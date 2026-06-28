@@ -2382,20 +2382,7 @@ function getCategoryChineseName(cat) {
 
 // Dynamically shift layout by updating main content padding-right
 function updateMainContentPadding() {
-  const mainContent = document.querySelector('.main-content');
-  const windowDiv = document.getElementById('ai-floating-window');
-  if (mainContent && windowDiv) {
-    const isActive = windowDiv.classList.contains('active');
-    const isRightDocked = windowDiv.style.right !== 'auto';
-    
-    if (isActive && isRightDocked) {
-      mainContent.classList.add('ai-open');
-      mainContent.style.paddingRight = (windowDiv.offsetWidth + 40) + 'px';
-    } else {
-      mainContent.classList.remove('ai-open');
-      mainContent.style.paddingRight = '';
-    }
-  }
+  // No-op: Prevent popup from shifting or altering the main page layout
 }
 
 // Update the AI context header with context size and estimated tokens
