@@ -3199,6 +3199,9 @@ async function askFloatingAiTutor() {
   const selectedModelName = modelSelect ? modelSelect.options[modelSelect.selectedIndex].text.split(' ')[0] : 'AI';
   const useStreaming = streamToggle ? streamToggle.checked : true;
   
+  const qId = getQuestionId(currentAiQuestion);
+  const userRecord = userData.answered[qId];
+  
   // Append User message in UI
   const userMsgDiv = document.createElement('div');
   userMsgDiv.className = 'ai-msg-bubble user';
@@ -3238,7 +3241,8 @@ async function askFloatingAiTutor() {
           model: chosenModel,
           history: aiConversationHistory,
           thinkingIntensity: chosenIntensity,
-          stream: true
+          stream: true,
+          userRecord: userRecord ? { userAns: userRecord.userAns, isCorrect: userRecord.isCorrect } : null
         })
       });
       
@@ -3395,7 +3399,8 @@ async function askFloatingAiTutor() {
           model: chosenModel,
           history: aiConversationHistory,
           thinkingIntensity: chosenIntensity,
-          stream: false
+          stream: false,
+          userRecord: userRecord ? { userAns: userRecord.userAns, isCorrect: userRecord.isCorrect } : null
         })
       });
       
@@ -4655,9 +4660,11 @@ function renderMobilePractice(container) {
       <section class="glass-panel rounded-2xl p-5 relative overflow-hidden bg-white/40 dark:bg-slate-900/40">
         <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
         <div class="flex justify-between items-center mb-3">
-          <div class="flex gap-2">
+          <div class="flex gap-2 items-center">
             <span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-label-md text-xs font-bold">${catBadgeName}</span>
-            <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full font-label-md text-xs font-bold">难度: 中等</span>
+            <button class="btn btn-outline" id="mob-call-ai-btn" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 700; border-color: var(--primary); color: var(--primary); display: flex; align-items: center; gap: 0.2rem; border-radius: 12px; cursor: pointer; background: transparent; transition: all 0.2s;">
+              🤖 问问助教
+            </button>
           </div>
           <span class="text-xs text-outline font-semibold">题号: ${currentQuestionIndex + 1} / ${questions.length}</span>
         </div>
@@ -4744,6 +4751,21 @@ function renderMobilePractice(container) {
     if (aiToggle) aiToggle.click();
   });
 
+  const mobCallAi = container.querySelector('#mob-call-ai-btn');
+  if (mobCallAi) {
+    if (!isLoggedIn) {
+      mobCallAi.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast('请先登录以召唤 AI 助教！', 'warning');
+        document.getElementById('login-trigger-btn').click();
+      });
+    } else {
+      mobCallAi.addEventListener('click', () => {
+        bindQuestionToAi(q);
+      });
+    }
+  }
+
   // Render content KaTeX
   renderMath(container);
 
@@ -4785,29 +4807,28 @@ function renderMobilePractice(container) {
 
   if (q.category === 'judgment') {
     interactive.innerHTML = `
-      <div class="grid grid-cols-2 gap-4">
-        <button class="option-card glass-panel rounded-2xl p-5 flex flex-col items-center gap-2 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer text-slate-800 dark:text-slate-100" id="mob-judge-true" data-val="对">
-          <span class="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
-          <span class="text-sm font-bold">对 (True)</span>
+      <div class="judgment-wrapper">
+        <button class="judgment-btn" id="mob-judge-true" data-val="对">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>对 (True)</span>
         </button>
-        <button class="option-card glass-panel rounded-2xl p-5 flex flex-col items-center gap-2 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer text-slate-800 dark:text-slate-100" id="mob-judge-false" data-val="错">
-          <span class="material-symbols-outlined text-rose-500 text-3xl">cancel</span>
-          <span class="text-sm font-bold">错 (False)</span>
+        <button class="judgment-btn" id="mob-judge-false" data-val="错">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>错 (False)</span>
         </button>
       </div>
     `;
 
     const trueCard = interactive.querySelector('#mob-judge-true');
     const falseCard = interactive.querySelector('#mob-judge-false');
-    const cards = [trueCard, falseCard];
 
     if (userRecord) {
-      revealJudgmentMobile(cards, userRecord.userAns, q.answer);
+      revealJudgmentStatus(trueCard, falseCard, userRecord.userAns, q.answer);
       showAnswerReveal();
       mobSubmit.style.display = 'none';
     } else {
       mobSubmit.style.display = 'none'; // Hide submit button for judgment questions
-      cards.forEach(card => {
+      [trueCard, falseCard].forEach(card => {
         card.addEventListener('click', () => {
           if (userData.answered[qId]) return;
           const val = card.getAttribute('data-val');
@@ -4815,7 +4836,7 @@ function renderMobilePractice(container) {
           userData.answered[qId] = { userAns: val, isCorrect };
           saveUserData();
           
-          revealJudgmentMobile(cards, val, q.answer);
+          revealJudgmentStatus(trueCard, falseCard, val, q.answer);
           showAnswerReveal();
           
           if (isCorrect) {
@@ -4836,22 +4857,23 @@ function renderMobilePractice(container) {
     }
 
   } else if (q.category === 'single_choice') {
-    let optionsHtml = '';
+    let optionsHtml = '<div class="options-list">';
     q.options.forEach(opt => {
       optionsHtml += `
-        <button class="option-card w-full text-left glass-panel rounded-2xl p-4 flex items-center gap-4 transition-all duration-200 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer" data-key="${opt.key}">
-          <div class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-sm text-slate-500 shrink-0 select-none">${opt.key}</div>
-          <span class="text-sm font-semibold text-on-surface leading-normal">${renderContent(opt.text)}</span>
-        </button>
+        <div class="option-item" data-key="${opt.key}">
+          <div class="option-prefix">${opt.key}</div>
+          <div class="option-text">${renderContent(opt.text)}</div>
+        </div>
       `;
     });
+    optionsHtml += '</div>';
     interactive.innerHTML = optionsHtml;
     renderMath(interactive);
 
-    const optionCards = interactive.querySelectorAll('.option-card');
+    const optionCards = interactive.querySelectorAll('.option-item');
 
     if (userRecord) {
-      revealChoiceMobile(optionCards, userRecord.userAns, q.answer);
+      revealChoiceStatus(optionCards, userRecord.userAns, q.answer);
       showAnswerReveal();
       mobSubmit.style.display = 'none';
     } else {
@@ -4864,7 +4886,7 @@ function renderMobilePractice(container) {
           userData.answered[qId] = { userAns: key, isCorrect };
           saveUserData();
           
-          revealChoiceMobile(optionCards, key, q.answer);
+          revealChoiceStatus(optionCards, key, q.answer);
           showAnswerReveal();
           
           if (isCorrect) {
@@ -5630,9 +5652,12 @@ function renderMobileExamRunner(container) {
       <!-- Question Card -->
       <section class="glass-panel rounded-2xl p-5 relative overflow-hidden bg-white/40 dark:bg-slate-900/40">
         <div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-        <div class="flex gap-2 mb-3">
+        <div class="flex gap-2 mb-3 items-center">
           <span class="bg-primary/10 text-primary px-3 py-1 rounded-full font-label-md text-xs font-bold">${catBadgeName}</span>
-          <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full font-label-md text-xs font-bold">考题号: ${currentQuestionIndex + 1}</span>
+          <button class="btn btn-outline" id="mob-exam-call-ai-btn" style="padding: 0.2rem 0.5rem; font-size: 0.7rem; font-weight: 700; border-color: var(--primary); color: var(--primary); display: flex; align-items: center; gap: 0.2rem; border-radius: 12px; cursor: pointer; background: transparent; transition: all 0.2s;">
+            🤖 问问助教
+          </button>
+          <span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full font-label-md text-xs font-bold ml-auto">考题号: ${currentQuestionIndex + 1}</span>
         </div>
         <div class="font-math-display text-sm text-on-surface leading-relaxed space-y-4">
           ${renderContent(q.question)}
@@ -5711,6 +5736,13 @@ function renderMobileExamRunner(container) {
     if (aiToggle) aiToggle.click();
   };
 
+  const mobExamCallAi = container.querySelector('#mob-exam-call-ai-btn');
+  if (mobExamCallAi) {
+    mobExamCallAi.onclick = () => {
+      bindQuestionToAi(q);
+    };
+  }
+
   // Toggle sheet overlay
   function openSheet() {
     overlay.classList.remove('hidden');
@@ -5759,14 +5791,14 @@ function renderMobileExamRunner(container) {
   const interactive = container.querySelector('#mob-exam-interactive');
   if (q.category === 'judgment') {
     interactive.innerHTML = `
-      <div class="grid grid-cols-2 gap-4">
-        <button class="option-card glass-panel rounded-2xl p-5 flex flex-col items-center gap-2 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer text-slate-850 dark:text-slate-100 ${userAns === '对' ? 'option-selected' : ''}" id="mob-exam-true">
-          <span class="material-symbols-outlined text-emerald-500 text-3xl">check_circle</span>
-          <span class="text-sm font-bold">对 (True)</span>
+      <div class="judgment-wrapper">
+        <button class="judgment-btn ${userAns === '对' ? 'selected-true' : ''}" id="mob-exam-true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>对 (True)</span>
         </button>
-        <button class="option-card glass-panel rounded-2xl p-5 flex flex-col items-center gap-2 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer text-slate-850 dark:text-slate-100 ${userAns === '错' ? 'option-selected' : ''}" id="mob-exam-false">
-          <span class="material-symbols-outlined text-rose-500 text-3xl">cancel</span>
-          <span class="text-sm font-bold">错 (False)</span>
+        <button class="judgment-btn ${userAns === '错' ? 'selected-true' : ''}" id="mob-exam-false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>错 (False)</span>
         </button>
       </div>
     `;
@@ -5775,20 +5807,21 @@ function renderMobileExamRunner(container) {
     interactive.querySelector('#mob-exam-false').onclick = () => saveMobileExamAnswer('错');
 
   } else if (q.category === 'single_choice') {
-    let optionsHtml = '';
+    let optionsHtml = '<div class="options-list">';
     q.options.forEach(opt => {
       const isSelected = userAns === opt.key;
       optionsHtml += `
-        <button class="option-card w-full text-left glass-panel rounded-2xl p-4 flex items-center gap-4 transition-all duration-200 border-slate-200/50 dark:border-slate-800/50 bg-white/40 cursor-pointer ${isSelected ? 'option-selected' : ''}" data-key="${opt.key}">
-          <div class="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-sm shrink-0 select-none ${isSelected ? 'bg-primary text-white border-none' : 'text-slate-500'}">${opt.key}</div>
-          <span class="text-sm font-semibold text-on-surface leading-normal">${renderContent(opt.text)}</span>
-        </button>
+        <div class="option-item ${isSelected ? 'selected' : ''}" data-key="${opt.key}">
+          <div class="option-prefix">${opt.key}</div>
+          <div class="option-text">${renderContent(opt.text)}</div>
+        </div>
       `;
     });
+    optionsHtml += '</div>';
     interactive.innerHTML = optionsHtml;
     renderMath(interactive);
 
-    interactive.querySelectorAll('.option-card').forEach(card => {
+    interactive.querySelectorAll('.option-item').forEach(card => {
       card.onclick = () => {
         const key = card.getAttribute('data-key');
         saveMobileExamAnswer(key);
