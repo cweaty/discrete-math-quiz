@@ -3833,6 +3833,29 @@ function loadGlobalCloudQuota() {
 //            MOBILE APP ADAPTATION HELPERS & INTERACTIVE ROUTERS
 // ============================================================================
 
+function animateMobileTransition(direction, action) {
+  const viewport = document.getElementById('viewport');
+  if (!viewport || window.innerWidth > 768) {
+    action();
+    return;
+  }
+  
+  const outClass = direction === 'left' ? 'slide-out-left' : 'slide-out-right';
+  viewport.classList.add(outClass);
+  
+  setTimeout(() => {
+    viewport.classList.remove(outClass);
+    action();
+    
+    const inClass = direction === 'left' ? 'slide-in-right' : 'slide-in-left';
+    viewport.classList.add(inClass);
+    
+    setTimeout(() => {
+      viewport.classList.remove(inClass);
+    }, 220);
+  }, 170);
+}
+
 let currentMobileTab = 'lobby';
 
 function setupMobileSwipeGestures() {
@@ -3883,28 +3906,36 @@ function setupMobileSwipeGestures() {
           if (currentMobileTab === 'category') {
             const questions = getFilteredQuestions();
             if (currentQuestionIndex < questions.length - 1) {
-              currentQuestionIndex++;
-              renderViewport();
+              animateMobileTransition('left', () => {
+                currentQuestionIndex++;
+                renderViewport();
+              });
             }
           } else {
             if (currentQuestionIndex < examState.questions.length - 1) {
-              currentQuestionIndex++;
-              renderViewport();
+              animateMobileTransition('left', () => {
+                currentQuestionIndex++;
+                renderViewport();
+              });
             }
           }
         } 
         // Swipe right (finger moves left to right, diffX > 0) -> Previous question
         else if (diffX > 0) {
           if (currentQuestionIndex > 0) {
-            currentQuestionIndex--;
-            renderViewport();
+            animateMobileTransition('right', () => {
+              currentQuestionIndex--;
+              renderViewport();
+            });
           }
         }
       } else if (isOtherSecondaryPage) {
         // Swipe right (left to right) returns to lobby
         if (diffX > 0) {
-          currentMobileTab = 'lobby';
-          renderViewport();
+          animateMobileTransition('right', () => {
+            currentMobileTab = 'lobby';
+            renderViewport();
+          });
         }
       } else {
         // Switch between main navigation tabs
@@ -3915,42 +3946,46 @@ function setupMobileSwipeGestures() {
           if (diffX < 0) {
             // Swipe left: next tab
             if (currentIndex < tabsList.length - 1) {
-              const nextTab = tabsList[currentIndex + 1];
-              currentMobileTab = nextTab;
-              
-              // Sync state
-              if (nextTab === 'lobby' || nextTab === 'category') {
-                currentCategory = 'all';
-                currentMode = 'practice';
-              } else if (nextTab === 'exam') {
-                currentMode = 'exam';
-              } else if (nextTab === 'leaderboard') {
-                currentCategory = 'leaderboard';
-              } else if (nextTab === 'profile') {
-                currentCategory = 'profile';
-              }
-              
-              renderViewport();
+              animateMobileTransition('left', () => {
+                const nextTab = tabsList[currentIndex + 1];
+                currentMobileTab = nextTab;
+                
+                // Sync state
+                if (nextTab === 'lobby' || nextTab === 'category') {
+                  currentCategory = 'all';
+                  currentMode = 'practice';
+                } else if (nextTab === 'exam') {
+                  currentMode = 'exam';
+                } else if (nextTab === 'leaderboard') {
+                  currentCategory = 'leaderboard';
+                } else if (nextTab === 'profile') {
+                  currentCategory = 'profile';
+                }
+                
+                renderViewport();
+              });
             }
           } else if (diffX > 0) {
             // Swipe right: previous tab
             if (currentIndex > 0) {
-              const prevTab = tabsList[currentIndex - 1];
-              currentMobileTab = prevTab;
-              
-              // Sync state
-              if (prevTab === 'lobby' || prevTab === 'category') {
-                currentCategory = 'all';
-                currentMode = 'practice';
-              } else if (prevTab === 'exam') {
-                currentMode = 'exam';
-              } else if (prevTab === 'leaderboard') {
-                currentCategory = 'leaderboard';
-              } else if (prevTab === 'profile') {
-                currentCategory = 'profile';
-              }
-              
-              renderViewport();
+              animateMobileTransition('right', () => {
+                const prevTab = tabsList[currentIndex - 1];
+                currentMobileTab = prevTab;
+                
+                // Sync state
+                if (prevTab === 'lobby' || prevTab === 'category') {
+                  currentCategory = 'all';
+                  currentMode = 'practice';
+                } else if (prevTab === 'exam') {
+                  currentMode = 'exam';
+                } else if (prevTab === 'leaderboard') {
+                  currentCategory = 'leaderboard';
+                } else if (prevTab === 'profile') {
+                  currentCategory = 'profile';
+                }
+                
+                renderViewport();
+              });
             }
           }
         }
@@ -4935,14 +4970,18 @@ function renderMobilePractice(container) {
 
   if (mobPrev) {
     mobPrev.onclick = () => {
-      currentQuestionIndex--;
-      renderViewport();
+      animateMobileTransition('right', () => {
+        currentQuestionIndex--;
+        renderViewport();
+      });
     };
   }
   if (mobNext) {
     mobNext.onclick = () => {
-      currentQuestionIndex++;
-      renderViewport();
+      animateMobileTransition('left', () => {
+        currentQuestionIndex++;
+        renderViewport();
+      });
     };
   }
 
@@ -5992,8 +6031,22 @@ function renderMobileExamRunner(container) {
   const submitTrigger = container.querySelector('#mob-submit-exam-trigger');
   const aiFab = container.querySelector('#mob-exam-ai-fab');
 
-  if (prevBtn) prevBtn.onclick = () => { currentQuestionIndex--; renderViewport(); };
-  if (nextBtn) nextBtn.onclick = () => { currentQuestionIndex++; renderViewport(); };
+  if (prevBtn) {
+    prevBtn.onclick = () => {
+      animateMobileTransition('right', () => {
+        currentQuestionIndex--;
+        renderViewport();
+      });
+    };
+  }
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      animateMobileTransition('left', () => {
+        currentQuestionIndex++;
+        renderViewport();
+      });
+    };
+  }
   
   if (submitTrigger) {
     submitTrigger.onclick = () => {

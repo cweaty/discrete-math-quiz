@@ -2236,3 +2236,40 @@ tr:nth-child(even) {
   .font-label-md { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 500; }
   .font-math-display { font-family: 'KaTeX_Main', 'Inter', system-ui, sans-serif; }
 }
+
+/* Mobile Slide transitions */
+@keyframes slideOutLeft {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(-100%); opacity: 0; }
+}
+
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.slide-out-left {
+  animation: slideOutLeft 0.18s ease-in forwards;
+}
+
+.slide-out-right {
+  animation: slideOutRight 0.18s ease-in forwards;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.22s ease-out forwards;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.22s ease-out forwards;
+}
