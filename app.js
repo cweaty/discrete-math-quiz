@@ -393,14 +393,17 @@ function renderProfileView(container) {
         <h3 style="margin-top: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem; margin-bottom: 1rem;">
           ⚙️ 账户选项
         </h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.75rem;">
           <button class="btn btn-outline" onclick="document.getElementById('settings-trigger-btn').click()" style="padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
             ⚙️ 刷题首选项
           </button>
-          <button class="btn btn-outline" id="profile-logout-btn" style="color: var(--error); border-color: rgba(239, 68, 68, 0.25); padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+          <button class="btn btn-outline" id="profile-logout-btn" style="color: var(--text-primary); border-color: var(--border-color); padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
             🚪 退出当前登录
           </button>
         </div>
+        <button class="btn btn-outline" id="profile-delete-btn" style="color: var(--error); border-color: rgba(239, 68, 68, 0.35); width: 100%; padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all var(--transition-fast);">
+          ⚠️ 注销此账号 (彻底清除云端数据)
+        </button>
       </div>
     </div>
   `;
@@ -409,6 +412,64 @@ function renderProfileView(container) {
   container.querySelector('#profile-logout-btn').addEventListener('click', () => {
     document.getElementById('logout-btn').click();
   });
+
+  // Bind Account Deletion
+  const deleteBtn = container.querySelector('#profile-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      const firstConfirm = confirm('⚠️ 警告：您正在请求注销该离散数学刷题账户！\\n\\n注销后：\\n1. 您的用户名与账户将被立即注销释放。\\n2. 您的云端刷题进度、打卡天数和错题藏书将被永久彻底抹除。\\n\\n您确定要继续吗？');
+      if (!firstConfirm) return;
+      
+      const secondConfirm = confirm('⚠️ 再次确认：此操作不可撤销，云端数据将彻底被粉碎！\\n\\n您真的确定要彻底注销此账号吗？');
+      if (!secondConfirm) return;
+      
+      const token = localStorage.getItem('dm_jwt_token');
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`${API_BASE}/auth/delete`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+          localStorage.removeItem('dm_jwt_token');
+          localStorage.removeItem('dm_user_profile');
+          userData.answered = {};
+          userData.bookmarks = [];
+          userData.streak = 0;
+          userData.lastStudyDate = "";
+          userData.examHistory = [];
+          userData.examHighScore = 0;
+          saveUserData();
+          
+          showToast('账号注销成功，所有本地及云端数据已彻底擦除！', 'success');
+          
+          currentCategory = 'all';
+          checkAuthStatus();
+          updateStatsDashboard();
+          setupSidebarCounts();
+          
+          document.querySelectorAll('.nav-item').forEach(n => {
+            n.classList.remove('active');
+            if (n.getAttribute('data-category') === 'all') {
+              n.classList.add('active');
+            }
+          });
+          
+          renderViewport();
+        } else {
+          showToast(result.error || '注销失败，请稍后重试！', 'error');
+        }
+      } catch (err) {
+        showToast('连接账户中心失败，请检查网络！', 'error');
+      }
+    });
+  }
 }
 
 // --- LaTeX Rendering Math Helper ---
