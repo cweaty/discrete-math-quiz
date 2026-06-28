@@ -65,7 +65,6 @@ function initGlobalScrollAnimations() {
     desktopHeader.style.position = 'sticky';
     desktopHeader.style.top = '0';
     desktopHeader.style.zIndex = '100';
-    desktopHeader.style.transition = 'background-color var(--transition-normal), border-color var(--transition-normal)';
     
     // Adjust main-content padding-top to 0 and move it to header for seamless stick
     const mainContent = document.querySelector('.main-content');
@@ -73,40 +72,13 @@ function initGlobalScrollAnimations() {
       mainContent.style.paddingTop = '0';
       desktopHeader.style.paddingTop = '2rem';
       desktopHeader.style.paddingBottom = '1.5rem';
-      desktopHeader.style.backgroundColor = 'var(--bg-primary)';
-      desktopHeader.style.borderBottom = '1px solid transparent';
     }
     
     desktopHeaderTrigger = ScrollTrigger.create({
       trigger: ".main-content",
       scroller: ".main-content",
       start: "top+=10 top",
-      onEnter: () => {
-        gsap.to(desktopHeader, {
-          paddingTop: "1rem",
-          paddingBottom: "1rem",
-          backgroundColor: "var(--bg-primary-fade)",
-          backdropFilter: "blur(12px)",
-          webkitBackdropFilter: "blur(12px)",
-          borderBottomColor: "var(--border-color)",
-          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -4px rgba(0, 0, 0, 0.03)",
-          duration: 0.3,
-          overwrite: "auto"
-        });
-      },
-      onLeaveBack: () => {
-        gsap.to(desktopHeader, {
-          paddingTop: "2rem",
-          paddingBottom: "1.5rem",
-          backgroundColor: "var(--bg-primary)",
-          backdropFilter: "none",
-          webkitBackdropFilter: "none",
-          borderBottomColor: "transparent",
-          boxShadow: "none",
-          duration: 0.3,
-          overwrite: "auto"
-        });
-      }
+      toggleClass: { targets: desktopHeader, className: "scrolled" }
     });
   }
   
@@ -117,28 +89,7 @@ function initGlobalScrollAnimations() {
       trigger: ".main-content",
       scroller: ".main-content",
       start: "top+=10 top",
-      onEnter: () => {
-        gsap.to(mobileHeader, {
-          height: "52px",
-          backgroundColor: "var(--bg-primary-fade)",
-          backdropFilter: "blur(12px)",
-          webkitBackdropFilter: "blur(12px)",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
-          duration: 0.3,
-          overwrite: "auto"
-        });
-      },
-      onLeaveBack: () => {
-        gsap.to(mobileHeader, {
-          height: "64px",
-          backgroundColor: "var(--bg-secondary)",
-          backdropFilter: "none",
-          webkitBackdropFilter: "none",
-          boxShadow: "none",
-          duration: 0.3,
-          overwrite: "auto"
-        });
-      }
+      toggleClass: { targets: mobileHeader, className: "scrolled" }
     });
   }
 }
