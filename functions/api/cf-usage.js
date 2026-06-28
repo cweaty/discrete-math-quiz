@@ -43,21 +43,19 @@ export async function onRequestPost(context) {
     const datetimeStart = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0)).toISOString();
     const datetimeEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59)).toISOString();
     
-    // GraphQL query to query workersInvocationsAdaptive and aiInferenceAdaptiveGroups
+    // GraphQL query to query workersOverviewRequestsAdaptiveGroups and aiInferenceAdaptiveGroups
     const query = `
       query GetWorkersAnalytics($accountTag: String!, $datetimeStart: String!, $datetimeEnd: String!) {
         viewer {
           accounts(filter: {accountTag: $accountTag}) {
-            workersInvocationsAdaptive(
+            workersOverviewRequestsAdaptiveGroups(
               limit: 10000,
               filter: {
                 datetime_geq: $datetimeStart,
                 datetime_leq: $datetimeEnd
               }
             ) {
-              sum {
-                requests
-              }
+              count
               dimensions {
                 scriptName
               }
@@ -118,7 +116,7 @@ export async function onRequestPost(context) {
       });
     }
     
-    const invocations = accounts[0].workersInvocationsAdaptive || [];
+    const invocations = accounts[0].workersOverviewRequestsAdaptiveGroups || [];
     const aiGroups = accounts[0].aiInferenceAdaptiveGroups || [];
     
     let workersRequests = 0;
@@ -128,9 +126,9 @@ export async function onRequestPost(context) {
     
     invocations.forEach(item => {
       const name = item.dimensions?.scriptName || "";
-      const count = item.sum?.requests || 0;
+      const count = item.count || 0;
       
-      if (name === targetScript || name.includes("pages-fn") || name.includes("discrete-math")) {
+      if (name.includes("pages") || name === targetScript || name.includes("discrete-math")) {
         pagesRequests += count;
       } else {
         workersRequests += count;
