@@ -1,4 +1,4 @@
-// Signup Worker API for Cloudflare KV
+// Signup Worker API for Cloudflare KV (Username & Password Only)
 
 const textEncoder = new TextEncoder();
 
@@ -18,7 +18,7 @@ function generateRandomSalt() {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const db = env.DB_KV; // Binding must be named DB_KV
+  const db = env.DB_KV;
   
   if (!db) {
     return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
@@ -28,23 +28,23 @@ export async function onRequestPost(context) {
   }
   
   try {
-    const { email, username, password } = await request.json();
+    const { username, password } = await request.json();
     
-    if (!email || !username || !password) {
-      return new Response(JSON.stringify({ error: "邮箱、用户名或密码不能为空！" }), {
+    if (!username || !password) {
+      return new Response(JSON.stringify({ error: "用户名或密码不能为空！" }), {
         status: 400,
         headers: { "Content-Type": "application/json" }
       });
     }
     
     // Normalization
-    const normEmail = email.trim().toLowerCase();
+    const normUsername = username.trim().toLowerCase();
     const cleanUsername = username.trim();
     
-    // Check if account already exists
-    const existingAccount = await db.get(`user:account:${normEmail}`);
+    // Check if account already exists (key by username now)
+    const existingAccount = await db.get(`user:account:${normUsername}`);
     if (existingAccount) {
-      return new Response(JSON.stringify({ error: "该邮箱已被注册！" }), {
+      return new Response(JSON.stringify({ error: "该用户名已被注册！" }), {
         status: 409,
         headers: { "Content-Type": "application/json" }
       });
@@ -61,13 +61,12 @@ export async function onRequestPost(context) {
       passwordHash,
       salt
     };
-    await db.put(`user:account:${normEmail}`, JSON.stringify(accountData));
+    await db.put(`user:account:${normUsername}`, JSON.stringify(accountData));
     
     // Create initial user profile
     const profileData = {
       userId,
       username: cleanUsername,
-      email: normEmail,
       answeredCount: 0,
       correctRate: 0,
       examHighScore: 0,

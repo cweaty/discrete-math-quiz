@@ -81,6 +81,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M10 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span>排行榜</span>
           </li>
+          <li class="nav-item" data-category="profile" id="nav-profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-linecap="round"/></svg>
+            <span>个人中心</span>
+          </li>
         </ul>
       </nav>
       
@@ -266,8 +270,8 @@
       <!-- Login Form -->
       <form class="auth-form" id="login-form">
         <div class="form-group">
-          <label for="login-email">邮箱地址</label>
-          <input type="email" id="login-email" required placeholder="请输入您的邮箱..." autocomplete="email">
+          <label for="login-username">用户名</label>
+          <input type="text" id="login-username" required placeholder="请输入您的用户名..." autocomplete="username">
         </div>
         <div class="form-group">
           <label for="login-password">密码</label>
@@ -280,11 +284,7 @@
       <form class="auth-form" id="register-form" style="display: none;">
         <div class="form-group">
           <label for="reg-username">用户名</label>
-          <input type="text" id="reg-username" required placeholder="请起个响亮的昵称..." autocomplete="username">
-        </div>
-        <div class="form-group">
-          <label for="reg-email">邮箱地址</label>
-          <input type="email" id="reg-email" required placeholder="请输入您的邮箱..." autocomplete="email">
+          <input type="text" id="reg-username" required placeholder="请设置您的用户名..." autocomplete="username">
         </div>
         <div class="form-group">
           <label for="reg-password">密码</label>

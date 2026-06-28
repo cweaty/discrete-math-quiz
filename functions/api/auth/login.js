@@ -1,4 +1,4 @@
-// Login Worker API with JWT Generation for Cloudflare KV
+// Login Worker API with JWT Generation for Cloudflare KV (Username & Password Only)
 
 const textEncoder = new TextEncoder();
 
@@ -50,22 +50,22 @@ export async function onRequestPost(context) {
   }
   
   try {
-    const { email, password } = await request.json();
+    const { username, password } = await request.json();
     
-    if (!email || !password) {
-      return new Response(JSON.stringify({ error: "邮箱和密码不能为空！" }), {
+    if (!username || !password) {
+      return new Response(JSON.stringify({ error: "用户名和密码不能为空！" }), {
         status: 400,
         headers: { "Content-Type": "application/json" }
       });
     }
     
     // Normalization
-    const normEmail = email.trim().toLowerCase();
+    const normUsername = username.trim().toLowerCase();
     
-    // Read Account Index
-    const accountStr = await db.get(`user:account:${normEmail}`);
+    // Read Account Index (key by username now)
+    const accountStr = await db.get(`user:account:${normUsername}`);
     if (!accountStr) {
-      return new Response(JSON.stringify({ error: "账号不存在或密码错误！" }), {
+      return new Response(JSON.stringify({ error: "用户名不存在或密码错误！" }), {
         status: 401,
         headers: { "Content-Type": "application/json" }
       });
@@ -76,7 +76,7 @@ export async function onRequestPost(context) {
     // Hash password and verify
     const inputHash = await hashPassword(password, account.salt);
     if (inputHash !== account.passwordHash) {
-      return new Response(JSON.stringify({ error: "账号不存在或密码错误！" }), {
+      return new Response(JSON.stringify({ error: "用户名不存在或密码错误！" }), {
         status: 401,
         headers: { "Content-Type": "application/json" }
       });
@@ -97,7 +97,6 @@ export async function onRequestPost(context) {
     const payload = {
       userId,
       username: profile.username,
-      email: profile.email,
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
     };
     

@@ -226,8 +226,14 @@ function setupCategoryNavigation() {
       const cnName = item.querySelector('span').innerText;
       titleEl.innerText = cnName;
       
-      const count = getFilteredQuestions().length;
-      subtitleEl.innerText = `当前分类下共收录了 ${count} 道题目`;
+      if (currentCategory === 'leaderboard') {
+        subtitleEl.innerText = '全站刷题与考试积分高分榜前50名';
+      } else if (currentCategory === 'profile') {
+        subtitleEl.innerText = '查看您的个人做题战绩、连续打卡天数与账号同步状态';
+      } else {
+        const count = getFilteredQuestions().length;
+        subtitleEl.innerText = `当前分类下共收录了 ${count} 道题目`;
+      }
       
       renderViewport();
     });
@@ -266,8 +272,8 @@ function renderViewport() {
   const statsPanel = document.getElementById('stats-panel');
   const masteryPanel = document.getElementById('mastery-panel');
   
-  // If leaderboard or exam or retake is active, hide dashboard metrics
-  const hideMetrics = (currentCategory === 'leaderboard' || currentMode === 'exam' || currentCategory === 'bookmarks_retake');
+  // If leaderboard, profile, exam or retake is active, hide dashboard metrics
+  const hideMetrics = (currentCategory === 'leaderboard' || currentCategory === 'profile' || currentMode === 'exam' || currentCategory === 'bookmarks_retake');
   
   if (statsPanel) statsPanel.style.display = hideMetrics ? 'none' : 'grid';
   if (masteryPanel) masteryPanel.style.display = hideMetrics ? 'none' : 'grid';
@@ -277,11 +283,132 @@ function renderViewport() {
     return;
   }
   
+  if (currentCategory === 'profile') {
+    renderProfileView(container);
+    return;
+  }
+  
   if (currentMode === 'practice') {
     renderPracticeMode(container);
   } else {
     renderExamMode(container);
   }
+}
+
+// --- Profile Details View ---
+function renderProfileView(container) {
+  const isLoggedIn = !!localStorage.getItem('dm_jwt_token');
+  
+  if (!isLoggedIn) {
+    container.innerHTML = `
+      <div class="empty-bookmarks-card" style="max-width: 600px; text-align: center; gap: 1.25rem; margin: 2rem auto;">
+        <div class="empty-icon" style="background-color: var(--primary-light); color: var(--primary); margin: 0 auto;">🔒</div>
+        <h2>个人中心未激活</h2>
+        <p style="color: var(--text-secondary); max-width: 420px; margin: 0 auto;">
+          登录后可解锁个人专属详细页面，查看学习时长、打卡进度、高分榜记录并开启云端实时备份！
+        </p>
+        <button class="btn btn-primary" onclick="document.getElementById('login-trigger-btn').click()" style="padding: 0.65rem 1.5rem; margin-top: 0.5rem; align-self: center;">
+          立即登录 / 注册
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
+  // Calculate statistics
+  const answeredKeys = Object.keys(userData.answered);
+  const totalAnswered = answeredKeys.length;
+  let correctCount = 0;
+  answeredKeys.forEach(key => {
+    if (userData.answered[key].isCorrect) correctCount++;
+  });
+  const accuracy = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+  const streak = userData.streak || 0;
+  const examHighScore = userData.examHighScore || 0;
+  const bookmarksCount = userData.bookmarks.length;
+  
+  const savedProfile = localStorage.getItem('dm_user_profile');
+  const profile = savedProfile ? JSON.parse(savedProfile) : {};
+  const username = profile.username || '同学';
+  
+  container.innerHTML = `
+    <div class="profile-container" style="max-width: 650px; margin: 1rem auto; display: flex; flex-direction: column; gap: 1.5rem; animation: fadeIn 0.4s ease;">
+      <!-- Profile Banner Card -->
+      <div class="dashboard-card" style="display: flex; gap: 1.5rem; align-items: center; padding: 1.75rem 2rem; background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary)); border: 1px solid var(--border-color); border-radius: var(--radius-lg); position: relative; overflow: hidden; box-shadow: var(--shadow-md);">
+        <div style="position: absolute; right: -10px; top: -10px; font-size: 6rem; opacity: 0.04; pointer-events: none; user-select: none;">🎓</div>
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);">
+          ${username[0].toUpperCase()}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+          <h2 style="margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--text-primary);">${username}</h2>
+          <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: var(--text-muted);">
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #10B981;"></span>
+            <span>已开启云端实时备份</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics Grid -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+        <div class="dashboard-card" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+          <span style="font-size: 1.6rem;">🔥</span>
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">连续学习</span>
+          <span style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">${streak} 天</span>
+        </div>
+        <div class="dashboard-card" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+          <span style="font-size: 1.6rem;">🎯</span>
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">答题正确率</span>
+          <span style="font-size: 1.3rem; font-weight: 800; color: var(--success);">${accuracy}%</span>
+        </div>
+        <div class="dashboard-card" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; box-shadow: var(--shadow-sm);">
+          <span style="font-size: 1.6rem;">🏆</span>
+          <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">考场最高分</span>
+          <span style="font-size: 1.3rem; font-weight: 800; color: var(--warning);">${examHighScore} 分</span>
+        </div>
+      </div>
+
+      <!-- Detail Card -->
+      <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm);">
+        <h3 style="margin-top: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem; margin-bottom: 1rem;">
+          📊 个人刷题成就
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+            <span style="color: var(--text-secondary); font-weight: 600;">已答题目总数：</span>
+            <span style="font-weight: 800; color: var(--text-primary);">${totalAnswered} 题</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+            <span style="color: var(--text-secondary); font-weight: 600;">正确解答题数：</span>
+            <span style="font-weight: 800; color: var(--success);">${correctCount} 题</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
+            <span style="color: var(--text-secondary); font-weight: 600;">错题及收藏夹：</span>
+            <span style="font-weight: 800; color: var(--error);">${bookmarksCount} 题</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm);">
+        <h3 style="margin-top: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem; margin-bottom: 1rem;">
+          ⚙️ 账户选项
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+          <button class="btn btn-outline" onclick="document.getElementById('settings-trigger-btn').click()" style="padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+            ⚙️ 刷题首选项
+          </button>
+          <button class="btn btn-outline" id="profile-logout-btn" style="color: var(--error); border-color: rgba(239, 68, 68, 0.25); padding: 0.65rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+            🚪 退出当前登录
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Bind Logout
+  container.querySelector('#profile-logout-btn').addEventListener('click', () => {
+    document.getElementById('logout-btn').click();
+  });
 }
 
 // --- LaTeX Rendering Math Helper ---
@@ -461,21 +588,56 @@ function renderPracticeMode(container) {
   solutionAnswer.innerHTML = `正确答案：${renderContent(q.answer)}`;
   solutionAnalysis.innerHTML = q.analysis ? renderContent(q.analysis) : '该题目暂无详细解析。';
   
-  // Toggle solution button listener
-  toggleSolutionBtn.addEventListener('click', () => {
-    if (solutionPanel.style.display === 'none') {
-      solutionPanel.style.display = 'flex';
-      toggleSolutionBtn.innerText = '隐藏答案与解析';
-      renderMath(solutionPanel);
-      loadComments(qId, solutionPanel);
-    } else {
-      solutionPanel.style.display = 'none';
-      toggleSolutionBtn.innerText = '显示答案与解析';
-    }
-  });
+  const isLoggedIn = !!localStorage.getItem('dm_jwt_token');
 
-  // Handle Practice View Question UI based on category
-  if (q.category === 'judgment') {
+  if (!isLoggedIn) {
+    interactiveArea.innerHTML = `
+      <div style="padding: 1.5rem; background-color: var(--bg-secondary); border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width:100%; box-sizing:border-box;">
+        <span style="font-size: 2rem; user-select: none;">🔒</span>
+        <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">答题特权已锁定</div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; max-width: 320px;">
+          您需要登录账号才能答题、解锁参考解析与 AI 助教！
+        </p>
+        <button class="btn btn-primary" onclick="document.getElementById('login-trigger-btn').click()" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; margin-top: 0.25rem;">
+          立即登录 / 注册
+        </button>
+      </div>
+    `;
+    
+    // Disable call AI tutor
+    const callAiTutorBtn = card.querySelector('#call-ai-tutor-btn');
+    if (callAiTutorBtn) {
+      // Overwrite with login prompt
+      const clone = callAiTutorBtn.cloneNode(true);
+      callAiTutorBtn.parentNode.replaceChild(clone, callAiTutorBtn);
+      clone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast('请先登录以召唤 AI 助教！', 'warning');
+        document.getElementById('login-trigger-btn').click();
+      });
+    }
+    
+    // Disable toggle solution button
+    toggleSolutionBtn.disabled = true;
+    toggleSolutionBtn.innerText = '🔒 登录解锁解析';
+    toggleSolutionBtn.style.opacity = '0.6';
+    toggleSolutionBtn.style.cursor = 'not-allowed';
+  } else {
+    // Toggle solution button listener
+    toggleSolutionBtn.addEventListener('click', () => {
+      if (solutionPanel.style.display === 'none') {
+        solutionPanel.style.display = 'flex';
+        toggleSolutionBtn.innerText = '隐藏答案与解析';
+        renderMath(solutionPanel);
+        loadComments(qId, solutionPanel);
+      } else {
+        solutionPanel.style.display = 'none';
+        toggleSolutionBtn.innerText = '显示答案与解析';
+      }
+    });
+
+    // Handle Practice View Question UI based on category
+    if (q.category === 'judgment') {
     // Judgment rendering
     interactiveArea.innerHTML = `
       <div class="judgment-wrapper">
@@ -665,7 +827,8 @@ function renderPracticeMode(container) {
       }, { once: true });
     }
   }
-  
+}
+
   // Navigation controls
   const prevBtn = card.querySelector('#prev-btn');
   const nextBtn = card.querySelector('#next-btn');
@@ -897,6 +1060,23 @@ function renderSubjectiveFeedback(interactiveArea, qId, existingIsCorrect, draft
 //             EXAM MODE RENDERING
 // ==========================================
 function renderExamMode(container) {
+  const isLoggedIn = !!localStorage.getItem('dm_jwt_token');
+  if (!isLoggedIn) {
+    container.innerHTML = `
+      <div class="empty-bookmarks-card" style="max-width: 600px; text-align: center; gap: 1.25rem; margin: 2rem auto;">
+        <div class="empty-icon" style="background-color: var(--primary-light); color: var(--primary); margin: 0 auto;">🔒</div>
+        <h2>模拟考试功能已锁定</h2>
+        <p style="color: var(--text-secondary); max-width: 420px; margin: 0 auto;">
+          模拟考试需要登录账号以保存考试成绩高分榜、记录错题库并计算答题正确率。
+        </p>
+        <button class="btn btn-primary" onclick="document.getElementById('login-trigger-btn').click()" style="padding: 0.65rem 1.5rem; margin-top: 0.5rem; align-self: center;">
+          立即登录 / 注册
+        </button>
+      </div>
+    `;
+    return;
+  }
+  
   if (!examState.isActive) {
     renderExamLobby(container);
   } else {
@@ -1661,7 +1841,7 @@ async function checkAuthStatus() {
       try {
         const profile = JSON.parse(savedProfile);
         document.getElementById('user-username').innerText = profile.username;
-        document.getElementById('user-email').innerText = profile.email;
+        document.getElementById('user-email').innerText = '已开启云端备份';
         document.getElementById('user-avatar-initial').innerText = profile.username.substring(0, 1).toUpperCase();
         
         userProfile.style.display = 'flex';
@@ -1781,14 +1961,14 @@ function setupAuthEvents() {
   // Handle Login submission
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('login-email').value;
+    const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
     
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       });
       
       const result = await response.json();
@@ -1830,14 +2010,13 @@ function setupAuthEvents() {
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('reg-username').value;
-    const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
     
     try {
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, password })
       });
       
       const result = await response.json();
