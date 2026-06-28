@@ -824,7 +824,7 @@ function renderPracticeMode(container) {
       } else {
         showToast('回答错误，看下解析吧', 'error');
       }
-      handleAnswerSubmitted(isCorrect);
+      handleAnswerSubmitted(qId, isCorrect);
     }
     
   } else if (q.category === 'single_choice') {
@@ -870,7 +870,7 @@ function renderPracticeMode(container) {
           } else {
             showToast('回答错误，正确答案是 ' + q.answer, 'error');
           }
-          handleAnswerSubmitted(isCorrect);
+          handleAnswerSubmitted(qId, isCorrect);
         });
       });
     }
@@ -935,7 +935,7 @@ function renderPracticeMode(container) {
         showToast('判定错误，点击下方解析对照', 'error');
         addManualGradeButton(interactiveArea, qId);
       }
-      handleAnswerSubmitted(isCorrect);
+      handleAnswerSubmitted(qId, isCorrect);
     }
     
   } else {
@@ -2410,9 +2410,7 @@ function setupSettingsEvents() {
 }
 
 // Helper for settings-based auto-navigation
-function handleAnswerSubmitted(isCorrect) {
-  const qId = getQuestionId(QUESTIONS[currentQuestionIndex]);
-  
+function handleAnswerSubmitted(qId, isCorrect) {
   // Update wrongQuestions
   if (isCorrect) {
     updateStudyStreak();
