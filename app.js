@@ -14,6 +14,7 @@ let practiceSettings = {
 };
 
 let cfCountdownInterval = null;
+let globalCfCountdownInterval = null;
 
 let shuffledQuestionsCache = null;
 let radarChartInstance = null;
@@ -81,6 +82,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Render initial viewport
   renderViewport();
+  
+  // Initialize Global Cloud Quota Dashboard
+  loadGlobalCloudQuota();
   
   // Toast container setup
   const toast = document.getElementById('toast');
@@ -356,6 +360,21 @@ function setupModeToggle() {
 function renderViewport() {
   const container = document.getElementById('viewport');
   container.innerHTML = '';
+  
+  // Show/Hide Global Cloud Quota Panel
+  const cfPanel = document.getElementById('global-cf-quota-panel');
+  if (cfPanel) {
+    const isLobby = ['all', 'judgment', 'single_choice', 'fill_blank', 'subjective', 'wrong_questions', 'bookmarks'].includes(currentCategory) && currentMode === 'practice';
+    if (isLobby) {
+      loadGlobalCloudQuota();
+    } else {
+      cfPanel.style.display = 'none';
+      if (globalCfCountdownInterval) {
+        clearInterval(globalCfCountdownInterval);
+        globalCfCountdownInterval = null;
+      }
+    }
+  }
   
 
   
@@ -3524,5 +3543,125 @@ function renderErrorCard(targetContainer, errMsg) {
     localStorage.removeItem('cf_account_id');
     localStorage.removeItem('cf_api_token');
     renderCloudflareUsageCard(document.getElementById('viewport'));
+  });
+}
+
+
+// ============================================================================
+//            GLOBAL CLOUDFLARE RESOURCES QUOTA DASHBOARD
+// ============================================================================
+
+function loadGlobalCloudQuota() {
+  const panel = document.getElementById('global-cf-quota-panel');
+  if (!panel) return;
+
+  // Clean up any running timers
+  if (globalCfCountdownInterval) {
+    clearInterval(globalCfCountdownInterval);
+    globalCfCountdownInterval = null;
+  }
+
+  const accountId = localStorage.getItem('cf_account_id');
+  const apiToken = localStorage.getItem('cf_api_token');
+  const body = (accountId && apiToken) ? { accountId, apiToken } : {};
+
+  fetch(`${API_BASE}/cf-usage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(res => {
+    if (res.ok) return res.json();
+    throw new Error('Failed to load global cf quota');
+  })
+  .then(result => {
+    const workers = result.workersRequests || 0;
+    const pages = result.pagesRequests || 0;
+    const total = result.totalRequests || 0;
+    const quota = result.quota || 100000;
+    const pct = parseFloat(((total / quota) * 100).toFixed(2));
+    
+    const aiNeurons = result.aiNeurons || 0;
+    const aiQuota = result.aiQuota || 10000;
+    const aiPct = parseFloat(((aiNeurons / aiQuota) * 100).toFixed(2));
+    let secondsLeft = result.secondsRemaining || 0;
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    function getTimerHtml(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `<span style="color:#d97706; font-weight:700;">${hours}</span>时<span style="color:#d97706; font-weight:700;">${minutes}</span>分<span style="color:#d97706; font-weight:700;">${secs}</span>秒`;
+    }
+
+    panel.innerHTML = `
+      <!-- Workers/Pages Requests Card -->
+      <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+            📡 Workers/Pages 平台请求配额
+          </h3>
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight:700;">重置倒计时: <span id="global-cf-reset-timer">${getTimerHtml(secondsLeft)}</span></span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+          <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, pct)}%;"></div>
+          <span style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
+            本日已用: ${total.toLocaleString()} / ${quota.toLocaleString()} (${pct}%)
+          </span>
+        </div>
+
+        <div style="display:flex; gap:1.5rem; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
+          <span>🌐 Pages (项目运行): <strong style="color: var(--primary);">${pages.toLocaleString()}</strong> 次</span>
+          <span>⚙️ Workers (其他服务): <strong style="color: var(--success);">${workers.toLocaleString()}</strong> 次</span>
+        </div>
+      </div>
+
+      <!-- Workers AI Neurons Card -->
+      <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+            🔮 Workers AI 智能算力配额
+          </h3>
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">每日免费额度</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+          <div style="background: linear-gradient(90deg, #10B981, #3B82F6); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, aiPct)}%;"></div>
+          <span style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
+            本日已用: ${aiNeurons.toLocaleString()} / ${aiQuota.toLocaleString()} Neurons (${aiPct}%)
+          </span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
+          <span>🧠 AI 助教算力单元: <strong style="color: #10B981;">${aiNeurons.toLocaleString()} Neurons</strong></span>
+          <span style="color: var(--text-muted); font-size:0.7rem;">(免费配额重置与请求数同步)</span>
+        </div>
+      </div>
+    `;
+    
+    panel.style.display = 'grid';
+
+    // Start live clock countdown
+    const resetTimerEl = document.getElementById('global-cf-reset-timer');
+    globalCfCountdownInterval = setInterval(() => {
+      if (secondsLeft > 0) {
+        secondsLeft--;
+        if (resetTimerEl) {
+          resetTimerEl.innerHTML = getTimerHtml(secondsLeft);
+        }
+      } else {
+        clearInterval(globalCfCountdownInterval);
+        loadGlobalCloudQuota();
+      }
+    }, 1000);
+  })
+  .catch(err => {
+    panel.style.display = 'none';
   });
 }

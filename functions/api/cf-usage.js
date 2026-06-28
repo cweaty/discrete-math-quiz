@@ -1,13 +1,29 @@
-// Cloudflare Workers/Pages Usage Queries Worker API
+// Cloudflare Workers/Pages & Workers AI Usage Queries Worker API
+// Supports global server-side environment variables CF_ACCOUNT_ID and CF_API_TOKEN
 
 export async function onRequestPost(context) {
   const { request, env } = context;
   
   try {
-    const { accountId, apiToken, scriptName } = await request.json();
+    let accountId = "";
+    let apiToken = "";
+    let scriptName = "";
     
-    if (!accountId || !apiToken) {
-      return new Response(JSON.stringify({ error: "Cloudflare Account ID 和 API Token 不能为空！" }), {
+    try {
+      const body = await request.json();
+      accountId = body.accountId;
+      apiToken = body.apiToken;
+      scriptName = body.scriptName;
+    } catch (e) {
+      // Body might be empty, that's fine (will fall back to server env)
+    }
+    
+    // Fallback to server-side environment variables
+    const finalAccountId = accountId || env.CF_ACCOUNT_ID;
+    const finalApiToken = apiToken || env.CF_API_TOKEN;
+    
+    if (!finalAccountId || !finalApiToken) {
+      return new Response(JSON.stringify({ error: "服务器未配置全局 CF_ACCOUNT_ID 和 CF_API_TOKEN，且客户端未提供凭证！" }), {
         status: 400,
         headers: { "Content-Type": "application/json" }
       });
@@ -23,7 +39,7 @@ export async function onRequestPost(context) {
     const datetimeStart = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0)).toISOString();
     const datetimeEnd = new Date(Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59)).toISOString();
     
-    // GraphQL query to query workersInvocationsAdaptive
+    // GraphQL query to query workersInvocationsAdaptive and aiInferenceAdaptiveGroups
     const query = `
       query GetWorkersAnalytics($accountTag: String!, $datetimeStart: String!, $datetimeEnd: String!) {
         viewer {
@@ -42,6 +58,17 @@ export async function onRequestPost(context) {
                 scriptName
               }
             }
+            aiInferenceAdaptiveGroups(
+              limit: 1000,
+              filter: {
+                datetime_geq: $datetimeStart,
+                datetime_leq: $datetimeEnd
+              }
+            ) {
+              sum {
+                totalNeurons
+              }
+            }
           }
         }
       }
@@ -50,13 +77,13 @@ export async function onRequestPost(context) {
     const response = await fetch("https://api.cloudflare.com/client/v4/graphql", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiToken}`,
+        "Authorization": `Bearer ${finalApiToken}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         query,
         variables: {
-          accountTag: accountId,
+          accountTag: finalAccountId,
           datetimeStart,
           datetimeEnd
         }
@@ -81,25 +108,24 @@ export async function onRequestPost(context) {
     
     const accounts = result.data?.viewer?.accounts;
     if (!accounts || accounts.length === 0) {
-      return new Response(JSON.stringify({ error: "未找到对应的 Account ID 账户，请确保 Token 具有 Account Analytics: Read 权限。" }), {
+      return new Response(JSON.stringify({ error: "未找到对应的 Account ID 账户，请确保凭证正确且拥有 Account Analytics: Read 权限。" }), {
         status: 404,
         headers: { "Content-Type": "application/json" }
       });
     }
     
     const invocations = accounts[0].workersInvocationsAdaptive || [];
+    const aiGroups = accounts[0].aiInferenceAdaptiveGroups || [];
     
     let workersRequests = 0;
     let pagesRequests = 0;
     
-    // Target Pages project script name (fallback to discrete-math-quiz)
     const targetScript = scriptName || "discrete-math-quiz";
     
     invocations.forEach(item => {
       const name = item.dimensions?.scriptName || "";
       const count = item.sum?.requests || 0;
       
-      // Determine if Pages or Workers
       if (name === targetScript || name.includes("pages-fn") || name.includes("discrete-math")) {
         pagesRequests += count;
       } else {
@@ -108,6 +134,15 @@ export async function onRequestPost(context) {
     });
     
     const totalRequests = workersRequests + pagesRequests;
+    
+    // Sum totalNeurons used
+    let aiNeuronsUsed = 0;
+    aiGroups.forEach(item => {
+      aiNeuronsUsed += item.sum?.totalNeurons || 0;
+    });
+    
+    // Round to 2 decimal places
+    aiNeuronsUsed = parseFloat(aiNeuronsUsed.toFixed(2));
     
     // Calculate seconds remaining until next reset (UTC midnight / Beijing 8:00 AM next day)
     const nextReset = new Date(Date.UTC(utcYear, utcMonth, utcDate + 1, 0, 0, 0));
@@ -118,6 +153,8 @@ export async function onRequestPost(context) {
       pagesRequests,
       totalRequests,
       quota: 100000,
+      aiNeurons: aiNeuronsUsed,
+      aiQuota: 10000,
       secondsRemaining
     }), {
       status: 200,
