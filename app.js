@@ -2431,7 +2431,7 @@ function setupFloatingAiTutor() {
         <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (精选中文推理)</option>
         <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen 2.5 Coder (代码专家)</option>
         <option value="@cf/qwen/qwq-32b">QwQ 32B (极强数学逻辑推理)</option>
-        <option value="@cf/qwen/deepseek-r1-distill-qwen-32b">DeepSeek R1 (蒸馏深度推理)</option>
+        <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (蒸馏深度推理)</option>
       </select>
     </div>
     
