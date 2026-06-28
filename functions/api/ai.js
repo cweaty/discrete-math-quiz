@@ -19,7 +19,7 @@ export async function onRequestPost(context) {
     // Check if Cloudflare AI binding is available
     if (!env.AI) {
       // Mock Response for local dev if AI binding is not configured
-      const mockReply = `【本地开发模式 - 模拟AI助教回复】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \\rightarrow B \\Leftrightarrow \\neg A \\vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行智能推导解答！`;
+      const mockReply = `<think>\n1. [本地模拟思考] 载入题目背景与参考解析。\n2. 识别用户提问："${userQuery}"。\n3. 正在检索知识库... 匹配到“命题逻辑等值演算”、“命题变元”等离散数学知识点。\n4. 依据模型 \`${activeModel}\` 拟定逻辑推导链条：德·摩根定律等。\n5. 生成 LaTeX 学术格式回复。\n</think>\n【本地开发模式 - 模拟AI助教回复】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \rightarrow B \Leftrightarrow \neg A \vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行智能推导解答！`;
       
       const mockUsage = {
         prompt_tokens: Math.round(userQuery.length * 0.4 + question.length * 0.2 + 100),

@@ -2595,15 +2595,22 @@ async function askFloatingAiTutor() {
     aiReplyDiv.className = 'ai-msg-bubble assistant';
     
     if (response.ok) {
-      // Extract <think>...</think> block if present
+      // Extract <think>...</think> block if present (robust regex parsing)
       let rawText = result.response;
       let thinkingText = "";
       
-      const thinkStart = rawText.indexOf("<think>");
-      const thinkEnd = rawText.indexOf("</think>");
-      if (thinkStart !== -1 && thinkEnd !== -1 && thinkEnd > thinkStart) {
-        thinkingText = rawText.substring(thinkStart + 7, thinkEnd).trim();
-        rawText = rawText.substring(thinkEnd + 8).trim();
+      const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+      const match = rawText.match(thinkRegex);
+      if (match) {
+        thinkingText = match[1].trim();
+        rawText = rawText.replace(thinkRegex, "").trim();
+      } else {
+        // Fallback for missing closing tag
+        const openIndex = rawText.toLowerCase().indexOf("<think>");
+        if (openIndex !== -1) {
+          thinkingText = rawText.substring(openIndex + 7).trim();
+          rawText = rawText.substring(0, openIndex).trim();
+        }
       }
       
       // Render Collapsible Thinking Accordion
