@@ -1,18 +1,17 @@
+import { getDb } from "../_db.js";
 // GET Global Leaderboard API
 
 export async function onRequestGet(context) {
   const { env } = context;
-  const db = env.DB_KV;
-  
-  if (!db) {
-    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+  if (!env.DB_KV && !env.DB_R2) {
+    return new Response(JSON.stringify({ error: "Cloudflare database bindings ('DB_KV' or 'DB_R2') are missing!" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
   }
   
   try {
-    const leaderboardData = await db.get("leaderboard:global");
+    const leaderboardData = await getDb(env, "leaderboard:global");
     
     // Return empty list if not initialized yet
     return new Response(leaderboardData || "[]", {

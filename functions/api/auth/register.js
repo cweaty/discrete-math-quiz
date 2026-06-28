@@ -1,3 +1,4 @@
+import { getDb, putDb } from "../../_db.js";
 // Signup Worker API for Cloudflare KV (Username & Password Only)
 
 const textEncoder = new TextEncoder();
@@ -18,10 +19,8 @@ function generateRandomSalt() {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const db = env.DB_KV;
-  
-  if (!db) {
-    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+  if (!env.DB_KV && !env.DB_R2) {
+    return new Response(JSON.stringify({ error: "Cloudflare database bindings ('DB_KV' or 'DB_R2') are missing!" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
@@ -42,7 +41,7 @@ export async function onRequestPost(context) {
     const cleanUsername = username.trim();
     
     // Check if account already exists (key by username now)
-    const existingAccount = await db.get(`user:account:${normUsername}`);
+    const existingAccount = await getDb(env, `user:account:${normUsername}`);
     if (existingAccount) {
       return new Response(JSON.stringify({ error: "该用户名已被注册！" }), {
         status: 409,
@@ -61,7 +60,7 @@ export async function onRequestPost(context) {
       passwordHash,
       salt
     };
-    await db.put(`user:account:${normUsername}`, JSON.stringify(accountData));
+    await putDb(env, `user:account:${normUsername}`, JSON.stringify(accountData));
     
     // Create initial user profile
     const profileData = {
@@ -72,14 +71,14 @@ export async function onRequestPost(context) {
       examHighScore: 0,
       updatedAt: Math.floor(Date.now() / 1000)
     };
-    await db.put(`user:profile:${userId}`, JSON.stringify(profileData));
+    await putDb(env, `user:profile:${userId}`, JSON.stringify(profileData));
     
     // Create initial empty progress data
     const progressData = {
       bookmarks: [],
       answered: {}
     };
-    await db.put(`user:data:${userId}`, JSON.stringify(progressData));
+    await putDb(env, `user:data:${userId}`, JSON.stringify(progressData));
     
     return new Response(JSON.stringify({ message: "注册成功！现在可以进行登录。" }), {
       status: 201,

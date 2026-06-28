@@ -1,3 +1,4 @@
+import { getDb, putDb } from "../_db.js";
 // Sync Progress API with Auto Leaderboard Integration for Cloudflare KV
 
 export async function onRequestPost(context) {
@@ -17,7 +18,7 @@ export async function onRequestPost(context) {
     const userId = user.userId;
     
     // 1. Read existing profile
-    const profileStr = await db.get(`user:profile:${userId}`);
+    const profileStr = await getDb(env, `user:profile:${userId}`);
     if (!profileStr) {
       return new Response(JSON.stringify({ error: "未找到用户画像资料！" }), {
         status: 404,
@@ -32,7 +33,7 @@ export async function onRequestPost(context) {
       wrongQuestions: wrongQuestions || [],
       answered: answered || {}
     };
-    await db.put(`user:data:${userId}`, JSON.stringify(progressData));
+    await putDb(env, `user:data:${userId}`, JSON.stringify(progressData));
     
     // 3. Compute stats
     const answeredCount = Object.keys(progressData.answered).length;
@@ -58,10 +59,10 @@ export async function onRequestPost(context) {
     profile.updatedAt = Math.floor(Date.now() / 1000);
     
     // Save updated profile
-    await db.put(`user:profile:${userId}`, JSON.stringify(profile));
+    await putDb(env, `user:profile:${userId}`, JSON.stringify(profile));
     
     // 5. Update Global Leaderboard
-    const leaderboardStr = await db.get("leaderboard:global");
+    const leaderboardStr = await getDb(env, "leaderboard:global");
     let leaderboard = leaderboardStr ? JSON.parse(leaderboardStr) : [];
     
     // Remove user if already exists in leaderboard (to avoid duplicates)
@@ -92,7 +93,7 @@ export async function onRequestPost(context) {
     
     // Slice to top 50
     const top50 = leaderboard.slice(0, 50);
-    await db.put("leaderboard:global", JSON.stringify(top50));
+    await putDb(env, "leaderboard:global", JSON.stringify(top50));
     
     return new Response(JSON.stringify({
       message: "同步成功！",
@@ -123,8 +124,8 @@ export async function onRequestGet(context) {
   
   try {
     const userId = user.userId;
-    const profileStr = await db.get(`user:profile:${userId}`);
-    const dataStr = await db.get(`user:data:${userId}`);
+    const profileStr = await getDb(env, `user:profile:${userId}`);
+    const dataStr = await getDb(env, `user:data:${userId}`);
     
     return new Response(JSON.stringify({
       profile: JSON.parse(profileStr || "{}"),

@@ -108,13 +108,27 @@ function loadUserData() {
   updateStatsDashboard();
 }
 
-function saveUserData() {
+let syncTimeoutId = null;
+
+function saveUserData(forceSync = false) {
   localStorage.setItem('dm_quiz_user_data', JSON.stringify(userData));
   updateStatsDashboard();
   setupSidebarCounts();
-  // Trigger background cloud sync if logged in
+  
+  // Trigger background cloud sync with 10s debounce to optimize KV/R2 writes
   if (localStorage.getItem('dm_jwt_token')) {
-    syncUserData();
+    if (syncTimeoutId) {
+      clearTimeout(syncTimeoutId);
+      syncTimeoutId = null;
+    }
+    
+    if (forceSync) {
+      syncUserData();
+    } else {
+      syncTimeoutId = setTimeout(() => {
+        syncUserData();
+      }, 10000); // 10 seconds debounce
+    }
   }
 }
 
@@ -2388,7 +2402,7 @@ function setupSettingsEvents() {
     btnResetWrong.addEventListener('click', () => {
       if (confirm('⚠️ 警告：是否确定要清空您的整个错题本？此操作将无法撤销！如果已登录，云端记录也将同步清空。')) {
         userData.wrongQuestions = [];
-        saveUserData();
+        saveUserData(true);
         showToast('错题本已成功清空！', 'success');
         settingsModal.classList.remove('show');
         currentQuestionIndex = 0;
@@ -2400,7 +2414,7 @@ function setupSettingsEvents() {
   btnResetBookmarks.addEventListener('click', () => {
     if (confirm('⚠️ 警告：是否确定要清空收藏夹中的所有题目？此操作将无法撤销！如果已登录，云端收藏夹也将同步清空。')) {
       userData.bookmarks = [];
-      saveUserData(); // saves to local & automatically pushes sync deletion to cloud KV
+      saveUserData(true); // saves to local & automatically pushes sync deletion to cloud KV
       showToast('收藏夹已成功清空！', 'success');
       settingsModal.classList.remove('show');
       currentQuestionIndex = 0;

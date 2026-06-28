@@ -1,11 +1,10 @@
+import { getDb, putDb } from "../_db.js";
 // Cloudflare Workers API for Q&A Comments on Questions
 
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const db = env.DB_KV;
-  
-  if (!db) {
-    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+  if (!env.DB_KV && !env.DB_R2) {
+    return new Response(JSON.stringify({ error: "Cloudflare database bindings ('DB_KV' or 'DB_R2') are missing!" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
@@ -21,7 +20,7 @@ export async function onRequestGet(context) {
   }
   
   try {
-    const commentsData = await db.get(`comments:${qId}`);
+    const commentsData = await getDb(env, `comments:${qId}`);
     return new Response(commentsData || "[]", {
       status: 200,
       headers: {
@@ -57,7 +56,7 @@ export async function onRequestPost(context) {
     }
     
     // Read current comments
-    const commentsStr = await db.get(`comments:${qId}`);
+    const commentsStr = await getDb(env, `comments:${qId}`);
     const comments = commentsStr ? JSON.parse(commentsStr) : [];
     
     // Append new comment
@@ -70,7 +69,7 @@ export async function onRequestPost(context) {
     // Limit to last 50 comments to keep it clean
     const recentComments = comments.slice(-50);
     
-    await db.put(`comments:${qId}`, JSON.stringify(recentComments));
+    await putDb(env, `comments:${qId}`, JSON.stringify(recentComments));
     
     return new Response(JSON.stringify({
       message: "发布成功！",

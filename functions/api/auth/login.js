@@ -1,3 +1,4 @@
+import { getDb } from "../../_db.js";
 // Login Worker API with JWT Generation for Cloudflare KV (Username & Password Only)
 
 const textEncoder = new TextEncoder();
@@ -40,10 +41,8 @@ async function generateJwt(payload, secret) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const db = env.DB_KV;
-  
-  if (!db) {
-    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+  if (!env.DB_KV && !env.DB_R2) {
+    return new Response(JSON.stringify({ error: "Cloudflare database bindings ('DB_KV' or 'DB_R2') are missing!" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });
@@ -63,7 +62,7 @@ export async function onRequestPost(context) {
     const normUsername = username.trim().toLowerCase();
     
     // Read Account Index (key by username now)
-    const accountStr = await db.get(`user:account:${normUsername}`);
+    const accountStr = await getDb(env, `user:account:${normUsername}`);
     if (!accountStr) {
       return new Response(JSON.stringify({ error: "用户名不存在或密码错误！" }), {
         status: 401,
@@ -85,11 +84,11 @@ export async function onRequestPost(context) {
     const userId = account.userId;
     
     // Read Profile
-    const profileStr = await db.get(`user:profile:${userId}`);
+    const profileStr = await getDb(env, `user:profile:${userId}`);
     const profile = JSON.parse(profileStr);
     
     // Read user data
-    const dataStr = await db.get(`user:data:${userId}`);
+    const dataStr = await getDb(env, `user:data:${userId}`);
     const data = JSON.parse(dataStr);
     
     // Generate JWT (expires in 7 days)
