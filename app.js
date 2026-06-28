@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize mobile layout variables and events
   setupMobileNavigation();
+  setupMobileSwipeGestures();
   
   // Render initial viewport
   renderViewport();
@@ -3833,6 +3834,118 @@ function loadGlobalCloudQuota() {
 // ============================================================================
 
 let currentMobileTab = 'lobby';
+
+function setupMobileSwipeGestures() {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchStartTime = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+  
+  document.addEventListener('touchend', (e) => {
+    if (e.changedTouches.length !== 1) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const touchEndTime = Date.now();
+    
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+    const timeDiff = touchEndTime - touchStartTime;
+    
+    // Swipe horizontal constraints:
+    // 1. time < 350ms
+    // 2. horizontal distance > 75px
+    // 3. vertical deviation < 50px
+    if (timeDiff < 350 && Math.abs(diffX) > 75 && Math.abs(diffY) < 50) {
+      if (window.innerWidth > 768) return;
+      
+      const target = e.target;
+      if (target.closest('input') || target.closest('textarea') || target.closest('select') || 
+          target.closest('.ai-thinking-accordion') || target.closest('#ai-chat-area-floating') || 
+          target.closest('.katex') || target.closest('#mobile-question-comments-list') || 
+          target.closest('.subjective-textarea')) {
+        return;
+      }
+      
+      const isSecondaryPage = (currentMobileTab === 'lobby_comments' || 
+                               currentMobileTab === 'quota_details' || 
+                               (currentMobileTab === 'category' && currentCategory !== 'all') || 
+                               (currentMobileTab === 'exam' && examState.isActive));
+                               
+      if (isSecondaryPage) {
+        // Swipe right (left to right) returns to previous page
+        if (diffX > 0) {
+          if (currentMobileTab === 'lobby_comments' || currentMobileTab === 'quota_details') {
+            currentMobileTab = 'lobby';
+            renderViewport();
+          } else if (currentMobileTab === 'category' && currentCategory !== 'all') {
+            exitMobileSubView();
+          } else if (currentMobileTab === 'exam' && examState.isActive) {
+            if (confirm('正在模拟考试中，是否确认退出当前考试？')) {
+              exitExam();
+              currentMobileTab = 'exam';
+              renderViewport();
+            }
+          }
+        }
+      } else {
+        // Switch between main navigation tabs
+        const tabsList = ['lobby', 'category', 'exam', 'leaderboard', 'profile'];
+        const currentIndex = tabsList.indexOf(currentMobileTab);
+        
+        if (currentIndex !== -1) {
+          if (diffX < 0) {
+            // Swipe left: next tab
+            if (currentIndex < tabsList.length - 1) {
+              const nextTab = tabsList[currentIndex + 1];
+              currentMobileTab = nextTab;
+              
+              // Sync state
+              if (nextTab === 'lobby' || nextTab === 'category') {
+                currentCategory = 'all';
+                currentMode = 'practice';
+              } else if (nextTab === 'exam') {
+                currentMode = 'exam';
+              } else if (nextTab === 'leaderboard') {
+                currentCategory = 'leaderboard';
+              } else if (nextTab === 'profile') {
+                currentCategory = 'profile';
+              }
+              
+              renderViewport();
+            }
+          } else if (diffX > 0) {
+            // Swipe right: previous tab
+            if (currentIndex > 0) {
+              const prevTab = tabsList[currentIndex - 1];
+              currentMobileTab = prevTab;
+              
+              // Sync state
+              if (prevTab === 'lobby' || prevTab === 'category') {
+                currentCategory = 'all';
+                currentMode = 'practice';
+              } else if (prevTab === 'exam') {
+                currentMode = 'exam';
+              } else if (prevTab === 'leaderboard') {
+                currentCategory = 'leaderboard';
+              } else if (prevTab === 'profile') {
+                currentCategory = 'profile';
+              }
+              
+              renderViewport();
+            }
+          }
+        }
+      }
+    }
+  });
+}
 
 function setupMobileNavigation() {
   const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
