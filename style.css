@@ -2118,6 +2118,27 @@ tr:nth-child(even) {
     background-color: rgba(195, 192, 255, 0.15) !important;
   }
   
+  /* Mobile Navigation Button Reset to remove borders/boxes */
+  .mobile-nav-btn {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+  }
+  
+  /* Quota Progress Bar Colors */
+  .bg-primary {
+    background-color: var(--primary) !important;
+  }
+  .bg-secondary {
+    background-color: var(--accent) !important;
+  }
+
   /* Font Family Mappings to avoid browser defaults */
   .font-display-lg { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; }
   .font-headline-md { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 600; }
