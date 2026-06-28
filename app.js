@@ -4758,14 +4758,14 @@ function renderMobilePractice(container) {
       
       <!-- Sticky Bottom Control Row -->
       <div class="fixed bottom-0 left-0 w-full glass-panel border-t border-white/40 p-4 flex justify-between items-center gap-4 z-40 pb-[env(safe-area-inset-bottom,20px)] md:hidden bg-white/70 dark:bg-slate-900/70">
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-prev-btn" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-prev-btn" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           上一题
         </button>
         <button class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white font-headline-sm text-xs hover:bg-primary/95 transition-all shadow-sm min-h-[48px] border-none cursor-pointer font-bold" id="mob-submit-btn">
           提交答案
         </button>
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-next-btn" ${currentQuestionIndex === questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-next-btn" ${currentQuestionIndex === questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           下一题
           <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -5815,14 +5815,14 @@ function renderMobileExamRunner(container) {
       
       <!-- Bottom Control Bar -->
       <div class="fixed bottom-0 left-0 w-full glass-panel border-t border-white/40 p-4 flex justify-between items-center gap-4 z-40 pb-[env(safe-area-inset-bottom,20px)] md:hidden bg-white/70 dark:bg-slate-900/70">
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-prev" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-prev" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           上一题
         </button>
         <button class="flex-1 py-3 px-4 rounded-xl bg-indigo-50/70 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-headline-sm text-xs hover:bg-indigo-100/70 transition-colors shadow-sm min-h-[48px] border border-indigo-100 dark:border-indigo-900 cursor-pointer font-bold" id="mob-exam-card-btn">
           答题卡
         </button>
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-next" ${currentQuestionIndex === examState.questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-transparent text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-next" ${currentQuestionIndex === examState.questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           下一题
           <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
