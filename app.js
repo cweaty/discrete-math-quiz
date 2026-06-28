@@ -343,6 +343,18 @@ function renderViewport() {
   const container = document.getElementById('viewport');
   container.innerHTML = '';
   
+  // Populate Developer Debug Overlay
+  const debugCat = document.getElementById('debug-cat');
+  const debugWrongCount = document.getElementById('debug-wrong-count');
+  const debugFilteredCount = document.getElementById('debug-filtered-count');
+  const debugWrongList = document.getElementById('debug-wrong-list');
+  if (debugCat) {
+    debugCat.innerText = currentCategory;
+    debugWrongCount.innerText = userData.wrongQuestions ? userData.wrongQuestions.length : 'undefined';
+    debugFilteredCount.innerText = getFilteredQuestions().length;
+    debugWrongList.innerText = userData.wrongQuestions ? JSON.stringify(userData.wrongQuestions) : 'undefined';
+  }
+  
   const statsPanel = document.getElementById('stats-panel');
   const masteryPanel = document.getElementById('mastery-panel');
   
