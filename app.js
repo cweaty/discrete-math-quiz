@@ -16,6 +16,8 @@ let practiceSettings = {
 let shuffledQuestionsCache = null;
 let radarChartInstance = null;
 let currentAiQuestion = null;
+let aiConversationHistory = [];
+let aiConversationHistory = [];
 let lastFilteredIdsKey = ""; // To track if the pool changed
 
 function loadSettings() {
@@ -2361,6 +2363,47 @@ async function postComment(qId, panel) {
 //        FLOATING AI ASSISTANT OVERLAY
 // ==========================================
 
+// Chinese Helper for question category
+function getCategoryChineseName(cat) {
+  switch(cat) {
+    case 'judgment': return '判断题';
+    case 'single_choice': return '单选题';
+    case 'fill_blank': return '填空题';
+    case 'calculation': return '计算题';
+    case 'proof': return '证明题';
+    case 'application': return '应用题';
+    default: return '客观题';
+  }
+}
+
+// Update the AI context header with context size and estimated tokens
+function updateAiContextBar(q) {
+  const contextBar = document.getElementById('ai-window-context-bar');
+  if (!contextBar) return;
+  if (!q) {
+    contextBar.innerHTML = `<span>📌 当前未关联具体题目</span>`;
+    return;
+  }
+  
+  let catBadgeName = getCategoryChineseName(q.category);
+  
+  // Calculate total characters in context
+  let totalChars = q.question.length + (q.analysis || '').length;
+  aiConversationHistory.forEach(msg => {
+    totalChars += msg.content.length;
+  });
+  
+  // Estimate tokens (approx 0.75 tokens per char + baseline prompt template overhead)
+  let estTokens = Math.round(totalChars * 0.75) + 180;
+  
+  contextBar.innerHTML = `
+    <span style="font-weight:700;">📌 关联: ${catBadgeName} 原卷第 ${q.original_num} 题</span>
+    <span style="font-size:0.68rem; color:var(--primary); font-weight:700; background-color:var(--primary-light); padding:0.15rem 0.35rem; border-radius:4px;">
+      长: ${totalChars}字 (~${estTokens} Token)
+    </span>
+  `;
+}
+
 function setupFloatingAiTutor() {
   // Prevent duplicate insertion
   if (document.getElementById('ai-floating-toggle')) return;
@@ -2380,12 +2423,25 @@ function setupFloatingAiTutor() {
       </div>
       <button class="ai-window-close" id="ai-window-close-btn">&times;</button>
     </div>
+    
+    <!-- Model Switcher Selector -->
+    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display:flex; align-items:center; gap:0.25rem;">🔮 选择大模型:</span>
+      <select id="ai-model-selector" style="font-size: 0.75rem; padding: 0.25rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600;">
+        <option value="@cf/meta/llama-3.1-8b-instruct-fast" selected>Llama 3.1 8B (极速解答)</option>
+        <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (精选中文推理)</option>
+        <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen 2.5 Coder (代码专家)</option>
+        <option value="@cf/qwen/qwq-32b">QwQ 32B (极强数学逻辑推理)</option>
+        <option value="@cf/qwen/deepseek-r1-distill-qwen-32b">DeepSeek R1 (蒸馏深度推理)</option>
+      </select>
+    </div>
+    
     <div class="ai-window-context" id="ai-window-context-bar">
       <span>📌 当前未关联具体题目</span>
     </div>
     <div class="ai-window-chat" id="ai-chat-area-floating">
       <div class="ai-msg-bubble assistant">
-        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题的上下文并在这里为您解答！
+        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题 the 上下文并在这里为您解答！支持多轮追问哦！
       </div>
     </div>
     <div class="ai-window-input-row">
@@ -2428,24 +2484,10 @@ function setupFloatingAiTutor() {
 function bindQuestionToAi(q) {
   currentAiQuestion = q;
   
-  // Get category title in Chinese
-  let catBadgeName = '';
-  switch(q.category) {
-    case 'judgment': catBadgeName = '判断题'; break;
-    case 'single_choice': catBadgeName = '单项选择题'; break;
-    case 'fill_blank': catBadgeName = '填空题'; break;
-    case 'calculation': catBadgeName = '计算题'; break;
-    case 'proof': catBadgeName = '证明题'; break;
-    case 'application': catBadgeName = '应用题'; break;
-  }
+  // Clear conversation history on binding a new question
+  aiConversationHistory = [];
   
-  const contextBar = document.getElementById('ai-window-context-bar');
-  if (contextBar) {
-    contextBar.innerHTML = `
-      <span>📌 关联题目: [${catBadgeName} 原卷第 ${q.original_num} 题]</span>
-      <span style="font-size:0.7rem; color:var(--primary); font-weight:700;">已成功绑定上下文</span>
-    `;
-  }
+  updateAiContextBar(q);
   
   // Open the window
   const windowDiv = document.getElementById('ai-floating-window');
@@ -2458,13 +2500,15 @@ function bindQuestionToAi(q) {
     mainContent.classList.add('ai-open');
   }
   
+  let catBadgeName = getCategoryChineseName(q.category);
+  
   // Append binding greeting bubble
   const chatArea = document.getElementById('ai-chat-area-floating');
   if (chatArea) {
     const greetingDiv = document.createElement('div');
     greetingDiv.className = 'ai-msg-bubble assistant';
     greetingDiv.style.borderLeft = '3px solid var(--primary)';
-    greetingDiv.innerHTML = `已成功为你绑定当前题目：<b>${catBadgeName} (原卷第 ${q.original_num} 题)</b>。<br/>关于这道题的选项分析、公式推导、或解析，您有什么疑问吗？请在下方发问！`;
+    greetingDiv.innerHTML = `已成功绑定：<b>${catBadgeName} (原卷第 ${q.original_num} 题)</b>。<br/>已为你载入试题上下文。支持多轮连续追问，请在下方发问！`;
     chatArea.appendChild(greetingDiv);
     chatArea.scrollTop = chatArea.scrollHeight;
   }
@@ -2473,6 +2517,7 @@ function bindQuestionToAi(q) {
 async function askFloatingAiTutor() {
   const inputField = document.getElementById('ai-query-input-floating');
   const chatArea = document.getElementById('ai-chat-area-floating');
+  const modelSelect = document.getElementById('ai-model-selector');
   if (!inputField || !chatArea) return;
   
   const query = inputField.value.trim();
@@ -2486,16 +2531,25 @@ async function askFloatingAiTutor() {
     return;
   }
   
-  // Append User message
+  const chosenModel = modelSelect ? modelSelect.value : '@cf/meta/llama-3.1-8b-instruct-fast';
+  const selectedModelName = modelSelect ? modelSelect.options[modelSelect.selectedIndex].text.split(' ')[0] : 'AI';
+  
+  // Append User message in UI
   const userMsgDiv = document.createElement('div');
   userMsgDiv.className = 'ai-msg-bubble user';
   userMsgDiv.innerText = query;
   chatArea.appendChild(userMsgDiv);
   
+  // Push to conversation history array
+  aiConversationHistory.push({ role: 'user', content: query });
+  
+  // Update context bar representation
+  updateAiContextBar(currentAiQuestion);
+  
   // Append AI Loading state
   const aiLoadingDiv = document.createElement('div');
   aiLoadingDiv.className = 'ai-msg-bubble assistant';
-  aiLoadingDiv.innerHTML = `<span style="color:var(--text-muted);">AI 助教正在思考推导中...</span>`;
+  aiLoadingDiv.innerHTML = `<span style="color:var(--text-muted);">AI 助教使用 <b>${selectedModelName}</b> 推演中...</span>`;
   chatArea.appendChild(aiLoadingDiv);
   
   // Clear input & scroll
@@ -2509,7 +2563,9 @@ async function askFloatingAiTutor() {
       body: JSON.stringify({
         question: currentAiQuestion.question,
         analysis: currentAiQuestion.analysis,
-        userQuery: query
+        userQuery: query,
+        model: chosenModel,
+        history: aiConversationHistory
       })
     });
     
@@ -2520,12 +2576,39 @@ async function askFloatingAiTutor() {
     aiReplyDiv.className = 'ai-msg-bubble assistant';
     
     if (response.ok) {
+      // Set text response
       aiReplyDiv.innerHTML = marked.parse(result.response);
+      
+      // Render token usage metadata badge
+      const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+      const usageBadge = document.createElement('div');
+      usageBadge.style.fontSize = '0.65rem';
+      usageBadge.style.color = 'var(--text-muted)';
+      usageBadge.style.marginTop = '0.4rem';
+      usageBadge.style.borderTop = '1px dashed var(--border-color)';
+      usageBadge.style.paddingTop = '0.25rem';
+      usageBadge.style.display = 'flex';
+      usageBadge.style.justifyContent = 'space-between';
+      usageBadge.style.alignItems = 'center';
+      usageBadge.innerHTML = `
+        <span>🔮 ${selectedModelName}</span>
+        <span>Tokens: Prompt ${usage.prompt_tokens} \| Reply ${usage.completion_tokens} \| Total ${usage.total_tokens}</span>
+      `;
+      aiReplyDiv.appendChild(usageBadge);
       chatArea.appendChild(aiReplyDiv);
       renderMath(aiReplyDiv);
+      
+      // Push assistant response to history
+      aiConversationHistory.push({ role: 'assistant', content: result.response });
+      
+      // Update context length
+      updateAiContextBar(currentAiQuestion);
     } else {
       aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
       chatArea.appendChild(aiReplyDiv);
+      // Remove last user message from history as it failed
+      aiConversationHistory.pop();
+      updateAiContextBar(currentAiQuestion);
     }
   } catch (err) {
     aiLoadingDiv.remove();
@@ -2533,6 +2616,9 @@ async function askFloatingAiTutor() {
     errDiv.className = 'ai-msg-bubble assistant';
     errDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败，请检查网络！</span>`;
     chatArea.appendChild(errDiv);
+    // Remove last user message from history
+    aiConversationHistory.pop();
+    updateAiContextBar(currentAiQuestion);
   }
   
   chatArea.scrollTop = chatArea.scrollHeight;
