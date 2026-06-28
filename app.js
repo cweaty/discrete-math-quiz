@@ -13,6 +13,8 @@ let practiceSettings = {
   hideCorrect: false
 };
 
+let cfCountdownInterval = null;
+
 let shuffledQuestionsCache = null;
 let radarChartInstance = null;
 let currentAiQuestion = null;
@@ -457,6 +459,9 @@ function renderProfileView(container) {
         </div>
       </div>
 
+      <!-- Cloudflare Workers/Pages Usage Monitoring Card -->
+      <div id="cf-usage-container"></div>
+
       <!-- Quick Actions -->
       <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm);">
         <h3 style="margin-top: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 0.6rem; margin-bottom: 1rem;">
@@ -481,6 +486,9 @@ function renderProfileView(container) {
   container.querySelector('#profile-logout-btn').addEventListener('click', () => {
     document.getElementById('logout-btn').click();
   });
+
+  // Load and Render Cloudflare Usage Dashboard
+  renderCloudflareUsageCard(container);
 
   // Bind Account Deletion
   const deleteBtn = container.querySelector('#profile-delete-btn');
@@ -3298,4 +3306,206 @@ async function askFloatingAiTutor() {
   }
   
   chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+
+// ============================================================================
+//            CLOUDFLARE WORKERS/PAGES USAGE METRICS HANDLERS
+// ============================================================================
+
+function renderCloudflareUsageCard(container) {
+  const usageContainer = container.querySelector('#cf-usage-container');
+  if (!usageContainer) return;
+  
+  const cfAccountId = localStorage.getItem('cf_account_id');
+  const cfApiToken = localStorage.getItem('cf_api_token');
+  
+  // Clean up any running timers
+  if (cfCountdownInterval) {
+    clearInterval(cfCountdownInterval);
+    cfCountdownInterval = null;
+  }
+  
+  if (!cfAccountId || !cfApiToken) {
+    // Show configuration form
+    usageContainer.innerHTML = `
+      <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1rem;">
+        <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+          📊 Workers/Pages 请求使用情况
+        </h3>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height:1.45;">
+          输入您的 Cloudflare 凭证即可在此直观监测当前账号今日 Workers 与 Pages 的请求额度消耗进度与重置倒计时。
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem;">
+          <div style="display:flex; flex-direction:column; gap:0.25rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Cloudflare Account ID</label>
+            <input type="text" id="cf-account-id" placeholder="输入您的 32 位 Account ID..." style="padding: 0.55rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none;">
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.25rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Cloudflare API Token</label>
+            <input type="password" id="cf-api-token" placeholder="输入具有 Account Analytics: Read 权限的 API 令牌..." style="padding: 0.55rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none;">
+          </div>
+          <button class="btn btn-primary" id="cf-save-btn" style="padding: 0.6rem; font-size: 0.85rem; font-weight: 700; width: 100%; margin-top: 0.25rem; cursor: pointer;">
+            确认绑定并查询使用进度
+          </button>
+        </div>
+      </div>
+    `;
+    
+    usageContainer.querySelector('#cf-save-btn').addEventListener('click', () => {
+      const idInput = usageContainer.querySelector('#cf-account-id').value.trim();
+      const tokenInput = usageContainer.querySelector('#cf-api-token').value.trim();
+      
+      if (!idInput || !tokenInput) {
+        showToast('Account ID 和 API Token 均不能为空！', 'error');
+        return;
+      }
+      
+      localStorage.setItem('cf_account_id', idInput);
+      localStorage.setItem('cf_api_token', tokenInput);
+      showToast('Cloudflare 凭证保存成功，正在获取数据...', 'success');
+      renderCloudflareUsageCard(container);
+    });
+    
+  } else {
+    // Show loading state and fetch usage from server
+    usageContainer.innerHTML = `
+      <div class="dashboard-card" style="padding: 2rem; text-align: center; color: var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:0.5rem; justify-content:center;">
+        <span style="font-size:1.5rem; animation: pulse 1s infinite;">📡</span>
+        <span style="font-size:0.85rem; font-weight:600;">正在建立安全代理连接，实时抓取 Cloudflare 额度数据...</span>
+      </div>
+    `;
+    
+    fetchCloudflareUsage(cfAccountId, cfApiToken, usageContainer);
+  }
+}
+
+async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
+  try {
+    const response = await fetch(`${API_BASE}/cf-usage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ accountId, apiToken })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      
+      const workers = result.workersRequests;
+      const pages = result.pagesRequests;
+      const total = result.totalRequests;
+      const quota = result.quota;
+      const pct = parseFloat(((total / quota) * 100).toFixed(2));
+      let secondsLeft = result.secondsRemaining;
+      
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      
+      // Helper function to format seconds into timer HTML
+      function getTimerHtml(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `<span style="color:#d97706; font-weight:700;">${hours}</span>小时<span style="color:#d97706; font-weight:700;">${minutes}</span>分<span style="color:#d97706; font-weight:700;">${secs}</span>秒`;
+      }
+      
+      targetContainer.innerHTML = `
+        <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1.15rem; animation: fadeIn 0.4s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary);">📊 Workers/Pages 请求使用情况</h3>
+            <button class="btn btn-outline" id="cf-reconfig-btn" style="padding: 0.25rem 0.5rem; font-size: 0.72rem; font-weight: 700; border-radius: 8px; cursor:pointer;">⚙️ 重设凭证</button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 24px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+            <div id="cf-progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; transition: width 0.6s ease; width: ${Math.min(100, pct)}%;"></div>
+            <span id="cf-progress-text" style="color: var(--text-primary); font-size: 0.78rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
+              请求使用进度: ${total.toLocaleString()} (${pct}%)
+            </span>
+          </div>
+
+          <!-- Stats Grid -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; border-left: 4px solid var(--primary); background-color: rgba(99, 102, 241, 0.04); padding: 1.15rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; border: 1px solid var(--border-color);">
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Workers 请求</span>
+              <span style="font-size: 1.6rem; font-weight: 800; color: var(--success);">${workers.toLocaleString()}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Pages 请求</span>
+              <span style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">${pages.toLocaleString()}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">日配额</span>
+              <span style="font-size: 1.6rem; font-weight: 800; color: var(--warning);">${quota.toLocaleString()}</span>
+            </div>
+          </div>
+
+          <!-- Info Alert -->
+          <div style="background-color: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md); padding: 0.85rem; display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+            <span style="font-size:1rem;">ℹ️</span>
+            <div>
+              <strong>每日请求数重置清零：</strong>
+              距离重置还有 <span id="cf-countdown-timer">${getTimerHtml(secondsLeft)}</span>，北京时间 (UTC+8) <strong>8:00</strong> 重置，今日使用情况总计：<strong style="color:#d97706;">${total.toLocaleString()}</strong>。
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Bind reconfig
+      targetContainer.querySelector('#cf-reconfig-btn').addEventListener('click', () => {
+        localStorage.removeItem('cf_account_id');
+        localStorage.removeItem('cf_api_token');
+        renderCloudflareUsageCard(document.getElementById('viewport'));
+      });
+      
+      // Start Countdown Timer
+      const countdownTimerEl = targetContainer.querySelector('#cf-countdown-timer');
+      cfCountdownInterval = setInterval(() => {
+        if (secondsLeft > 0) {
+          secondsLeft--;
+          if (countdownTimerEl) {
+            countdownTimerEl.innerHTML = getTimerHtml(secondsLeft);
+          }
+        } else {
+          // Timer expired, re-render card to fetch fresh data
+          clearInterval(cfCountdownInterval);
+          renderCloudflareUsageCard(document.getElementById('viewport'));
+        }
+      }, 1000);
+      
+    } else {
+      const errRes = await response.json();
+      renderErrorCard(targetContainer, errRes.error || '获取使用率出错！');
+    }
+  } catch (err) {
+    renderErrorCard(targetContainer, '网络连接异常，无法获取额度详情。');
+  }
+}
+
+function renderErrorCard(targetContainer, errMsg) {
+  targetContainer.innerHTML = `
+    <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1rem; border-color: rgba(239, 68, 68, 0.3);">
+      <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--error); display: flex; align-items: center; gap: 0.5rem;">
+        ⚠️ 获取 Cloudflare 额度失败
+      </h3>
+      <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height:1.45;">
+        错误信息: ${errMsg}
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+        <button class="btn btn-outline" id="cf-retry-btn" style="padding: 0.5rem; font-size: 0.8rem; font-weight:700; cursor:pointer;">🔄 重新获取</button>
+        <button class="btn btn-outline" id="cf-reset-err-btn" style="padding: 0.5rem; font-size: 0.8rem; font-weight:700; cursor:pointer; color:var(--text-secondary);">⚙️ 修改凭据</button>
+      </div>
+    </div>
+  `;
+  
+  targetContainer.querySelector('#cf-retry-btn').addEventListener('click', () => {
+    renderCloudflareUsageCard(document.getElementById('viewport'));
+  });
+  
+  targetContainer.querySelector('#cf-reset-err-btn').addEventListener('click', () => {
+    localStorage.removeItem('cf_account_id');
+    localStorage.removeItem('cf_api_token');
+    renderCloudflareUsageCard(document.getElementById('viewport'));
+  });
 }
