@@ -2429,26 +2429,32 @@ function setupFloatingAiTutor() {
       <button class="ai-window-close" id="ai-window-close-btn">&times;</button>
     </div>
     
-    <!-- Model Switcher & Intensity Selectors -->
-    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-      <div style="display:flex; flex-direction:column; gap:0.2rem;">
-        <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🔮 选择大模型:</span>
-        <select id="ai-model-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
-          <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast" selected>Llama 3.3 70B (旗舰)</option>
-          <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (中文)</option>
-          <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen Coder (代码)</option>
-          <option value="@cf/qwen/qwq-32b">QwQ 32B (数学)</option>
-          <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (推理)</option>
-        </select>
+    <!-- Model Switcher, Intensity & Stream Selectors -->
+    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+        <div style="display:flex; flex-direction:column; gap:0.2rem;">
+          <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🔮 选择大模型:</span>
+          <select id="ai-model-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
+            <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast" selected>Llama 3.3 70B (旗舰)</option>
+            <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (中文)</option>
+            <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen Coder (代码)</option>
+            <option value="@cf/qwen/qwq-32b">QwQ 32B (数学)</option>
+            <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (推理)</option>
+          </select>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:0.2rem;">
+          <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🧠 思考强度:</span>
+          <select id="ai-intensity-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
+            <option value="low">低 (精简直答)</option>
+            <option value="medium" selected>中 (标准思考)</option>
+            <option value="high">高 (深度探究)</option>
+          </select>
+        </div>
       </div>
-      <div style="display:flex; flex-direction:column; gap:0.2rem;">
-        <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🧠 思考强度:</span>
-        <select id="ai-intensity-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
-          <option value="low">低 (精简直答)</option>
-          <option value="medium" selected>中 (标准思考)</option>
-          <option value="high">高 (深度探究)</option>
-        </select>
-      </div>
+      <label style="display:flex; align-items:center; gap:0.35rem; cursor:pointer; font-size:0.7rem; font-weight:600; color:var(--text-muted); margin-top:0.15rem;">
+        <input type="checkbox" id="ai-stream-toggle" checked style="cursor:pointer; width:14px; height:14px; accent-color:var(--primary);">
+        <span>⚡ 启用打字机流式输出 (更流畅)</span>
+      </label>
     </div>
     
     <div class="ai-window-context" id="ai-window-context-bar">
