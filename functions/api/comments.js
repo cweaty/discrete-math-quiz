@@ -86,3 +86,89 @@ export async function onRequestPost(context) {
     });
   }
 }
+
+export async function onRequestDelete(context) {
+  const { request, env, data } = context;
+  const db = env.DB_KV;
+  const user = data.user;
+  
+  if (!db) {
+    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  
+  if (!user) {
+    return new Response(JSON.stringify({ error: "未登录，无法删除评论！" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  
+  try {
+    const { qId, timestamp } = await request.json();
+    if (!qId || !timestamp) {
+      return new Response(JSON.stringify({ error: "参数缺失！" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Clear all shortcut
+    if (timestamp === 'all') {
+      await putDb(env, `comments:${qId}`, JSON.stringify([]));
+      return new Response(JSON.stringify({
+        message: "该题目讨论记录已全部删除清空！",
+        comments: []
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Read current comments
+    const commentsStr = await getDb(env, `comments:${qId}`);
+    if (!commentsStr) {
+      return new Response(JSON.stringify({ error: "未找到评论记录" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    let comments = JSON.parse(commentsStr);
+    const commentIndex = comments.findIndex(c => c.timestamp === timestamp);
+    if (commentIndex === -1) {
+      return new Response(JSON.stringify({ error: "评论不存在！" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Check ownership
+    if (comments[commentIndex].username !== user.username) {
+      return new Response(JSON.stringify({ error: "您只能删除自己发表的评论！" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Delete comment
+    comments.splice(commentIndex, 1);
+    await putDb(env, `comments:${qId}`, JSON.stringify(comments));
+    
+    return new Response(JSON.stringify({
+      message: "评论删除成功！",
+      comments: comments
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+    
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+}

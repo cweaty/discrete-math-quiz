@@ -2734,6 +2734,8 @@ async function loadComments(qId, panel) {
       commentList.innerHTML = `<div class="comment-empty-msg">💬 暂无讨论。写下你的第一个疑问或心得开启话题吧！</div>`;
       if (countBadge) countBadge.innerText = "0 条讨论";
     } else {
+      const loggedInProfile = JSON.parse(localStorage.getItem('dm_profile') || '{}');
+      const currentUsername = loggedInProfile.username || '';
       let listHtml = "";
       comments.forEach(c => {
         const timeStr = new Date(c.timestamp).toLocaleString('zh-CN', {
@@ -2743,14 +2745,18 @@ async function loadComments(qId, panel) {
           minute: '2-digit',
           hour12: false
         });
+        const isMine = currentUsername && (c.username === currentUsername);
         
         listHtml += `
           <div class="comment-item">
             <div class="comment-user-avatar">${c.username.substring(0, 1).toUpperCase()}</div>
-            <div class="comment-bubble">
-              <div class="comment-meta">
-                <span style="color: var(--text-primary); font-weight: 700;">${escapeHtml(c.username)}</span>
-                <span>${timeStr}</span>
+            <div class="comment-bubble" style="flex:1;">
+              <div class="comment-meta" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <div>
+                  <span style="color: var(--text-primary); font-weight: 700;">${escapeHtml(c.username)}</span>
+                  <span style="margin-left:8px; font-size:11px; color:var(--text-muted);">${timeStr}</span>
+                </div>
+                ${isMine ? `<button class="desktop-delete-comment-btn" data-timestamp="${c.timestamp}" style="color:var(--error); border:none; background:none; cursor:pointer; font-size:11px; font-weight:700; padding:0;">删除</button>` : ''}
               </div>
               <div class="comment-text">${escapeHtml(c.content)}</div>
             </div>
@@ -2758,6 +2764,37 @@ async function loadComments(qId, panel) {
         `;
       });
       commentList.innerHTML = listHtml;
+      
+      commentList.querySelectorAll('.desktop-delete-comment-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const timestamp = parseInt(btn.getAttribute('data-timestamp'));
+          if (!confirm('确定要删除这条评论吗？')) return;
+          const token = localStorage.getItem('dm_jwt_token');
+          if (!token) return;
+
+          try {
+            const deleteRes = await fetch(`${API_BASE}/comments`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ qId, timestamp })
+            });
+
+            if (deleteRes.ok) {
+              showToast('评论已删除！', 'success');
+              await loadComments(qId, panel);
+            } else {
+              const errData = await deleteRes.json();
+              showToast(errData.error || '删除失败', 'error');
+            }
+          } catch (e) {
+            showToast('删除失败，请检查网络连接', 'error');
+          }
+        };
+      });
+
       if (countBadge) countBadge.innerText = `${comments.length} 条讨论`;
       
       // Auto-scroll comment list to the bottom
@@ -4747,39 +4784,32 @@ function renderMobilePractice(container) {
       showAnswerReveal();
       mobSubmit.style.display = 'none';
     } else {
+      mobSubmit.style.display = 'none'; // Hide submit button for judgment questions
       cards.forEach(card => {
         card.addEventListener('click', () => {
-          selectedOptionKey = card.getAttribute('data-val');
-          cards.forEach(c => c.classList.remove('option-selected'));
-          card.classList.add('option-selected');
+          if (userData.answered[qId]) return;
+          const val = card.getAttribute('data-val');
+          const isCorrect = (val === q.answer);
+          userData.answered[qId] = { userAns: val, isCorrect };
+          saveUserData();
+          
+          revealJudgmentMobile(cards, val, q.answer);
+          showAnswerReveal();
+          
+          if (isCorrect) {
+            showToast('回答正确！', 'success');
+          } else {
+            showToast('回答错误！', 'error');
+          }
+          handleAnswerSubmitted(qId, isCorrect);
+          
+          if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
+            setTimeout(() => {
+              currentQuestionIndex++;
+              renderViewport();
+            }, 1200);
+          }
         });
-      });
-      
-      mobSubmit.addEventListener('click', () => {
-        if (!selectedOptionKey) {
-          showToast('请先选择一个选项！', 'warning');
-          return;
-        }
-        const isCorrect = (selectedOptionKey === q.answer);
-        userData.answered[qId] = { userAns: selectedOptionKey, isCorrect };
-        saveUserData();
-        revealJudgmentMobile(cards, selectedOptionKey, q.answer);
-        showAnswerReveal();
-        mobSubmit.style.display = 'none';
-        
-        if (isCorrect) {
-          showToast('回答正确！', 'success');
-        } else {
-          showToast('回答错误！', 'error');
-        }
-        handleAnswerSubmitted(qId, isCorrect);
-        
-        if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
-          setTimeout(() => {
-            currentQuestionIndex++;
-            renderViewport();
-          }, 1200);
-        }
       });
     }
 
@@ -4803,45 +4833,32 @@ function renderMobilePractice(container) {
       showAnswerReveal();
       mobSubmit.style.display = 'none';
     } else {
+      mobSubmit.style.display = 'none'; // Hide submit button for choice questions
       optionCards.forEach(card => {
         card.addEventListener('click', () => {
-          selectedOptionKey = card.getAttribute('data-key');
-          optionCards.forEach(c => {
-            c.classList.remove('option-selected');
-            const ind = c.querySelector('div');
-            ind.className = 'w-8 h-8 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center font-bold text-sm text-slate-500 shrink-0 select-none';
-          });
-          card.classList.add('option-selected');
-          const ind = card.querySelector('div');
-          ind.className = 'w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0 select-none border-none';
+          if (userData.answered[qId]) return;
+          const key = card.getAttribute('data-key');
+          const isCorrect = (key === q.answer);
+          userData.answered[qId] = { userAns: key, isCorrect };
+          saveUserData();
+          
+          revealChoiceMobile(optionCards, key, q.answer);
+          showAnswerReveal();
+          
+          if (isCorrect) {
+            showToast('回答正确！', 'success');
+          } else {
+            showToast('回答错误！', 'error');
+          }
+          handleAnswerSubmitted(qId, isCorrect);
+          
+          if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
+            setTimeout(() => {
+              currentQuestionIndex++;
+              renderViewport();
+            }, 1200);
+          }
         });
-      });
-
-      mobSubmit.addEventListener('click', () => {
-        if (!selectedOptionKey) {
-          showToast('请先选择一个选项！', 'warning');
-          return;
-        }
-        const isCorrect = (selectedOptionKey === q.answer);
-        userData.answered[qId] = { userAns: selectedOptionKey, isCorrect };
-        saveUserData();
-        revealChoiceMobile(optionCards, selectedOptionKey, q.answer);
-        showAnswerReveal();
-        mobSubmit.style.display = 'none';
-
-        if (isCorrect) {
-          showToast('回答正确！', 'success');
-        } else {
-          showToast('回答错误！', 'error');
-        }
-        handleAnswerSubmitted(qId, isCorrect);
-        
-        if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
-          setTimeout(() => {
-            currentQuestionIndex++;
-            renderViewport();
-          }, 1200);
-        }
       });
     }
 
@@ -5013,18 +5030,54 @@ async function loadMobileQuestionComments(qId, container) {
         return;
       }
 
+      const loggedInProfile = JSON.parse(localStorage.getItem('dm_profile') || '{}');
+      const currentUsername = loggedInProfile.username || '';
+
       comments.forEach(c => {
         const item = document.createElement('div');
         item.className = 'bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2.5 space-y-1';
+        const isMine = currentUsername && (c.username === currentUsername);
         item.innerHTML = `
           <div class="flex items-center gap-1.5">
             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">${c.username}</span>
             <span class="text-[8px] text-slate-400 ml-auto">${formatRelativeTime(c.timestamp)}</span>
+            ${isMine ? `<button class="mob-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">删除</button>` : ''}
           </div>
           <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal">${escapeHtml(c.content)}</p>
         `;
         list.appendChild(item);
       });
+
+      list.querySelectorAll('.mob-delete-comment-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const timestamp = parseInt(btn.getAttribute('data-timestamp'));
+          if (!confirm('确定要删除这条评论吗？')) return;
+          const token = localStorage.getItem('dm_jwt_token');
+          if (!token) return;
+
+          try {
+            const deleteRes = await fetch(`${API_BASE}/comments`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ qId, timestamp })
+            });
+
+            if (deleteRes.ok) {
+              showToast('评论已删除！', 'success');
+              await loadList();
+            } else {
+              const errData = await deleteRes.json();
+              showToast(errData.error || '删除失败', 'error');
+            }
+          } catch (e) {
+            showToast('删除失败，请检查网络连接', 'error');
+          }
+        };
+      });
+
       list.scrollTop = list.scrollHeight;
     } catch(err) {
       countBadge.innerText = `加载失败`;
