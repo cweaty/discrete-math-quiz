@@ -3934,7 +3934,7 @@ function updateMobileNavAndHeader() {
   if (currentMobileTab === 'lobby_comments') {
     headerLeft.innerHTML = `
       <button onclick="currentMobileTab='lobby'; renderViewport();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
-        <span class="material-symbols-outlined">arrow_back</span>
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </button>
       <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">学术讨论大厅</span>
     `;
@@ -3942,7 +3942,7 @@ function updateMobileNavAndHeader() {
   } else if (currentMobileTab === 'quota_details') {
     headerLeft.innerHTML = `
       <button onclick="currentMobileTab='lobby'; renderViewport();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
-        <span class="material-symbols-outlined">arrow_back</span>
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </button>
       <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">资源配额详情</span>
     `;
@@ -3958,15 +3958,35 @@ function updateMobileNavAndHeader() {
       case 'bookmarks': catName = '收藏夹'; break;
     }
     
+    const questions = getFilteredQuestions();
+    let catCorrectCount = 0;
+    let catIncorrectCount = 0;
+    questions.forEach(question => {
+      const qKey = getQuestionId(question);
+      const record = userData.answered[qKey];
+      if (record) {
+        if (record.isCorrect) catCorrectCount++;
+        else catIncorrectCount++;
+      }
+    });
+
+    const correctSvg = `<svg class="w-3.5 h-3.5 text-emerald-500 fill-none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle;"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const incorrectSvg = `<svg class="w-3.5 h-3.5 text-rose-500 fill-none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle;"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
     headerLeft.innerHTML = `
-      <button onclick="exitMobileSubView();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
-        <span class="material-symbols-outlined">arrow_back</span>
+      <button onclick="exitMobileSubView();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-1">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </button>
-      <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">${catName}</span>
+      <div class="flex flex-col">
+        <span class="font-bold text-slate-900 dark:text-white tracking-tight text-sm leading-tight">${catName}</span>
+        <div class="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-slate-500 dark:text-slate-400">
+          <span class="flex items-center gap-0.5">${correctSvg} ${catCorrectCount}</span>
+          <span class="flex items-center gap-0.5">${incorrectSvg} ${catIncorrectCount}</span>
+        </div>
+      </div>
     `;
     
     // Header Bookmark Button linked to main bookmark button
-    const questions = getFilteredQuestions();
     const q = questions[currentQuestionIndex];
     let isStarred = false;
     if (q) {
@@ -3975,14 +3995,19 @@ function updateMobileNavAndHeader() {
     }
     
     headerRight.innerHTML = `
-      <button id="mobile-header-bookmark-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer ${isStarred ? 'text-amber-500' : 'text-slate-400'}">
-        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' ${isStarred ? 1 : 0};">star</span>
-      </button>
+      <div class="flex items-center gap-1">
+        <button id="mobile-header-card-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer text-slate-500 dark:text-slate-400" title="答题卡">
+          <svg class="w-5.5 h-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17h6M9 12h6M9 7h6"/></svg>
+        </button>
+        <button id="mobile-header-bookmark-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer ${isStarred ? 'text-amber-500' : 'text-slate-400'}" title="收藏">
+          <svg class="w-5.5 h-5.5 ${isStarred ? 'fill-amber-500 text-amber-500' : 'fill-none text-slate-400'}" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+        </button>
+      </div>
     `;
   } else if (currentMobileTab === 'exam' && examState.isActive) {
     headerLeft.innerHTML = `
       <button onclick="document.getElementById('submit-exam-btn').click();" class="flex items-center justify-center p-1 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border-none bg-transparent cursor-pointer mr-2">
-        <span class="material-symbols-outlined">close</span>
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">模拟考试</span>
     `;
@@ -4000,18 +4025,22 @@ function updateMobileNavAndHeader() {
     `;
     
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const themeIconSvg = isDark ? 
+      `<svg class="w-5 h-5 text-slate-600 dark:text-slate-300 fill-none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>` :
+      `<svg class="w-5 h-5 text-slate-600 dark:text-slate-300 fill-none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+
     headerRight.innerHTML = `
       <button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer" id="mobile-theme-btn">
-        <span class="material-symbols-outlined text-slate-600 dark:text-slate-300" id="mobile-theme-icon">${isDark ? 'dark_mode' : 'light_mode'}</span>
+        ${themeIconSvg}
       </button>
     `;
     
     const mobTheme = document.getElementById('mobile-theme-btn');
     if (mobTheme) {
-      mobTheme.addEventListener('click', () => {
+      mobTheme.onclick = () => {
         const themeBtn = document.getElementById('theme-toggle');
         if (themeBtn) themeBtn.click();
-      });
+      };
     }
   }
 
@@ -4708,15 +4737,41 @@ function renderMobilePractice(container) {
       
       <!-- Sticky Bottom Control Row -->
       <div class="fixed bottom-0 left-0 w-full glass-panel border-t border-white/40 p-4 flex justify-between items-center gap-4 z-40 pb-[env(safe-area-inset-bottom,20px)] md:hidden bg-white/70 dark:bg-slate-900/70">
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-on-surface font-headline-sm text-sm hover:bg-surface-variant transition-colors min-h-[48px] bg-white/40 dark:bg-slate-900/40 cursor-pointer" id="mob-prev-btn" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-prev-btn" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           上一题
         </button>
-        <button class="flex-[2] py-3 px-4 rounded-xl bg-primary text-on-primary font-headline-sm text-sm hover:bg-primary/90 transition-colors shadow-sm min-h-[48px] border-none cursor-pointer font-bold" id="mob-submit-btn">
+        <button class="flex-[2] py-3 px-4 rounded-xl bg-primary text-white font-headline-sm text-xs hover:bg-primary/95 transition-all shadow-sm min-h-[48px] border-none cursor-pointer font-bold" id="mob-submit-btn">
           提交答案
         </button>
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-on-surface font-headline-sm text-sm hover:bg-surface-variant transition-colors min-h-[48px] bg-white/40 dark:bg-slate-900/40 cursor-pointer" id="mob-next-btn" ${currentQuestionIndex === questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-next-btn" ${currentQuestionIndex === questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           下一题
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+      </div>
+
+      <!-- Mobile Practice Answer Card Overlay Sheet (Hidden by default) -->
+      <div id="mob-practice-overlay" class="fixed inset-0 bg-black/50 z-[2000] hidden transition-opacity duration-300"></div>
+      <div id="mob-practice-sheet" class="fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 rounded-t-3xl z-[2001] p-5 pb-8 transform translate-y-full transition-transform duration-300 shadow-2xl md:hidden border-t border-slate-200/20">
+        <div class="w-12 h-1 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-4"></div>
+        <div class="flex justify-between items-center mb-4 border-b border-slate-200/20 pb-3">
+          <h2 class="font-headline-sm text-sm text-slate-900 dark:text-white flex items-center gap-2 font-bold">
+            <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17h6M9 12h6M9 7h6"/></svg>
+            答题进度卡
+          </h2>
+          <button class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors border-none bg-transparent cursor-pointer text-slate-500" id="mob-practice-sheet-close">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="grid grid-cols-5 gap-3 max-h-[220px] overflow-y-auto pr-1" id="mob-practice-dots-grid">
+          <!-- Dots list populated dynamically -->
+        </div>
+        <div class="mt-6 flex justify-around text-[10px] text-outline font-semibold border-t border-slate-200/20 pt-3">
+          <div class="flex items-center gap-1.2"><div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>正确</div>
+          <div class="flex items-center gap-1.2"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div>错误</div>
+          <div class="flex items-center gap-1.2"><div class="w-2.5 h-2.5 rounded-full bg-primary"></div>当前</div>
+          <div class="flex items-center gap-1.2"><div class="w-2.5 h-2.5 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"></div>未做</div>
+        </div>
       </div>
 
       <!-- AI Assistant FAB -->
@@ -4733,36 +4788,94 @@ function renderMobilePractice(container) {
   const mobAiFab = container.querySelector('#mob-ai-fab');
 
   if (mobPrev) {
-    mobPrev.addEventListener('click', () => {
+    mobPrev.onclick = () => {
       currentQuestionIndex--;
       renderViewport();
-    });
+    };
   }
   if (mobNext) {
-    mobNext.addEventListener('click', () => {
+    mobNext.onclick = () => {
       currentQuestionIndex++;
       renderViewport();
-    });
+    };
   }
 
+  // Answer card sheet toggles
+  const headerCardBtn = document.getElementById('mobile-header-card-btn');
+  const practiceOverlay = container.querySelector('#mob-practice-overlay');
+  const practiceSheet = container.querySelector('#mob-practice-sheet');
+  const practiceSheetClose = container.querySelector('#mob-practice-sheet-close');
+
+  function openPracticeSheet() {
+    if (!practiceOverlay || !practiceSheet) return;
+    practiceOverlay.classList.remove('hidden');
+    practiceSheet.classList.remove('translate-y-full');
+    
+    // Render sheet dots
+    const dotsGrid = container.querySelector('#mob-practice-dots-grid');
+    if (dotsGrid) {
+      let dotsHtml = '';
+      questions.forEach((question, idx) => {
+        const qKey = getQuestionId(question);
+        const record = userData.answered[qKey];
+        
+        let cellClass = 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900';
+        if (idx === currentQuestionIndex) {
+          cellClass = 'bg-primary text-white border-primary font-bold scale-105';
+        } else if (record) {
+          cellClass = record.isCorrect ? 'bg-emerald-500 text-white border-emerald-500 font-bold' : 'bg-rose-500 text-white border-rose-500 font-bold';
+        }
+        
+        dotsHtml += `
+          <button class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold shadow-sm transition-all cursor-pointer ${cellClass}" data-index="${idx}">
+            ${idx + 1}
+          </button>
+        `;
+      });
+      dotsGrid.innerHTML = dotsHtml;
+      
+      // Bind dot clicks
+      dotsGrid.querySelectorAll('button').forEach(btn => {
+        btn.onclick = () => {
+          const targetIdx = parseInt(btn.getAttribute('data-index'));
+          currentQuestionIndex = targetIdx;
+          closePracticeSheet();
+          renderViewport();
+        };
+      });
+    }
+  }
+
+  function closePracticeSheet() {
+    if (!practiceOverlay || !practiceSheet) return;
+    practiceOverlay.classList.add('hidden');
+    practiceSheet.classList.add('translate-y-full');
+  }
+
+  if (headerCardBtn) {
+    headerCardBtn.onclick = openPracticeSheet;
+  }
+  if (practiceOverlay) practiceOverlay.onclick = closePracticeSheet;
+  if (practiceSheetClose) practiceSheetClose.onclick = closePracticeSheet;
+
   // AI Assistant FAB action
-  mobAiFab.addEventListener('click', () => {
+  mobAiFab.onclick = () => {
     const aiToggle = document.getElementById('ai-floating-toggle');
     if (aiToggle) aiToggle.click();
-  });
+  };
 
   const mobCallAi = container.querySelector('#mob-call-ai-btn');
   if (mobCallAi) {
     if (!isLoggedIn) {
-      mobCallAi.addEventListener('click', (e) => {
+      mobCallAi.onclick = (e) => {
         e.stopPropagation();
         showToast('请先登录以召唤 AI 助教！', 'warning');
         document.getElementById('login-trigger-btn').click();
-      });
+      };
     } else {
-      mobCallAi.addEventListener('click', () => {
+      mobCallAi.onclick = () => {
         bindQuestionToAi(q);
-      });
+      };
     }
   }
 
@@ -5671,14 +5784,16 @@ function renderMobileExamRunner(container) {
       
       <!-- Bottom Control Bar -->
       <div class="fixed bottom-0 left-0 w-full glass-panel border-t border-white/40 p-4 flex justify-between items-center gap-4 z-40 pb-[env(safe-area-inset-bottom,20px)] md:hidden bg-white/70 dark:bg-slate-900/70">
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-on-surface font-headline-sm text-sm hover:bg-surface-variant transition-colors min-h-[48px] bg-white/40 dark:bg-slate-900/40 cursor-pointer text-slate-850 dark:text-slate-100" id="mob-exam-prev" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-prev" ${currentQuestionIndex === 0 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
           上一题
         </button>
-        <button class="flex-1 py-3 px-4 rounded-xl bg-indigo-50/70 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-headline-sm text-sm hover:bg-indigo-100/70 transition-colors shadow-sm min-h-[48px] border border-indigo-100 dark:border-indigo-900 cursor-pointer font-bold" id="mob-exam-card-btn">
+        <button class="flex-1 py-3 px-4 rounded-xl bg-indigo-50/70 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 font-headline-sm text-xs hover:bg-indigo-100/70 transition-colors shadow-sm min-h-[48px] border border-indigo-100 dark:border-indigo-900 cursor-pointer font-bold" id="mob-exam-card-btn">
           答题卡
         </button>
-        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-on-surface font-headline-sm text-sm hover:bg-surface-variant transition-colors min-h-[48px] bg-white/40 dark:bg-slate-900/40 cursor-pointer text-slate-850 dark:text-slate-100" id="mob-exam-next" ${currentQuestionIndex === examState.questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
+        <button class="flex-1 py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-headline-sm text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-all min-h-[48px] bg-white/60 dark:bg-slate-900/60 cursor-pointer flex items-center justify-center" id="mob-exam-next" ${currentQuestionIndex === examState.questions.length - 1 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>
           下一题
+          <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
 
