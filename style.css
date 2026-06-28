@@ -1963,3 +1963,82 @@ tr:nth-child(even) {
     padding-right: 420px; /* Leaves space for the 380px wide AI window + 40px margin */
   }
 }
+
+/* --- Mobile App Adaptation Overrides --- */
+@media (max-width: 768px) {
+  /* Hide desktop sidebar and content header */
+  .sidebar, .content-header {
+    display: none !important;
+  }
+  
+  /* Make app container and main content responsive */
+  .app-container {
+    flex-direction: column !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    position: relative !important;
+  }
+  
+  .main-content {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: calc(100vh - 64px - 84px) !important; /* height without mobile top header and bottom nav bar */
+    padding: 1.25rem 1rem !important;
+    margin-top: 64px !important; /* spacing for fixed mobile header */
+    margin-bottom: 84px !important; /* spacing for fixed mobile bottom navbar */
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* Special adjustments when bottom navbar is hidden */
+  .main-content.no-bottom-nav {
+    height: calc(100vh - 64px) !important;
+    margin-bottom: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 20px) !important;
+  }
+
+  /* Make stats and mastery grid single-column on mobile */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .mastery-panel {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Make AI floating window act as a bottom sheet on mobile */
+  #ai-floating-window {
+    width: 100vw !important;
+    height: 70vh !important;
+    max-height: 80vh !important;
+    max-width: 100vw !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    transform: translateY(100%) scale(1) !important;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15) !important;
+    transition: all var(--transition-normal) !important;
+  }
+  
+  #ai-floating-window.active {
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
+    pointer-events: auto !important;
+  }
+  
+  #ai-floating-toggle {
+    bottom: 100px !important;
+    right: 16px !important;
+    width: 50px !important;
+    height: 50px !important;
+  }
+  
+  /* Adjust quiz viewport margins for mobile */
+  .quiz-viewport {
+    margin-top: 0 !important;
+  }
+}

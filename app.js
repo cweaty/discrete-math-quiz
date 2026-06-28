@@ -80,6 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Setup Floating AI Tutor Overlay
   setupFloatingAiTutor();
   
+  // Initialize mobile layout variables and events
+  setupMobileNavigation();
+  
   // Render initial viewport
   renderViewport();
   
@@ -254,6 +257,7 @@ function setupTheme() {
   // Get active theme
   const activeTheme = localStorage.getItem('dm_theme') || 'light';
   document.documentElement.setAttribute('data-theme', activeTheme);
+  document.documentElement.classList.toggle('dark', activeTheme === 'dark');
   updateThemeUI(activeTheme);
   
   toggleBtn.addEventListener('click', () => {
@@ -261,8 +265,16 @@ function setupTheme() {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     
     document.documentElement.setAttribute('data-theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
     localStorage.setItem('dm_theme', newTheme);
     updateThemeUI(newTheme);
+    
+    // Sync mobile header icon if exists
+    const mobThemeIcon = document.getElementById('mobile-theme-icon');
+    if (mobThemeIcon) {
+      mobThemeIcon.innerText = newTheme === 'dark' ? 'dark_mode' : 'light_mode';
+    }
+    
     showToast(`已切换至${newTheme === 'dark' ? '深色' : '浅色'}模式`, 'info');
   });
   
@@ -361,46 +373,101 @@ function renderViewport() {
   const container = document.getElementById('viewport');
   container.innerHTML = '';
   
-  // Show/Hide Global Cloud Quota Panel
-  const cfPanel = document.getElementById('global-cf-quota-panel');
-  if (cfPanel) {
-    const isLobby = ['all', 'judgment', 'single_choice', 'fill_blank', 'subjective', 'wrong_questions', 'bookmarks'].includes(currentCategory) && currentMode === 'practice';
-    if (isLobby) {
-      loadGlobalCloudQuota();
-    } else {
-      cfPanel.style.display = 'none';
-      if (globalCfCountdownInterval) {
-        clearInterval(globalCfCountdownInterval);
-        globalCfCountdownInterval = null;
-      }
-    }
-  }
+  const isMobile = window.innerWidth <= 768;
   
+  // Call mobile nav & header update
+  updateMobileNavAndHeader();
 
-  
+  const cfPanel = document.getElementById('global-cf-quota-panel');
   const statsPanel = document.getElementById('stats-panel');
   const masteryPanel = document.getElementById('mastery-panel');
-  
-  // If leaderboard, profile, exam or retake is active, hide dashboard metrics
-  const hideMetrics = (currentCategory === 'leaderboard' || currentCategory === 'profile' || currentMode === 'exam' || currentCategory === 'bookmarks_retake');
-  
-  if (statsPanel) statsPanel.style.display = hideMetrics ? 'none' : 'grid';
-  if (masteryPanel) masteryPanel.style.display = hideMetrics ? 'none' : 'grid';
-  
-  if (currentCategory === 'leaderboard') {
-    renderLeaderboardView(container);
-    return;
-  }
-  
-  if (currentCategory === 'profile') {
-    renderProfileView(container);
-    return;
-  }
-  
-  if (currentMode === 'practice') {
-    renderPracticeMode(container);
+
+  if (isMobile) {
+    // Mobile View Dispatcher
+    if (cfPanel) cfPanel.style.display = 'none';
+    if (statsPanel) statsPanel.style.display = 'none';
+    if (masteryPanel) masteryPanel.style.display = 'none';
+
+    if (currentMobileTab === 'lobby') {
+      if (cfPanel) {
+        cfPanel.style.display = 'grid';
+        loadGlobalCloudQuota();
+      }
+      if (statsPanel) statsPanel.style.display = 'grid';
+      if (masteryPanel) masteryPanel.style.display = 'grid';
+      
+      // Render Lobby Message Board Shortcut Card at the bottom of the Lobby metrics
+      renderLobbyShortcutCard(container);
+      return;
+    }
+    
+    if (currentMobileTab === 'lobby_comments') {
+      renderLobbyComments(container);
+      return;
+    }
+
+    if (currentMobileTab === 'quota_details') {
+      renderQuotaDetails(container);
+      return;
+    }
+
+    if (currentMobileTab === 'category') {
+      if (currentCategory === 'all') {
+        renderCategoryGrid(container);
+        return;
+      } else {
+        // Specific category practice mode question view
+        renderPracticeMode(container);
+        return;
+      }
+    }
+    
+    if (currentMobileTab === 'exam') {
+      renderExamMode(container);
+      return;
+    }
+    
+    if (currentMobileTab === 'leaderboard') {
+      renderLeaderboardView(container);
+      return;
+    }
+    
+    if (currentMobileTab === 'profile') {
+      renderProfileView(container);
+      return;
+    }
   } else {
-    renderExamMode(container);
+    // Original Desktop View Dispatcher
+    if (cfPanel) {
+      const isLobby = ['all', 'judgment', 'single_choice', 'fill_blank', 'subjective', 'wrong_questions', 'bookmarks'].includes(currentCategory) && currentMode === 'practice';
+      if (isLobby) {
+        loadGlobalCloudQuota();
+      } else {
+        cfPanel.style.display = 'none';
+        if (globalCfCountdownInterval) {
+          clearInterval(globalCfCountdownInterval);
+          globalCfCountdownInterval = null;
+        }
+      }
+    }
+    
+    const hideMetrics = (currentCategory === 'leaderboard' || currentCategory === 'profile' || currentMode === 'exam' || currentCategory === 'bookmarks_retake');
+    if (statsPanel) statsPanel.style.display = hideMetrics ? 'none' : 'grid';
+    if (masteryPanel) masteryPanel.style.display = hideMetrics ? 'none' : 'grid';
+    
+    if (currentCategory === 'leaderboard') {
+      renderLeaderboardView(container);
+      return;
+    }
+    if (currentCategory === 'profile') {
+      renderProfileView(container);
+      return;
+    }
+    if (currentMode === 'practice') {
+      renderPracticeMode(container);
+    } else {
+      renderExamMode(container);
+    }
   }
 }
 
@@ -1428,11 +1495,14 @@ function selectRandom(arr, count) {
 
 function updateExamTimer() {
   const timerEl = document.getElementById('exam-timer-display');
-  if (!timerEl) return;
+  const mobTimerEl = document.getElementById('mobile-exam-timer');
   
   if (examState.secondsRemaining === 0) {
-    timerEl.innerText = "不限时";
-    timerEl.parentElement.classList.remove('warning');
+    if (timerEl) {
+      timerEl.innerText = "不限时";
+      timerEl.parentElement.classList.remove('warning');
+    }
+    if (mobTimerEl) mobTimerEl.innerText = "不限时";
     return;
   }
   
@@ -1441,13 +1511,26 @@ function updateExamTimer() {
   
   const displayMins = mins.toString().padStart(2, '0');
   const displaySecs = secs.toString().padStart(2, '0');
+  const timerStr = `${displayMins}:${displaySecs}`;
   
-  timerEl.innerText = `${displayMins}:${displaySecs}`;
+  if (timerEl) {
+    timerEl.innerText = timerStr;
+    if (examState.secondsRemaining < 300) {
+      timerEl.parentElement.classList.add('warning');
+    } else {
+      timerEl.parentElement.classList.remove('warning');
+    }
+  }
   
-  if (examState.secondsRemaining < 300) {
-    timerEl.parentElement.classList.add('warning');
-  } else {
-    timerEl.parentElement.classList.remove('warning');
+  if (mobTimerEl) {
+    mobTimerEl.innerText = timerStr;
+    if (examState.secondsRemaining < 300) {
+      mobTimerEl.classList.remove('bg-red-100', 'text-red-600', 'dark:bg-red-950/30', 'dark:text-red-400');
+      mobTimerEl.classList.add('bg-red-600', 'text-white', 'animate-pulse');
+    } else {
+      mobTimerEl.classList.remove('bg-red-600', 'text-white', 'animate-pulse');
+      mobTimerEl.classList.add('bg-red-100', 'text-red-600', 'dark:bg-red-950/30', 'dark:text-red-400');
+    }
   }
 }
 
@@ -3664,4 +3747,616 @@ function loadGlobalCloudQuota() {
   .catch(err => {
     panel.style.display = 'none';
   });
+}
+
+// ============================================================================
+//            MOBILE APP ADAPTATION HELPERS & INTERACTIVE ROUTERS
+// ============================================================================
+
+let currentMobileTab = 'lobby';
+
+function setupMobileNavigation() {
+  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  mobileNavBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (examState.isActive && currentMobileTab !== 'exam') {
+        if (!confirm('正在模拟考试中，切换标签将退出考试且不保存当前进度，是否确认退出？')) {
+          return;
+        }
+        exitExam();
+      }
+      
+      const targetTab = btn.getAttribute('data-tab');
+      currentMobileTab = targetTab;
+      
+      // Sync app states
+      if (targetTab === 'lobby') {
+        currentCategory = 'all';
+        currentMode = 'practice';
+      } else if (targetTab === 'category') {
+        currentCategory = 'all';
+        currentMode = 'practice';
+      } else if (targetTab === 'exam') {
+        currentMode = 'exam';
+      } else if (targetTab === 'leaderboard') {
+        currentCategory = 'leaderboard';
+      } else if (targetTab === 'profile') {
+        currentCategory = 'profile';
+      }
+      
+      renderViewport();
+    });
+  });
+
+  // Mobile theme button trigger
+  const mobThemeBtn = document.getElementById('mobile-theme-btn');
+  if (mobThemeBtn) {
+    mobThemeBtn.addEventListener('click', () => {
+      const desktopThemeBtn = document.getElementById('theme-toggle');
+      if (desktopThemeBtn) desktopThemeBtn.click();
+    });
+  }
+
+  // Bind click for header bookmark delegation
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#mobile-header-bookmark-btn')) {
+      const mainBtn = document.getElementById('bookmark-btn');
+      if (mainBtn) mainBtn.click();
+      
+      // Update icon state
+      setTimeout(updateMobileNavAndHeader, 100);
+    }
+  });
+}
+
+function exitMobileSubView() {
+  currentCategory = 'all';
+  renderViewport();
+}
+
+function goBackToCategories() {
+  exitMobileSubView();
+}
+
+function updateMobileNavAndHeader() {
+  const isMobile = window.innerWidth <= 768;
+  const mobileHeader = document.getElementById('mobile-header');
+  const mobileNavBar = document.getElementById('mobile-nav-bar');
+  const mainContent = document.querySelector('.main-content');
+  
+  if (!isMobile) {
+    if (mobileHeader) mobileHeader.style.display = 'none';
+    if (mobileNavBar) mobileNavBar.style.display = 'none';
+    if (mainContent) mainContent.classList.remove('no-bottom-nav');
+    return;
+  }
+  
+  if (mobileHeader) mobileHeader.style.display = 'flex';
+  
+  // Hide bottom nav when in secondary pages
+  const hideBottomNav = (currentMobileTab === 'lobby_comments' || currentMobileTab === 'quota_details' || 
+                         (currentMobileTab === 'category' && currentCategory !== 'all') ||
+                         (currentMobileTab === 'exam' && examState.isActive));
+  
+  if (mobileNavBar) {
+    mobileNavBar.style.display = hideBottomNav ? 'none' : 'flex';
+  }
+  
+  if (mainContent) {
+    if (hideBottomNav) {
+      mainContent.classList.add('no-bottom-nav');
+    } else {
+      mainContent.classList.remove('no-bottom-nav');
+    }
+  }
+  
+  // Render mobile header
+  const headerLeft = document.getElementById('mobile-header-left');
+  const headerRight = document.getElementById('mobile-header-right');
+  
+  if (!headerLeft || !headerRight) return;
+  
+  if (currentMobileTab === 'lobby_comments') {
+    headerLeft.innerHTML = `
+      <button onclick="currentMobileTab='lobby'; renderViewport();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">学术讨论大厅</span>
+    `;
+    headerRight.innerHTML = '';
+  } else if (currentMobileTab === 'quota_details') {
+    headerLeft.innerHTML = `
+      <button onclick="currentMobileTab='lobby'; renderViewport();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">资源配额详情</span>
+    `;
+    headerRight.innerHTML = '';
+  } else if (currentMobileTab === 'category' && currentCategory !== 'all') {
+    let catName = '';
+    switch(currentCategory) {
+      case 'judgment': catName = '判断题'; break;
+      case 'single_choice': catName = '单选题'; break;
+      case 'fill_blank': catName = '填空题'; break;
+      case 'subjective': catName = '主观题'; break;
+      case 'wrong_questions': catName = '错题本'; break;
+      case 'bookmarks': catName = '收藏夹'; break;
+    }
+    
+    headerLeft.innerHTML = `
+      <button onclick="exitMobileSubView();" class="flex items-center justify-center p-1 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer mr-2">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">${catName}</span>
+    `;
+    
+    // Header Bookmark Button linked to main bookmark button
+    const questions = getFilteredQuestions();
+    const q = questions[currentQuestionIndex];
+    let isStarred = false;
+    if (q) {
+      const qId = getQuestionId(q);
+      isStarred = userData.bookmarks.includes(qId);
+    }
+    
+    headerRight.innerHTML = `
+      <button id="mobile-header-bookmark-btn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer ${isStarred ? 'text-amber-500' : 'text-slate-400'}">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' ${isStarred ? 1 : 0};">star</span>
+      </button>
+    `;
+  } else if (currentMobileTab === 'exam' && examState.isActive) {
+    headerLeft.innerHTML = `
+      <button onclick="document.getElementById('submit-exam-btn').click();" class="flex items-center justify-center p-1 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border-none bg-transparent cursor-pointer mr-2">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">模拟考试</span>
+    `;
+    
+    headerRight.innerHTML = `
+      <div class="bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold text-xs px-2.5 py-1 rounded-full" id="mobile-exam-timer">
+        --:--
+      </div>
+    `;
+  } else {
+    // Standard Logo + Title Header
+    headerLeft.innerHTML = `
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">Σ</div>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight">离散数学刷题系统</span>
+    `;
+    
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    headerRight.innerHTML = `
+      <button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border-none bg-transparent cursor-pointer" id="mobile-theme-btn">
+        <span class="material-symbols-outlined text-slate-600 dark:text-slate-300" id="mobile-theme-icon">${isDark ? 'dark_mode' : 'light_mode'}</span>
+      </button>
+    `;
+    
+    const mobTheme = document.getElementById('mobile-theme-btn');
+    if (mobTheme) {
+      mobTheme.addEventListener('click', () => {
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) themeBtn.click();
+      });
+    }
+  }
+
+  // Update navbar active state
+  const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn');
+  mobileNavBtns.forEach(b => {
+    const tab = b.getAttribute('data-tab');
+    if (tab === currentMobileTab) {
+      b.classList.remove('text-slate-500', 'dark:text-slate-400');
+      b.classList.add('text-indigo-600', 'dark:text-indigo-400');
+      const icon = b.querySelector('.material-symbols-outlined');
+      if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+    } else {
+      b.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+      b.classList.add('text-slate-500', 'dark:text-slate-400');
+      const icon = b.querySelector('.material-symbols-outlined');
+      if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+    }
+  });
+}
+
+function renderCategoryGrid(container) {
+  const autoNextChecked = practiceSettings.autoNext ? 'checked' : '';
+  const randomOrderChecked = practiceSettings.randomOrder ? 'checked' : '';
+  const hideCorrectChecked = practiceSettings.hideCorrect ? 'checked' : '';
+
+  const countAll = QUESTIONS.length;
+  const countJudgment = QUESTIONS.filter(q => q.category === 'judgment').length;
+  const countChoice = QUESTIONS.filter(q => q.category === 'single_choice').length;
+  const countBlank = QUESTIONS.filter(q => q.category === 'fill_blank').length;
+  const countSubjective = QUESTIONS.filter(q => ['calculation', 'proof', 'application'].includes(q.category)).length;
+  const countWrong = userData.wrongQuestions.length;
+  const countBookmarks = userData.bookmarks.length;
+
+  container.innerHTML = `
+    <div class="space-y-6" style="animation: fadeIn 0.4s ease;">
+      <div class="space-y-4">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">练习题库</h1>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+          <input id="mobile-search-input" class="w-full h-12 pl-12 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md focus:border-indigo-600 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 dark:text-white text-sm" placeholder="搜索题型..." type="text"/>
+        </div>
+      </div>
+
+      <!-- Settings Toggles -->
+      <section class="bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 overflow-x-auto">
+        <div class="flex items-center gap-6 min-w-max">
+          <div class="flex items-center gap-2">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mobile-set-auto-next" class="sr-only peer" ${autoNextChecked}>
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height-4 after:w-4 after:h-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">自动下一题</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mobile-set-random-order" class="sr-only peer" ${randomOrderChecked}>
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height-4 after:w-4 after:h-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">随机乱序</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mobile-set-hide-correct" class="sr-only peer" ${hideCorrectChecked}>
+              <div class="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height-4 after:w-4 after:h-4 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">隐藏已做对题</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Category Cards Grid -->
+      <div class="grid grid-cols-1 gap-4" id="mobile-category-list-container">
+        <!-- 1. 全部题目 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-all" data-cat="all">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <span class="material-symbols-outlined">grid_view</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">全部题目</h3>
+              <p class="text-xs text-slate-400">完整练习池中的所有离散数学问题</p>
+            </div>
+          </div>
+          <span class="bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold px-2 py-1 rounded-full">${countAll} 题</span>
+        </div>
+
+        <!-- 2. 判断题 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-all" data-cat="judgment">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <span class="material-symbols-outlined">fact_check</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">判断题</h3>
+              <p class="text-xs text-slate-400">对基本的离散数学命题进行对错判断</p>
+            </div>
+          </div>
+          <span class="bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold px-2 py-1 rounded-full">${countJudgment} 题</span>
+        </div>
+
+        <!-- 3. 单项选择题 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-all" data-cat="single_choice">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <span class="material-symbols-outlined">radio_button_checked</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">单项选择题</h3>
+              <p class="text-xs text-slate-400">四选一的逻辑与谓词等价公式选择</p>
+            </div>
+          </div>
+          <span class="bg-blue-600/10 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-1 rounded-full">${countChoice} 题</span>
+        </div>
+
+        <!-- 4. 填空题 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-all" data-cat="fill_blank">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <span class="material-symbols-outlined">edit_square</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">填空题</h3>
+              <p class="text-xs text-slate-400">输入确切的逻辑真值或表达式</p>
+            </div>
+          </div>
+          <span class="bg-amber-600/10 text-amber-600 dark:text-amber-400 text-xs font-bold px-2 py-1 rounded-full">${countBlank} 题</span>
+        </div>
+
+        <!-- 5. 主观题 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-indigo-50/30 dark:hover:bg-indigo-900/20 transition-all" data-cat="subjective">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <span class="material-symbols-outlined">description</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">主观证明与计算题</h3>
+              <p class="text-xs text-slate-400">演绎证明、范式求解与大型综合推理</p>
+            </div>
+          </div>
+          <span class="bg-purple-600/10 text-purple-600 dark:text-purple-400 text-xs font-bold px-2 py-1 rounded-full">${countSubjective} 题</span>
+        </div>
+
+        <!-- 6. 我的错题本 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-rose-50/30 dark:hover:bg-rose-900/20 transition-all" data-cat="wrong_questions">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <span class="material-symbols-outlined">error</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">我的错题本</h3>
+              <p class="text-xs text-slate-400">系统自动收录答错的题目，以便温故知新</p>
+            </div>
+          </div>
+          <span class="bg-rose-600/10 text-rose-600 dark:text-rose-400 text-xs font-bold px-2 py-1 rounded-full">${countWrong} 题</span>
+        </div>
+
+        <!-- 7. 我的收藏夹 -->
+        <div class="mobile-cat-card bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:bg-yellow-50/30 dark:hover:bg-yellow-900/20 transition-all" data-cat="bookmarks">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-600 dark:text-yellow-500">
+              <span class="material-symbols-outlined">star</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-800 dark:text-white text-sm">我的收藏夹</h3>
+              <p class="text-xs text-slate-400">收录您在刷题过程中主动加星标记的难点</p>
+            </div>
+          </div>
+          <span class="bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 text-xs font-bold px-2 py-1 rounded-full">${countBookmarks} 题</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Bind settings toggles
+  container.querySelector('#mobile-set-auto-next').addEventListener('change', (e) => {
+    practiceSettings.autoNext = e.target.checked;
+    saveSettings();
+    showToast(`已${e.target.checked ? '启用' : '禁用'}自动下一题`, 'info');
+  });
+  container.querySelector('#mobile-set-random-order').addEventListener('change', (e) => {
+    practiceSettings.randomOrder = e.target.checked;
+    shuffledQuestionsCache = null;
+    saveSettings();
+    currentQuestionIndex = 0;
+    showToast(`已${e.target.checked ? '启用' : '禁用'}随机乱序`, 'info');
+  });
+  container.querySelector('#mobile-set-hide-correct').addEventListener('change', (e) => {
+    practiceSettings.hideCorrect = e.target.checked;
+    saveSettings();
+    showToast(`已${e.target.checked ? '启用' : '禁用'}隐藏已做对题`, 'info');
+  });
+
+  // Bind category clicks
+  container.querySelectorAll('.mobile-cat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const selectedCat = card.getAttribute('data-cat');
+      currentCategory = selectedCat;
+      currentQuestionIndex = 0;
+      renderViewport();
+    });
+  });
+
+  // Search filter
+  const searchInput = container.querySelector('#mobile-search-input');
+  searchInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim().toLowerCase();
+    const cards = container.querySelectorAll('.mobile-cat-card');
+    cards.forEach(card => {
+      const title = card.querySelector('h3').innerText.toLowerCase();
+      const desc = card.querySelector('p').innerText.toLowerCase();
+      if (title.includes(val) || desc.includes(val)) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  });
+}
+
+function renderLobbyShortcutCard(container) {
+  const card = document.createElement('div');
+  card.className = 'w-full mt-4';
+  card.innerHTML = `
+    <div class="bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all active:scale-[0.98]" id="mobile-lobby-comments-shortcut">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-600" style="font-variation-settings: 'FILL' 1;">forum</span>
+          学术讨论大厅
+        </h2>
+        <span class="material-symbols-outlined text-slate-400">chevron_right</span>
+      </div>
+      <div class="bg-white/40 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/20" id="mobile-lobby-shortcut-comment-content">
+        <div class="flex items-center gap-2 mb-1.5">
+          <div class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-[10px]" id="mobile-lobby-shortcut-avatar">U</div>
+          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300" id="mobile-lobby-shortcut-user">离散学者</span>
+          <span class="text-[9px] text-slate-400 ml-auto" id="mobile-lobby-shortcut-time">--</span>
+        </div>
+        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed truncate" id="mobile-lobby-shortcut-text">点击进入讨论大厅，与同学分享学习心得与疑问！</p>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+  
+  card.querySelector('#mobile-lobby-comments-shortcut').addEventListener('click', () => {
+    currentMobileTab = 'lobby_comments';
+    renderViewport();
+  });
+  
+  fetchLatestCommentPreview();
+}
+
+async function fetchLatestCommentPreview() {
+  try {
+    const response = await fetch(`${API_BASE}/comments?q=lobby`);
+    if (response.ok) {
+      const comments = await response.json();
+      if (comments && comments.length > 0) {
+        const latest = comments[comments.length - 1];
+        const timeEl = document.getElementById('mobile-lobby-shortcut-time');
+        const userEl = document.getElementById('mobile-lobby-shortcut-user');
+        const textEl = document.getElementById('mobile-lobby-shortcut-text');
+        const avatarEl = document.getElementById('mobile-lobby-shortcut-avatar');
+        
+        if (timeEl) timeEl.innerText = formatRelativeTime(latest.timestamp);
+        if (userEl) userEl.innerText = latest.username;
+        if (textEl) textEl.innerText = latest.content;
+        if (avatarEl) avatarEl.innerText = latest.username[0].toUpperCase();
+      }
+    }
+  } catch (err) {
+    console.error("Error previewing comments", err);
+  }
+}
+
+function formatRelativeTime(timestamp) {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins}分钟前`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}小时前`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+async function renderLobbyComments(container) {
+  container.innerHTML = `
+    <div class="flex flex-col h-[calc(100vh-140px)]" style="animation: fadeIn 0.4s ease;">
+      <!-- Message List Area -->
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1" id="mobile-lobby-comments-list" style="padding-bottom: 2rem;">
+        <div class="text-center py-8 text-slate-400">
+          <span class="inline-block animate-spin mr-2">⏳</span>正在加载讨论留言...
+        </div>
+      </div>
+      
+      <!-- Bottom Input Row -->
+      <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 pt-3 px-1 flex gap-2 items-center">
+        <input type="text" id="mobile-lobby-comment-input" placeholder="说点什么..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
+        <button id="mobile-lobby-comment-send" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer">
+          <span class="material-symbols-outlined text-sm">send</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  const listContainer = container.querySelector('#mobile-lobby-comments-list');
+  const inputField = container.querySelector('#mobile-lobby-comment-input');
+  const sendBtn = container.querySelector('#mobile-lobby-comment-send');
+
+  await loadLobbyCommentsList(listContainer);
+
+  sendBtn.addEventListener('click', () => postLobbyComment(listContainer, inputField));
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') postLobbyComment(listContainer, inputField);
+  });
+}
+
+async function loadLobbyCommentsList(listContainer) {
+  try {
+    const response = await fetch(`${API_BASE}/comments?q=lobby`);
+    if (!response.ok) throw new Error("Failed to fetch comments");
+    
+    const comments = await response.json();
+    listContainer.innerHTML = '';
+    
+    if (comments.length === 0) {
+      listContainer.innerHTML = `
+        <div class="text-center py-12 text-slate-400 text-sm">
+          💬 暂时没有学术讨论，说点什么发布第一条留言吧！
+        </div>
+      `;
+      return;
+    }
+    
+    comments.forEach(c => {
+      const card = document.createElement('article');
+      card.className = 'bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col gap-2 shadow-sm';
+      card.innerHTML = `
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+            ${c.username[0].toUpperCase()}
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xs font-bold text-slate-800 dark:text-white">${c.username}</span>
+            <span class="text-[9px] text-slate-400">${formatRelativeTime(c.timestamp)}</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${escapeHtml(c.content)}</p>
+      `;
+      listContainer.appendChild(card);
+    });
+    
+    listContainer.scrollTop = listContainer.scrollHeight;
+  } catch (err) {
+    listContainer.innerHTML = `
+      <div class="text-center py-12 text-red-500 text-sm">
+        ⚠️ 无法加载留言板数据，请检查网络或稍后重试
+      </div>
+    `;
+  }
+}
+
+async function postLobbyComment(listContainer, inputField) {
+  const content = inputField.value.trim();
+  if (!content) {
+    showToast('留言内容不能为空！', 'error');
+    return;
+  }
+  
+  const token = localStorage.getItem('dm_jwt_token');
+  if (!token) {
+    showToast('请先登录账号以参与讨论！', 'error');
+    document.getElementById('login-trigger-btn').click();
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${API_BASE}/comments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ qId: 'lobby', content })
+    });
+    
+    const result = await response.json();
+    if (response.ok) {
+      inputField.value = '';
+      showToast('发布留言成功！', 'success');
+      loadLobbyCommentsList(listContainer);
+    } else {
+      showToast(result.error || '发布失败，请重试！', 'error');
+    }
+  } catch (err) {
+    showToast('服务器连接失败，请稍后重试！', 'error');
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function renderQuotaDetails(container) {
+  container.innerHTML = `
+    <div class="space-y-6" style="animation: fadeIn 0.4s ease;">
+      <div class="bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 space-y-4">
+        <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+          <span class="material-symbols-outlined text-indigo-600">bar_chart</span>
+          本地 Cloudflare 凭证绑定
+        </h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          绑定您的 Cloudflare Account ID 和 API Token 后，本刷题系统将直接展示您当前账户今日 Workers/Pages 的请求调用百分比，防止因共享接口超限导致服务熔断。
+        </p>
+        <div id="cf-usage-container"></div>
+      </div>
+    </div>
+  `;
+  
+  renderCloudflareUsageCard(container);
 }
