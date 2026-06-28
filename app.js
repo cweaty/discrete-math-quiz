@@ -48,6 +48,7 @@ function shuffleArray(array) {
 
 let userData = {
   bookmarks: [], // Array of question IDs: 'cat_originalnum' e.g. 'judgment_1'
+  wrongQuestions: [], // Auto-added incorrect questions
   answered: {},  // Map of question ID -> { userAns: '', isCorrect: true/false }
   examHistory: []
 };
@@ -97,6 +98,7 @@ function loadUserData() {
     try {
       userData = JSON.parse(savedData);
       if (!userData.bookmarks) userData.bookmarks = [];
+      if (!userData.wrongQuestions) userData.wrongQuestions = [];
       if (!userData.answered) userData.answered = {};
       if (!userData.examHistory) userData.examHistory = [];
     } catch (e) {
