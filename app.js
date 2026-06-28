@@ -17,7 +17,6 @@ let shuffledQuestionsCache = null;
 let radarChartInstance = null;
 let currentAiQuestion = null;
 let aiConversationHistory = [];
-let aiConversationHistory = [];
 let lastFilteredIdsKey = ""; // To track if the pool changed
 
 function loadSettings() {
