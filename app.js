@@ -3873,26 +3873,38 @@ function setupMobileSwipeGestures() {
         return;
       }
       
-      const isSecondaryPage = (currentMobileTab === 'lobby_comments' || 
-                               currentMobileTab === 'quota_details' || 
-                               (currentMobileTab === 'category' && currentCategory !== 'all') || 
-                               (currentMobileTab === 'exam' && examState.isActive));
+      const isQuestionPage = ((currentMobileTab === 'category' && currentCategory !== 'all') || 
+                              (currentMobileTab === 'exam' && examState.isActive));
+      const isOtherSecondaryPage = (currentMobileTab === 'lobby_comments' || currentMobileTab === 'quota_details');
                                
-      if (isSecondaryPage) {
-        // Swipe right (left to right) returns to previous page
-        if (diffX > 0) {
-          if (currentMobileTab === 'lobby_comments' || currentMobileTab === 'quota_details') {
-            currentMobileTab = 'lobby';
-            renderViewport();
-          } else if (currentMobileTab === 'category' && currentCategory !== 'all') {
-            exitMobileSubView();
-          } else if (currentMobileTab === 'exam' && examState.isActive) {
-            if (confirm('正在模拟考试中，是否确认退出当前考试？')) {
-              exitExam();
-              currentMobileTab = 'exam';
+      if (isQuestionPage) {
+        // Swipe left (finger moves right to left, diffX < 0) -> Next question
+        if (diffX < 0) {
+          if (currentMobileTab === 'category') {
+            const questions = getFilteredQuestions();
+            if (currentQuestionIndex < questions.length - 1) {
+              currentQuestionIndex++;
+              renderViewport();
+            }
+          } else {
+            if (currentQuestionIndex < examState.questions.length - 1) {
+              currentQuestionIndex++;
               renderViewport();
             }
           }
+        } 
+        // Swipe right (finger moves left to right, diffX > 0) -> Previous question
+        else if (diffX > 0) {
+          if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            renderViewport();
+          }
+        }
+      } else if (isOtherSecondaryPage) {
+        // Swipe right (left to right) returns to lobby
+        if (diffX > 0) {
+          currentMobileTab = 'lobby';
+          renderViewport();
         }
       } else {
         // Switch between main navigation tabs
