@@ -210,6 +210,7 @@ function getQuestionId(q) {
 
 // Get lists of questions filtered by currentCategory
 function getFilteredQuestions() {
+  console.log('[Diagnostic] getFilteredQuestions - currentCategory:', currentCategory, 'wrongQuestions:', JSON.stringify(userData.wrongQuestions));
   if (currentCategory === 'bookmarks') {
     return QUESTIONS.filter(q => userData.bookmarks.includes(getQuestionId(q)));
   }
