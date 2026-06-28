@@ -1447,15 +1447,7 @@ function renderExamLobby(container) {
   container.querySelector('#start-exam-btn').addEventListener('click', startExam);
 }
 
-function startExam() {
-  const selectedTopic = document.getElementById('exam-set-topic').value;
-  const selectedTime = parseInt(document.getElementById('exam-set-time').value, 10);
-  
-  const cntJudgment = parseInt(document.getElementById('exam-cnt-judgment').value || 0, 10);
-  const cntChoice = parseInt(document.getElementById('exam-cnt-choice').value || 0, 10);
-  const cntBlank = parseInt(document.getElementById('exam-cnt-blank').value || 0, 10);
-  const cntSubjective = parseInt(document.getElementById('exam-cnt-subjective').value || 0, 10);
-  
+function buildCustomExam(selectedTopic, selectedTime, cntJudgment, cntChoice, cntBlank, cntSubjective) {
   const totalQuestionsNeeded = cntJudgment + cntChoice + cntBlank + cntSubjective;
   if (totalQuestionsNeeded === 0) {
     showToast('总题数不能为 0！', 'error');
@@ -1505,6 +1497,18 @@ function startExam() {
   
   renderViewport();
   showToast('考试开始，答题过程中请勿切换分类或关闭网页', 'info');
+}
+
+function startExam() {
+  const selectedTopic = document.getElementById('exam-set-topic').value;
+  const selectedTime = parseInt(document.getElementById('exam-set-time').value, 10);
+  
+  const cntJudgment = parseInt(document.getElementById('exam-cnt-judgment').value || 0, 10);
+  const cntChoice = parseInt(document.getElementById('exam-cnt-choice').value || 0, 10);
+  const cntBlank = parseInt(document.getElementById('exam-cnt-blank').value || 0, 10);
+  const cntSubjective = parseInt(document.getElementById('exam-cnt-subjective').value || 0, 10);
+  
+  buildCustomExam(selectedTopic, selectedTime, cntJudgment, cntChoice, cntBlank, cntSubjective);
 }
 
 function selectRandom(arr, count) {
