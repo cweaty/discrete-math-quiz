@@ -3526,43 +3526,53 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
       }
       
       targetContainer.innerHTML = `
-        <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1.15rem; animation: fadeIn 0.4s ease;">
+        <!-- Workers/Pages Requests Card -->
+        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease; margin-bottom: 1rem;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary);">📊 Workers/Pages 请求使用情况</h3>
+            <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+              📡 Workers/Pages 平台请求配额
+            </h3>
             <button class="btn btn-outline" id="cf-reconfig-btn" style="padding: 0.25rem 0.5rem; font-size: 0.72rem; font-weight: 700; border-radius: 8px; cursor:pointer;">⚙️ 重设凭证</button>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.72rem; color: var(--text-muted); font-weight:700;">
+            <span>重置倒计时:</span>
+            <span id="cf-countdown-timer">${getTimerHtml(secondsLeft)}</span>
           </div>
 
           <!-- Progress Bar -->
-          <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 24px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
-            <div id="cf-progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; transition: width 0.6s ease; width: ${Math.min(100, pct)}%;"></div>
-            <span id="cf-progress-text" style="color: var(--text-primary); font-size: 0.78rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
-              请求使用进度: ${total.toLocaleString()} (${pct}%)
+          <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+            <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, pct)}%;"></div>
+            <span style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
+              本日已用: ${total.toLocaleString()} / ${quota.toLocaleString()} (${pct}%)
             </span>
           </div>
 
-          <!-- Stats Grid -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; border-left: 4px solid var(--primary); background-color: rgba(99, 102, 241, 0.04); padding: 1.15rem; border-radius: 0 var(--radius-md) var(--radius-md) 0; border: 1px solid var(--border-color);">
-            <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Workers 请求</span>
-              <span style="font-size: 1.6rem; font-weight: 800; color: var(--success);">${workers.toLocaleString()}</span>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Pages 请求</span>
-              <span style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">${pages.toLocaleString()}</span>
-            </div>
-            <div style="display:flex; flex-direction:column; gap:0.25rem;">
-              <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">日配额</span>
-              <span style="font-size: 1.6rem; font-weight: 800; color: var(--warning);">${quota.toLocaleString()}</span>
-            </div>
+          <div style="display:flex; gap:1.5rem; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
+            <span>🌐 Pages (项目运行): <strong style="color: var(--primary);">${pages.toLocaleString()}</strong> 次</span>
+            <span>⚙️ Workers (其他服务): <strong style="color: var(--success);">${workers.toLocaleString()}</strong> 次</span>
+          </div>
+        </div>
+
+        <!-- Workers AI Neurons Card -->
+        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
+              🔮 Workers AI 智能算力配额
+            </h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">每日免费额度</span>
           </div>
 
-          <!-- Info Alert -->
-          <div style="background-color: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: var(--radius-md); padding: 0.85rem; display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
-            <span style="font-size:1rem;">ℹ️</span>
-            <div>
-              <strong>每日请求数重置清零：</strong>
-              距离重置还有 <span id="cf-countdown-timer">${getTimerHtml(secondsLeft)}</span>，北京时间 (UTC+8) <strong>8:00</strong> 重置，今日使用情况总计：<strong style="color:#d97706;">${total.toLocaleString()}</strong>。
-            </div>
+          <!-- Progress Bar -->
+          <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+            <div style="background: linear-gradient(90deg, #10B981, var(--primary)); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, aiPct)}%;"></div>
+            <span style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : '0 1px 2px rgba(255,255,255,0.8)'}; user-select:none;">
+              本日已用: ${aiNeurons.toLocaleString()} / ${aiQuota.toLocaleString()} Neurons (${aiPct}%)
+            </span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
+            <span>🧠 AI 助教算力单元: <strong style="color: #10B981;">${aiNeurons.toLocaleString()} Neurons</strong></span>
+            <span style="color: var(--text-muted); font-size:0.7rem;">(免费配额重置与请求数同步)</span>
           </div>
         </div>
       `;
@@ -4311,17 +4321,7 @@ function escapeHtml(str) {
 
 function renderQuotaDetails(container) {
   container.innerHTML = `
-    <div class="space-y-6" style="animation: fadeIn 0.4s ease;">
-      <div class="glass-panel rounded-2xl p-5 space-y-4 bg-white/40 dark:bg-slate-900/40">
-        <h2 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
-          <span class="material-symbols-outlined text-indigo-600">bar_chart</span>
-          本地 Cloudflare 凭证绑定
-        </h2>
-        <p class="text-xs text-slate-500 leading-relaxed">
-          绑定您的 Cloudflare Account ID 和 API Token 后，本刷题系统将直接展示您当前账户今日 Workers/Pages 的请求调用百分比，防止因共享接口超限导致服务熔断。
-        </p>
-        <div id="cf-usage-container"></div>
-      </div>
+    <div class="space-y-6" id="cf-usage-container" style="animation: fadeIn 0.4s ease; padding-bottom: 80px;">
     </div>
   `;
   
@@ -4371,7 +4371,7 @@ function renderMobileLobby(container) {
       </div>
 
       <!-- Cloud Quota Card -->
-      <section class="glass-panel p-5 relative overflow-hidden rounded-2xl bg-white/40 dark:bg-slate-900/40" id="mob-lobby-quota-card">
+      <section class="glass-panel p-5 relative overflow-hidden rounded-2xl bg-white/40 dark:bg-slate-900/40 cursor-pointer" id="mob-lobby-quota-card">
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl"></div>
         <div class="relative z-10 space-y-4">
           <div class="flex justify-between items-center">
@@ -4385,22 +4385,24 @@ function renderMobileLobby(container) {
               </span>
             </div>
           </div>
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-[10px]">
-              <span class="text-outline font-bold">Workers/Pages 请求数</span>
-              <span class="text-slate-800 dark:text-slate-200 font-bold" id="mob-lobby-workers-pages-requests">-- / --</span>
-            </div>
-            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-              <div class="bg-primary h-full rounded-full transition-all duration-1000" id="mob-lobby-workers-pages-progress" style="width: 0%"></div>
+          
+          <div class="space-y-1">
+            <span class="text-[10px] text-outline font-bold block mb-1">Workers/Pages 平台请求配额</span>
+            <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 24px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+              <div id="mob-lobby-workers-pages-progress" style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; transition: width 0.6s ease; width: 0%"></div>
+              <span id="mob-lobby-workers-pages-requests" style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; user-select:none;">
+                本日已用: -- / -- (0%)
+              </span>
             </div>
           </div>
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-[10px]">
-              <span class="text-outline font-bold">AI 助教算力配额</span>
-              <span class="text-slate-800 dark:text-slate-200 font-bold" id="mob-lobby-ai-neurons">-- / -- Neurons</span>
-            </div>
-            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-              <div class="bg-secondary h-full rounded-full transition-all duration-1000" id="mob-lobby-ai-progress" style="width: 0%"></div>
+          
+          <div class="space-y-1">
+            <span class="text-[10px] text-outline font-bold block mb-1">Workers AI 智能算力配额</span>
+            <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 24px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
+              <div id="mob-lobby-ai-progress" style="background: linear-gradient(90deg, #10B981, var(--primary)); height: 100%; position: absolute; left: 0; top: 0; transition: width 0.6s ease; width: 0%"></div>
+              <span id="mob-lobby-ai-neurons" style="color: var(--text-primary); font-size: 0.75rem; font-weight: 700; z-index: 1; user-select:none;">
+                本日已用: -- / -- (0%)
+              </span>
             </div>
           </div>
         </div>
@@ -4529,9 +4531,9 @@ async function fetchLobbyQuotaDetails() {
       const aiEl = document.getElementById('mob-lobby-ai-neurons');
       const aiProg = document.getElementById('mob-lobby-ai-progress');
 
-      if (reqEl) reqEl.innerText = `${total.toLocaleString()} / ${quota.toLocaleString()}`;
+      if (reqEl) reqEl.innerText = `本日已用: ${total.toLocaleString()} / ${quota.toLocaleString()} (${pct}%)`;
       if (reqProg) reqProg.style.width = `${Math.min(100, pct)}%`;
-      if (aiEl) aiEl.innerText = `${aiNeurons.toLocaleString()} / ${aiQuota.toLocaleString()}`;
+      if (aiEl) aiEl.innerText = `本日已用: ${aiNeurons.toLocaleString()} / ${aiQuota.toLocaleString()} Neurons (${aiPct}%)`;
       if (aiProg) aiProg.style.width = `${Math.min(100, aiPct)}%`;
 
       function updateCountdown() {
