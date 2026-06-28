@@ -2380,6 +2380,24 @@ function getCategoryChineseName(cat) {
   }
 }
 
+// Dynamically shift layout by updating main content padding-right
+function updateMainContentPadding() {
+  const mainContent = document.querySelector('.main-content');
+  const windowDiv = document.getElementById('ai-floating-window');
+  if (mainContent && windowDiv) {
+    const isActive = windowDiv.classList.contains('active');
+    const isRightDocked = windowDiv.style.right !== 'auto';
+    
+    if (isActive && isRightDocked) {
+      mainContent.classList.add('ai-open');
+      mainContent.style.paddingRight = (windowDiv.offsetWidth + 40) + 'px';
+    } else {
+      mainContent.classList.remove('ai-open');
+      mainContent.style.paddingRight = '';
+    }
+  }
+}
+
 // Update the AI context header with context size and estimated tokens
 function updateAiContextBar(q) {
   const contextBar = document.getElementById('ai-window-context-bar');
@@ -2421,7 +2439,10 @@ function setupFloatingAiTutor() {
   const windowDiv = document.createElement('div');
   windowDiv.id = 'ai-floating-window';
   windowDiv.innerHTML = `
-    <div class="ai-window-header">
+    <!-- Left Resizing Handle -->
+    <div id="ai-resize-handle" style="position: absolute; left: 0; top: 0; width: 6px; height: 100%; cursor: ew-resize; z-index: 1001; background: transparent; transition: background 0.2s;"></div>
+
+    <div class="ai-window-header" style="user-select: none;">
       <div class="ai-window-title">
         <span>🤖 AI 离散数学助教</span>
       </div>
@@ -2429,7 +2450,7 @@ function setupFloatingAiTutor() {
     </div>
     
     <!-- Model Switcher, Intensity & Stream Selectors -->
-    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem;">
+    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.5rem; user-select: none;">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
         <div style="display:flex; flex-direction:column; gap:0.2rem;">
           <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🔮 选择大模型:</span>
@@ -2456,12 +2477,12 @@ function setupFloatingAiTutor() {
       </label>
     </div>
     
-    <div class="ai-window-context" id="ai-window-context-bar">
+    <div class="ai-window-context" id="ai-window-context-bar" style="user-select: none;">
       <span>📌 当前未关联具体题目</span>
     </div>
     <div class="ai-window-chat" id="ai-chat-area-floating">
       <div class="ai-msg-bubble assistant">
-        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题的上下文并在这里为您解答！支持多轮追问哦！
+        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题的上下文并在这里为您解答！支持多轮追问，窗口顶栏支持拖动，左侧边缘支持拖拽拉伸宽度！
       </div>
     </div>
     <div class="ai-window-input-row">
@@ -2473,23 +2494,13 @@ function setupFloatingAiTutor() {
   
   // Binding close & toggle events
   toggleBtn.addEventListener('click', () => {
-    const isActive = windowDiv.classList.toggle('active');
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      if (isActive) {
-        mainContent.classList.add('ai-open');
-      } else {
-        mainContent.classList.remove('ai-open');
-      }
-    }
+    windowDiv.classList.toggle('active');
+    updateMainContentPadding();
   });
   
   windowDiv.querySelector('#ai-window-close-btn').addEventListener('click', () => {
     windowDiv.classList.remove('active');
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.classList.remove('ai-open');
-    }
+    updateMainContentPadding();
   });
   
   const submitBtn = windowDiv.querySelector('#ai-query-submit-floating');
@@ -2499,6 +2510,115 @@ function setupFloatingAiTutor() {
   inputField.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') askFloatingAiTutor();
   });
+
+  // Highlight resize handle on hover
+  const resizeHandle = windowDiv.querySelector('#ai-resize-handle');
+  resizeHandle.addEventListener('mouseenter', () => {
+    resizeHandle.style.background = 'rgba(99, 102, 241, 0.2)';
+  });
+  resizeHandle.addEventListener('mouseleave', () => {
+    resizeHandle.style.background = 'transparent';
+  });
+
+  // DRAG ENGINE (拖拽移动窗口)
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let windowStartX = 0;
+  let windowStartY = 0;
+  
+  const header = windowDiv.querySelector('.ai-window-header');
+  header.style.cursor = 'move';
+  
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.closest('#ai-window-close-btn')) return;
+    
+    isDragging = true;
+    windowDiv.style.transition = 'none'; // Disable transition for buttery performance
+    
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    
+    const rect = windowDiv.getBoundingClientRect();
+    windowStartX = rect.left;
+    windowStartY = rect.top;
+    
+    // Convert to absolute positioning
+    windowDiv.style.right = 'auto';
+    windowDiv.style.bottom = 'auto';
+    windowDiv.style.left = windowStartX + 'px';
+    windowDiv.style.top = windowStartY + 'px';
+    
+    updateMainContentPadding(); // Shift layout off if dragged away
+    e.preventDefault();
+  });
+
+  // RESIZE ENGINE (拉伸调整宽度)
+  let isResizing = false;
+  let resizeStartX = 0;
+  let windowStartWidth = 0;
+  let windowStartLeft = 0;
+  let isDockedRight = true;
+
+  resizeHandle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    windowDiv.style.transition = 'none'; // Disable transition for buttery performance
+    
+    resizeStartX = e.clientX;
+    
+    const rect = windowDiv.getBoundingClientRect();
+    windowStartWidth = rect.width;
+    windowStartLeft = rect.left;
+    
+    isDockedRight = (windowDiv.style.right !== 'auto');
+    e.preventDefault();
+  });
+
+  // Combined Move & Resize Mouse Listeners
+  document.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      
+      windowDiv.style.left = (windowStartX + dx) + 'px';
+      windowDiv.style.top = (windowStartY + dy) + 'px';
+    }
+    
+    if (isResizing) {
+      const dx = e.clientX - resizeStartX;
+      let newWidth = windowStartWidth;
+      
+      if (isDockedRight) {
+        newWidth = windowStartWidth - dx;
+      } else {
+        newWidth = windowStartWidth - dx;
+        if (newWidth >= 300 && newWidth <= 800) {
+          windowDiv.style.left = (windowStartLeft + dx) + 'px';
+        }
+      }
+      
+      // Limit bounds
+      if (newWidth < 300) newWidth = 300;
+      if (newWidth > 800) newWidth = 800;
+      
+      windowDiv.style.width = newWidth + 'px';
+      
+      if (isDockedRight) {
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent && mainContent.classList.contains('ai-open')) {
+          mainContent.style.paddingRight = (newWidth + 40) + 'px';
+        }
+      }
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging || isResizing) {
+      isDragging = false;
+      isResizing = false;
+      windowDiv.style.transition = ''; // Restore smooth transitions
+    }
+  });
 }
 
 function bindQuestionToAi(q) {
@@ -2507,18 +2627,14 @@ function bindQuestionToAi(q) {
   // Clear conversation history on binding a new question
   aiConversationHistory = [];
   
-  updateAiContextBar(q);
-  
   // Open the window
   const windowDiv = document.getElementById('ai-floating-window');
   if (windowDiv) {
     windowDiv.classList.add('active');
   }
-  // Prevent content obstruction by shifting layout
-  const mainContent = document.querySelector('.main-content');
-  if (mainContent) {
-    mainContent.classList.add('ai-open');
-  }
+  
+  updateAiContextBar(q);
+  updateMainContentPadding();
   
   let catBadgeName = getCategoryChineseName(q.category);
   
