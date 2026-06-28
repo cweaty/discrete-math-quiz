@@ -2363,7 +2363,6 @@ async function postComment(qId, panel) {
 //          AI MATH TUTOR FLOWS
 // ==========================================
 
-
 // ==========================================
 //        FLOATING AI ASSISTANT OVERLAY
 // ==========================================
@@ -2462,7 +2461,7 @@ function setupFloatingAiTutor() {
     </div>
     <div class="ai-window-chat" id="ai-chat-area-floating">
       <div class="ai-msg-bubble assistant">
-        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题 the 上下文并在这里为您解答！支持多轮追问哦！
+        你好！我是你的离散数学AI助教。在刷题或模拟考试中遇到任何疑问，点击题目右上角的 <b>🤖 问助教</b> 按钮，我将自动关联这道题的上下文并在这里为您解答！支持多轮追问哦！
       </div>
     </div>
     <div class="ai-window-input-row">
@@ -2539,6 +2538,7 @@ async function askFloatingAiTutor() {
   const inputField = document.getElementById('ai-query-input-floating');
   const chatArea = document.getElementById('ai-chat-area-floating');
   const modelSelect = document.getElementById('ai-model-selector');
+  const streamToggle = document.getElementById('ai-stream-toggle');
   if (!inputField || !chatArea) return;
   
   const query = inputField.value.trim();
@@ -2554,6 +2554,7 @@ async function askFloatingAiTutor() {
   
   const chosenModel = modelSelect ? modelSelect.value : '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
   const selectedModelName = modelSelect ? modelSelect.options[modelSelect.selectedIndex].text.split(' ')[0] : 'AI';
+  const useStreaming = streamToggle ? streamToggle.checked : true;
   
   // Append User message in UI
   const userMsgDiv = document.createElement('div');
@@ -2563,8 +2564,6 @@ async function askFloatingAiTutor() {
   
   // Push to conversation history array
   aiConversationHistory.push({ role: 'user', content: query });
-  
-  // Update context bar representation
   updateAiContextBar(currentAiQuestion);
   
   // Append AI Loading state
@@ -2580,66 +2579,140 @@ async function askFloatingAiTutor() {
   const intensitySelect = document.getElementById('ai-intensity-selector');
   const chosenIntensity = intensitySelect ? intensitySelect.value : 'medium';
 
-  try {
-    const response = await fetch(`${API_BASE}/ai`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: currentAiQuestion.question,
-        analysis: currentAiQuestion.analysis,
-        userQuery: query,
-        model: chosenModel,
-        history: aiConversationHistory,
-        thinkingIntensity: chosenIntensity
-      })
-    });
-    
-    const result = await response.json();
-    aiLoadingDiv.remove();
-    
-    const aiReplyDiv = document.createElement('div');
-    aiReplyDiv.className = 'ai-msg-bubble assistant';
-    
-    if (response.ok) {
-      // Extract <think>...</think> block if present (robust regex parsing)
-      let rawText = result.response;
-      let thinkingText = "";
+  // Pre-prepare reply bubble shell
+  const aiReplyDiv = document.createElement('div');
+  aiReplyDiv.className = 'ai-msg-bubble assistant';
+
+  if (useStreaming) {
+    try {
+      const response = await fetch(`${API_BASE}/ai`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: currentAiQuestion.question,
+          analysis: currentAiQuestion.analysis,
+          userQuery: query,
+          model: chosenModel,
+          history: aiConversationHistory,
+          thinkingIntensity: chosenIntensity,
+          stream: true
+        })
+      });
       
-      const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
-      const match = rawText.match(thinkRegex);
-      if (match) {
-        thinkingText = match[1].trim();
-        rawText = rawText.replace(thinkRegex, "").trim();
-      } else {
-        // Fallback for missing closing tag
-        const openIndex = rawText.toLowerCase().indexOf("<think>");
-        if (openIndex !== -1) {
-          thinkingText = rawText.substring(openIndex + 7).trim();
-          rawText = rawText.substring(0, openIndex).trim();
+      aiLoadingDiv.remove();
+      
+      if (!response.ok) {
+        const result = await response.json();
+        aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
+        chatArea.appendChild(aiReplyDiv);
+        aiConversationHistory.pop();
+        updateAiContextBar(currentAiQuestion);
+        chatArea.scrollTop = chatArea.scrollHeight;
+        return;
+      }
+      
+      // Initialize streaming DOM structure inside reply bubble
+      aiReplyDiv.innerHTML = `
+        <div class="ai-thinking-accordion" style="display:none; margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
+          <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
+            <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
+            <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▼</span>
+          </button>
+          <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);"></div>
+        </div>
+        <div class="ai-main-body" style="min-height: 20px;"></div>
+      `;
+      chatArea.appendChild(aiReplyDiv);
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+      let fullText = "";
+      let hasFinishedThinking = false;
+      
+      // Helper parser for streaming text chunk by chunk
+      function parseAndRenderStream(text) {
+        let thinkingText = "";
+        let mainText = text;
+        
+        const thinkStart = text.indexOf("<think>");
+        const thinkEnd = text.indexOf("</think>");
+        
+        if (thinkStart !== -1) {
+          if (thinkEnd !== -1) {
+            thinkingText = text.substring(thinkStart + 7, thinkEnd).trim();
+            mainText = text.substring(thinkEnd + 8).trim();
+            
+            // Automatically collapse once finished thinking
+            if (!hasFinishedThinking) {
+              hasFinishedThinking = true;
+              const body = aiReplyDiv.querySelector('.ai-thinking-body');
+              const arrow = aiReplyDiv.querySelector('.arrow');
+              if (body) body.style.display = 'none';
+              if (arrow) arrow.innerText = '▶';
+            }
+          } else {
+            thinkingText = text.substring(thinkStart + 7).trim();
+            mainText = "";
+          }
+        }
+        
+        // Update thinking body contents
+        const thinkBody = aiReplyDiv.querySelector('.ai-thinking-body');
+        if (thinkBody && thinkingText) {
+          thinkBody.innerText = thinkingText;
+          const accordion = aiReplyDiv.querySelector('.ai-thinking-accordion');
+          if (accordion) accordion.style.display = 'block';
+          if (!hasFinishedThinking) {
+            if (thinkBody.style.display === 'none') {
+              thinkBody.style.display = 'block';
+              const arrow = aiReplyDiv.querySelector('.arrow');
+              if (arrow) arrow.innerText = '▼';
+            }
+          }
+        }
+        
+        // Update main content body
+        const mainBody = aiReplyDiv.querySelector('.ai-main-body');
+        if (mainBody && mainText) {
+          mainBody.innerHTML = marked.parse(mainText);
+          renderMath(mainBody);
+        }
+        
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop(); // keep last incomplete line
+        
+        for (const line of lines) {
+          const cleaned = line.trim();
+          if (!cleaned) continue;
+          if (cleaned.startsWith("data: ")) {
+            const dataStr = cleaned.slice(6).trim();
+            if (dataStr === "[DONE]") continue;
+            try {
+              const parsed = JSON.parse(dataStr);
+              const chunk = parsed.response || parsed.text || "";
+              fullText += chunk;
+              parseAndRenderStream(fullText);
+            } catch (err) {
+              // ignore incomplete JSON strings
+            }
+          }
         }
       }
       
-      // Render Collapsible Thinking Accordion
-      let thinkingHtml = "";
-      if (thinkingText) {
-        thinkingHtml = `
-          <div class="ai-thinking-accordion" style="margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
-            <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
-              <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
-              <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▶</span>
-            </button>
-            <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);">
-              ${thinkingText}
-            </div>
-          </div>
-        `;
-      }
+      // Finished streaming: Append simulated token usage badge at bottom
+      const estPromptTokens = Math.round(JSON.stringify(aiConversationHistory).length * 0.25) + 120;
+      const estCompletionTokens = Math.round(fullText.length * 0.25);
+      const estTotalTokens = estPromptTokens + estCompletionTokens;
       
-      // Combine thinking block and markdown result
-      aiReplyDiv.innerHTML = thinkingHtml + marked.parse(rawText);
-      
-      // Render token usage metadata badge
-      const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
       const usageBadge = document.createElement('div');
       usageBadge.style.fontSize = '0.65rem';
       usageBadge.style.color = 'var(--text-muted)';
@@ -2650,34 +2723,115 @@ async function askFloatingAiTutor() {
       usageBadge.style.justifyContent = 'space-between';
       usageBadge.style.alignItems = 'center';
       usageBadge.innerHTML = `
-        <span>🔮 ${selectedModelName}</span>
-        <span>Tokens: Prompt ${usage.prompt_tokens} \| Reply ${usage.completion_tokens} \| Total ${usage.total_tokens}</span>
+        <span>🔮 ${selectedModelName} (流式)</span>
+        <span>Tokens: ~Prompt ${estPromptTokens} \| ~Reply ${estCompletionTokens} \| ~Total ${estTotalTokens}</span>
       `;
       aiReplyDiv.appendChild(usageBadge);
-      chatArea.appendChild(aiReplyDiv);
-      renderMath(aiReplyDiv);
       
       // Push assistant response to history
-      aiConversationHistory.push({ role: 'assistant', content: result.response });
-      
-      // Update context length
+      aiConversationHistory.push({ role: 'assistant', content: fullText });
       updateAiContextBar(currentAiQuestion);
-    } else {
-      aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
+      
+    } catch (err) {
+      aiLoadingDiv.remove();
+      aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败或流式读取中断，请重试！</span>`;
       chatArea.appendChild(aiReplyDiv);
-      // Remove last user message from history as it failed
       aiConversationHistory.pop();
       updateAiContextBar(currentAiQuestion);
     }
-  } catch (err) {
-    aiLoadingDiv.remove();
-    const errDiv = document.createElement('div');
-    errDiv.className = 'ai-msg-bubble assistant';
-    errDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败，请检查网络！</span>`;
-    chatArea.appendChild(errDiv);
-    // Remove last user message from history
-    aiConversationHistory.pop();
-    updateAiContextBar(currentAiQuestion);
+  } else {
+    // Normal JSON Non-streaming request
+    try {
+      const response = await fetch(`${API_BASE}/ai`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: currentAiQuestion.question,
+          analysis: currentAiQuestion.analysis,
+          userQuery: query,
+          model: chosenModel,
+          history: aiConversationHistory,
+          thinkingIntensity: chosenIntensity,
+          stream: false
+        })
+      });
+      
+      const result = await response.json();
+      aiLoadingDiv.remove();
+      
+      if (response.ok) {
+        // Extract <think>...</think> block if present (robust regex parsing)
+        let rawText = result.response;
+        let thinkingText = "";
+        
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+        const match = rawText.match(thinkRegex);
+        if (match) {
+          thinkingText = match[1].trim();
+          rawText = rawText.replace(thinkRegex, "").trim();
+        } else {
+          // Fallback for missing closing tag
+          const openIndex = rawText.toLowerCase().indexOf("<think>");
+          if (openIndex !== -1) {
+            thinkingText = rawText.substring(openIndex + 7).trim();
+            rawText = rawText.substring(0, openIndex).trim();
+          }
+        }
+        
+        // Render Collapsible Thinking Accordion
+        let thinkingHtml = "";
+        if (thinkingText) {
+          thinkingHtml = `
+            <div class="ai-thinking-accordion" style="margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
+              <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
+                <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
+                <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▶</span>
+              </button>
+              <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);">
+                ${thinkingText}
+              </div>
+            </div>
+          `;
+        }
+        
+        // Combine thinking block and markdown result
+        aiReplyDiv.innerHTML = thinkingHtml + marked.parse(rawText);
+        
+        // Render token usage metadata badge
+        const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+        const usageBadge = document.createElement('div');
+        usageBadge.style.fontSize = '0.65rem';
+        usageBadge.style.color = 'var(--text-muted)';
+        usageBadge.style.marginTop = '0.4rem';
+        usageBadge.style.borderTop = '1px dashed var(--border-color)';
+        usageBadge.style.paddingTop = '0.25rem';
+        usageBadge.style.display = 'flex';
+        usageBadge.style.justifyContent = 'space-between';
+        usageBadge.style.alignItems = 'center';
+        usageBadge.innerHTML = `
+          <span>🔮 ${selectedModelName}</span>
+          <span>Tokens: Prompt ${usage.prompt_tokens} \| Reply ${usage.completion_tokens} \| Total ${usage.total_tokens}</span>
+        `;
+        aiReplyDiv.appendChild(usageBadge);
+        chatArea.appendChild(aiReplyDiv);
+        renderMath(aiReplyDiv);
+        
+        // Push assistant response to history
+        aiConversationHistory.push({ role: 'assistant', content: result.response });
+        updateAiContextBar(currentAiQuestion);
+      } else {
+        aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
+        chatArea.appendChild(aiReplyDiv);
+        aiConversationHistory.pop();
+        updateAiContextBar(currentAiQuestion);
+      }
+    } catch (err) {
+      aiLoadingDiv.remove();
+      aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败，请检查网络！</span>`;
+      chatArea.appendChild(aiReplyDiv);
+      aiConversationHistory.pop();
+      updateAiContextBar(currentAiQuestion);
+    }
   }
   
   chatArea.scrollTop = chatArea.scrollHeight;
