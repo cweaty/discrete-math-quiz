@@ -3479,23 +3479,23 @@ function renderCloudflareUsageCard(container) {
   if (!cfAccountId || !cfApiToken) {
     // Show configuration form
     usageContainer.innerHTML = `
-      <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1rem;">
+      <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
         <h3 style="margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
           📊 Workers/Pages 请求使用情况
         </h3>
         <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height:1.45;">
           输入您的 Cloudflare 凭证即可在此直观监测当前账号今日 Workers 与 Pages 的请求额度消耗进度与重置倒计时。
         </p>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.25rem;">
-          <div style="display:flex; flex-direction:column; gap:0.25rem;">
+        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.25rem;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Cloudflare Account ID</label>
-            <input type="text" id="cf-account-id" placeholder="输入您的 32 位 Account ID..." style="padding: 0.55rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none;">
+            <input type="text" id="cf-account-id" placeholder="输入您的 32 位 Account ID..." style="padding: 0.75rem 1rem; font-size: 0.85rem; border-radius: 14px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: all 0.2s;">
           </div>
-          <div style="display:flex; flex-direction:column; gap:0.25rem;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Cloudflare API Token</label>
-            <input type="password" id="cf-api-token" placeholder="输入具有 Account Analytics: Read 权限的 API 令牌..." style="padding: 0.55rem 0.75rem; font-size: 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none;">
+            <input type="password" id="cf-api-token" placeholder="输入具有 Account Analytics: Read 权限的 API 令牌..." style="padding: 0.75rem 1rem; font-size: 0.85rem; border-radius: 14px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: all 0.2s;">
           </div>
-          <button class="btn btn-primary" id="cf-save-btn" style="padding: 0.6rem; font-size: 0.85rem; font-weight: 700; width: 100%; margin-top: 0.25rem; cursor: pointer;">
+          <button class="btn btn-primary" id="cf-save-btn" style="padding: 0.75rem; font-size: 0.85rem; font-weight: 700; width: 100%; margin-top: 0.5rem; cursor: pointer; border-radius: 14px; border: none;">
             确认绑定并查询使用进度
           </button>
         </div>
@@ -3564,7 +3564,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
       
       targetContainer.innerHTML = `
         <!-- Workers/Pages Requests Card -->
-        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease; margin-bottom: 1rem;">
+        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-lg); animation: fadeIn 0.4s ease; margin-bottom: 1rem;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
               📡 Workers/Pages 平台请求配额
@@ -3591,7 +3591,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
         </div>
 
         <!-- Workers AI Neurons Card -->
-        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); animation: fadeIn 0.4s ease;">
+        <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-lg); animation: fadeIn 0.4s ease;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <h3 style="margin: 0; font-size: 0.85rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:0.4rem;">
               🔮 Workers AI 智能算力配额

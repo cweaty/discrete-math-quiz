@@ -2172,6 +2172,61 @@ tr:nth-child(even) {
     transform: translateY(0) !important;
   }
 
+  /* Premium Translucent Inputs with Focus Glow on Mobile */
+  input[type="text"],
+  input[type="password"],
+  textarea,
+  select {
+    background-color: rgba(255, 255, 255, 0.6) !important;
+    border: 1.5px solid var(--border-color) !important;
+    border-radius: 14px !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.85rem !important;
+    color: var(--text-primary) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01) !important;
+    outline: none !important;
+  }
+  
+  html.dark input[type="text"],
+  html.dark input[type="password"],
+  html.dark textarea,
+  html.dark select,
+  html[data-theme='dark'] input[type="text"],
+  html[data-theme='dark'] input[type="password"],
+  html[data-theme='dark'] textarea,
+  html[data-theme='dark'] select {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: var(--primary) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12) !important;
+  }
+
+  html.dark input[type="text"]:focus,
+  html.dark input[type="password"]:focus,
+  html.dark textarea:focus,
+  html.dark select:focus,
+  html[data-theme='dark'] input[type="text"]:focus,
+  html[data-theme='dark'] input[type="password"]:focus,
+  html[data-theme='dark'] textarea:focus,
+  html[data-theme='dark'] select:focus {
+    background-color: #0f172a !important;
+  }
+
+  .option-card div {
+    transition: all 0.2s ease !important;
+  }
+  .option-card:hover div,
+  .option-card:active div {
+    transform: scale(1.05);
+  }
+
   /* Font Family Mappings to avoid browser defaults */
   .font-display-lg { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 700; }
   .font-headline-md { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-weight: 600; }
