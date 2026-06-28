@@ -4,7 +4,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   
   try {
-    const { question, analysis, userQuery, model, history } = await request.json();
+    const { question, analysis, userQuery, model, history, thinkingIntensity } = await request.json();
     
     if (!question) {
       return new Response(JSON.stringify({ error: "Missing parameter 'question'" }), {
@@ -34,7 +34,17 @@ export async function onRequestPost(context) {
     }
     
     // Cloudflare Workers AI system prompt and messages
-    const systemPrompt = "你是一位资深的大学离散数学AI教授。请针对学生发出的题目、参考解析以及具体的疑问，给出严谨、学术、简洁且专业的中文解答。所有数学公式必须使用 LaTeX 格式（用单美元符号 $ 包裹，如 $p \\wedge q$）。";
+    // Adjust system prompt depending on chosen intensity
+    let intensityPrompt = "";
+    if (thinkingIntensity === "low") {
+      intensityPrompt = "\n【思考强度要求】：请直接给出非常简练直接的解答与结果，尽可能省略冗长的推导推算，且无需进行 <think> 思考。";
+    } else if (thinkingIntensity === "high") {
+      intensityPrompt = "\n【思考强度要求】：进行极致严谨、一步一推演的深度逻辑思维链推导，详尽列出每一步推理所依据的离散数学定理与命题条件。请务必将你这部分极其详尽的思考推导过程完整包裹在 <think> 和 </think> 标签中，放在回答的最前面。正文回答部分放在 </think> 之后。";
+    } else {
+      intensityPrompt = "\n【思考强度要求】：请给出标准的中等推理步骤。请将你的分析与推导思路完整包裹在 <think> 和 </think> 标签中，放在回答的最前面。正文回答部分放在 </think> 之后。";
+    }
+
+    const systemPrompt = "你是一位资深的大学离散数学AI教授。请针对学生发出的题目、参考解析以及具体的疑问，给出严谨、学术、简洁且专业的中文解答。所有数学公式必须使用 LaTeX 格式（用单美元符号 $ 包裹，如 $p \\wedge q$）。" + intensityPrompt;
     
     // Construct multi-turn messages
     const messages = [

@@ -2429,16 +2429,26 @@ function setupFloatingAiTutor() {
       <button class="ai-window-close" id="ai-window-close-btn">&times;</button>
     </div>
     
-    <!-- Model Switcher Selector -->
-    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display:flex; align-items:center; gap:0.25rem;">🔮 选择大模型:</span>
-      <select id="ai-model-selector" style="font-size: 0.75rem; padding: 0.25rem 0.4rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600;">
-        <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast" selected>Llama 3.3 70B (旗舰推理)</option>
-        <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (精选中文推理)</option>
-        <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen 2.5 Coder (代码专家)</option>
-        <option value="@cf/qwen/qwq-32b">QwQ 32B (极强数学逻辑推理)</option>
-        <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (蒸馏深度推理)</option>
-      </select>
+    <!-- Model Switcher & Intensity Selectors -->
+    <div style="padding: 0.5rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+      <div style="display:flex; flex-direction:column; gap:0.2rem;">
+        <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🔮 选择大模型:</span>
+        <select id="ai-model-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
+          <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast" selected>Llama 3.3 70B (旗舰)</option>
+          <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (中文)</option>
+          <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen Coder (代码)</option>
+          <option value="@cf/qwen/qwq-32b">QwQ 32B (数学)</option>
+          <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (推理)</option>
+        </select>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.2rem;">
+        <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🧠 思考强度:</span>
+        <select id="ai-intensity-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
+          <option value="low">低 (精简直答)</option>
+          <option value="medium" selected>中 (标准思考)</option>
+          <option value="high">高 (深度探究)</option>
+        </select>
+      </div>
     </div>
     
     <div class="ai-window-context" id="ai-window-context-bar">
@@ -2561,6 +2571,9 @@ async function askFloatingAiTutor() {
   inputField.value = '';
   chatArea.scrollTop = chatArea.scrollHeight;
   
+  const intensitySelect = document.getElementById('ai-intensity-selector');
+  const chosenIntensity = intensitySelect ? intensitySelect.value : 'medium';
+
   try {
     const response = await fetch(`${API_BASE}/ai`, {
       method: 'POST',
@@ -2570,7 +2583,8 @@ async function askFloatingAiTutor() {
         analysis: currentAiQuestion.analysis,
         userQuery: query,
         model: chosenModel,
-        history: aiConversationHistory
+        history: aiConversationHistory,
+        thinkingIntensity: chosenIntensity
       })
     });
     
@@ -2581,8 +2595,35 @@ async function askFloatingAiTutor() {
     aiReplyDiv.className = 'ai-msg-bubble assistant';
     
     if (response.ok) {
-      // Set text response
-      aiReplyDiv.innerHTML = marked.parse(result.response);
+      // Extract <think>...</think> block if present
+      let rawText = result.response;
+      let thinkingText = "";
+      
+      const thinkStart = rawText.indexOf("<think>");
+      const thinkEnd = rawText.indexOf("</think>");
+      if (thinkStart !== -1 && thinkEnd !== -1 && thinkEnd > thinkStart) {
+        thinkingText = rawText.substring(thinkStart + 7, thinkEnd).trim();
+        rawText = rawText.substring(thinkEnd + 8).trim();
+      }
+      
+      // Render Collapsible Thinking Accordion
+      let thinkingHtml = "";
+      if (thinkingText) {
+        thinkingHtml = `
+          <div class="ai-thinking-accordion" style="margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
+            <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
+              <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
+              <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▶</span>
+            </button>
+            <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);">
+              ${thinkingText}
+            </div>
+          </div>
+        `;
+      }
+      
+      // Combine thinking block and markdown result
+      aiReplyDiv.innerHTML = thinkingHtml + marked.parse(rawText);
       
       // Render token usage metadata badge
       const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
