@@ -810,7 +810,6 @@ function renderPracticeMode(container) {
       if (userData.answered[qId]) return; // Lock: can only select once
       const isCorrect = (selectedVal === q.answer);
       userData.answered[qId] = { userAns: selectedVal, isCorrect: isCorrect };
-      saveUserData();
       
       revealJudgmentStatus(trueBtn, falseBtn, selectedVal, q.answer);
       
@@ -856,7 +855,6 @@ function renderPracticeMode(container) {
           const isCorrect = (selectedKey === q.answer);
           
           userData.answered[qId] = { userAns: selectedKey, isCorrect: isCorrect };
-          saveUserData();
           
           revealChoiceStatus(optionItems, selectedKey, q.answer);
           
@@ -917,7 +915,6 @@ function renderPracticeMode(container) {
       
       const isCorrect = checkBlankCorrectness(userAns, q.answer);
       userData.answered[qId] = { userAns: userAns, isCorrect: isCorrect };
-      saveUserData();
       
       blankInput.disabled = true;
       blankSubmit.disabled = true;
@@ -2411,6 +2408,7 @@ function setupSettingsEvents() {
 
 // Helper for settings-based auto-navigation
 function handleAnswerSubmitted(qId, isCorrect) {
+  console.log('[WrongBook Debug] handleAnswerSubmitted for:', qId, 'isCorrect:', isCorrect);
   // Update wrongQuestions
   if (isCorrect) {
     updateStudyStreak();
