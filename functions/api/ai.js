@@ -83,7 +83,8 @@ export async function onRequestPost(context) {
       // Real Cloudflare Workers AI streaming
       const responseStream = await env.AI.run(activeModel, {
         messages: messages,
-        stream: true
+        stream: true,
+        max_tokens: 1800
       });
       
       return new Response(responseStream, {
@@ -120,7 +121,8 @@ export async function onRequestPost(context) {
     }
     
     const response = await env.AI.run(activeModel, {
-      messages: messages
+      messages: messages,
+      max_tokens: 1800
     });
     
     const replyText = response.response || response.text || "AI 助教暂时走神了，请稍后重试！";
