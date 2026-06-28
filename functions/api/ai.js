@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
     }
     
     // Choose model (default to llama-3.1-8b-instruct-fast if not provided)
-    const activeModel = model || "@cf/meta/llama-3.1-8b-instruct-fast";
+    const activeModel = model || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
     
     // Check if Cloudflare AI binding is available
     if (!env.AI) {
