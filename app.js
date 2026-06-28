@@ -2186,6 +2186,12 @@ if (originalThemeToggle) {
 
 
 // Streak & Daily Challenge Helpers
+function getYesterdayDateString() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('zh-CN');
+}
+
 function updateStudyStreak() {
   const todayStr = new Date().toLocaleDateString('zh-CN');
   if (userData.lastStudyDate === todayStr) return; // Already studied today
