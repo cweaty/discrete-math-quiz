@@ -3644,6 +3644,15 @@ function loadGlobalCloudQuota() {
   const panel = document.getElementById('global-cf-quota-panel');
   if (!panel) return;
 
+  if (window.innerWidth <= 768) {
+    panel.style.display = 'none';
+    if (globalCfCountdownInterval) {
+      clearInterval(globalCfCountdownInterval);
+      globalCfCountdownInterval = null;
+    }
+    return;
+  }
+
   // Clean up any running timers
   if (globalCfCountdownInterval) {
     clearInterval(globalCfCountdownInterval);
