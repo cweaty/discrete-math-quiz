@@ -13,7 +13,7 @@ export async function onRequestPost(context) {
   }
   
   try {
-    const { bookmarks, answered, examHighScore } = await request.json();
+    const { bookmarks, wrongQuestions, answered, examHighScore } = await request.json();
     const userId = user.userId;
     
     // 1. Read existing profile
@@ -29,6 +29,7 @@ export async function onRequestPost(context) {
     // 2. Validate input and save detailed data to user:data:{userId}
     const progressData = {
       bookmarks: bookmarks || [],
+      wrongQuestions: wrongQuestions || [],
       answered: answered || {}
     };
     await db.put(`user:data:${userId}`, JSON.stringify(progressData));
@@ -46,8 +47,13 @@ export async function onRequestPost(context) {
     // 4. Update profile stats
     profile.answeredCount = answeredCount;
     profile.correctRate = correctRate;
-    if (examHighScore !== undefined && examHighScore > profile.examHighScore) {
-      profile.examHighScore = examHighScore;
+    
+    // Check if it is a complete reset operation
+    const isReset = (answeredCount === 0 && progressData.bookmarks.length === 0 && progressData.wrongQuestions.length === 0);
+    if (isReset) {
+      profile.examHighScore = 0;
+    } else if (examHighScore !== undefined) {
+      profile.examHighScore = Math.max(profile.examHighScore || 0, examHighScore);
     }
     profile.updatedAt = Math.floor(Date.now() / 1000);
     
@@ -122,7 +128,7 @@ export async function onRequestGet(context) {
     
     return new Response(JSON.stringify({
       profile: JSON.parse(profileStr || "{}"),
-      data: JSON.parse(dataStr || "{\"bookmarks\":[],\"answered\":{}}")
+      data: JSON.parse(dataStr || "{\"bookmarks\":[],\"wrongQuestions\":[],\"answered\":{}}")
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }

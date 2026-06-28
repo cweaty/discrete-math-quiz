@@ -134,8 +134,69 @@ function updateStatsDashboard() {
   const accuracy = gradedCount > 0 ? Math.round((correctCount / gradedCount) * 100) : 0;
   document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
   
+  // Wrong questions count
+  const wrongCountEl = document.getElementById('stat-wrong-questions');
+  if (wrongCountEl) {
+    wrongCountEl.innerText = userData.wrongQuestions.length;
+  }
+  
   // Bookmark count
   document.getElementById('stat-bookmarks').innerText = userData.bookmarks.length;
+  
+  // Dynamic UI updates for Mastery cards and Radar chart
+  updateMasteryPanel();
+  updateRadarChart();
+}
+
+function updateMasteryPanel() {
+  const propPctEl = document.getElementById('mastery-prop-pct');
+  const propBarEl = document.getElementById('mastery-prop-bar');
+  const propAnsweredEl = document.getElementById('mastery-prop-answered');
+  const propCorrectEl = document.getElementById('mastery-prop-correct');
+  
+  const predPctEl = document.getElementById('mastery-pred-pct');
+  const predBarEl = document.getElementById('mastery-pred-bar');
+  const predAnsweredEl = document.getElementById('mastery-pred-answered');
+  const predCorrectEl = document.getElementById('mastery-pred-correct');
+  
+  if (!propPctEl || !predPctEl) return;
+  
+  const propTotal = 26;
+  const predTotal = 30;
+  
+  let propAnswered = 0;
+  let propCorrect = 0;
+  let predAnswered = 0;
+  let predCorrect = 0;
+  
+  for (const qKey in userData.answered) {
+    const qObj = QUESTIONS.find(q => `${q.category}_${q.original_num}` === qKey);
+    if (qObj) {
+      if (qObj.topic === 'propositional_logic') {
+        propAnswered++;
+        if (userData.answered[qKey].isCorrect) propCorrect++;
+      } else if (qObj.topic === 'predicate_logic') {
+        predAnswered++;
+        if (userData.answered[qKey].isCorrect) predCorrect++;
+      }
+    }
+  }
+  
+  const propPctVal = Math.round((propCorrect / propTotal) * 100);
+  const propCorrectRate = propAnswered > 0 ? Math.round((propCorrect / propAnswered) * 100) : 0;
+  
+  propPctEl.innerText = `${propPctVal}%`;
+  if (propBarEl) propBarEl.style.width = `${propPctVal}%`;
+  propAnsweredEl.innerText = `已答: ${propAnswered}/${propTotal}`;
+  propCorrectEl.innerText = `正确率: ${propCorrectRate}%`;
+  
+  const predPctVal = Math.round((predCorrect / predTotal) * 100);
+  const predCorrectRate = predAnswered > 0 ? Math.round((predCorrect / predAnswered) * 100) : 0;
+  
+  predPctEl.innerText = `${predPctVal}%`;
+  if (predBarEl) predBarEl.style.width = `${predPctVal}%`;
+  predAnsweredEl.innerText = `已答: ${predAnswered}/${predTotal}`;
+  predCorrectEl.innerText = `正确率: ${predCorrectRate}%`;
 }
 
 // Helper to generate unique ID for questions
@@ -147,6 +208,9 @@ function getQuestionId(q) {
 function getFilteredQuestions() {
   if (currentCategory === 'bookmarks') {
     return QUESTIONS.filter(q => userData.bookmarks.includes(getQuestionId(q)));
+  }
+  if (currentCategory === 'wrong_questions') {
+    return QUESTIONS.filter(q => userData.wrongQuestions.includes(getQuestionId(q)));
   }
   if (currentCategory === 'all') {
     return QUESTIONS;
@@ -199,6 +263,11 @@ function setupSidebarCounts() {
   document.getElementById('count-single_choice').innerText = QUESTIONS.filter(q => q.category === 'single_choice').length;
   document.getElementById('count-fill_blank').innerText = QUESTIONS.filter(q => q.category === 'fill_blank').length;
   document.getElementById('count-subjective').innerText = QUESTIONS.filter(q => ['calculation', 'proof', 'application'].includes(q.category)).length;
+  
+  const countWrongEl = document.getElementById('count-wrong-questions');
+  if (countWrongEl) {
+    countWrongEl.innerText = userData.wrongQuestions.length;
+  }
   document.getElementById('count-bookmarks').innerText = userData.bookmarks.length;
 }
 
@@ -1110,6 +1179,19 @@ function renderSubjectiveFeedback(interactiveArea, qId, existingIsCorrect, draft
         userAns: draftTextarea ? draftTextarea.value : draftValue,
         isCorrect: isCorrect
       };
+      
+      // Update wrongQuestions for subjective
+      if (isCorrect) {
+        const wIdx = userData.wrongQuestions.indexOf(qId);
+        if (wIdx > -1) {
+          userData.wrongQuestions.splice(wIdx, 1);
+        }
+      } else {
+        if (!userData.wrongQuestions.includes(qId)) {
+          userData.wrongQuestions.push(qId);
+        }
+      }
+      
       saveUserData();
       showToast(isCorrect ? '太棒了，继续加油！' : '没关系，看懂解析才是关键', isCorrect ? 'success' : 'info');
       renderViewport();
@@ -1947,6 +2029,7 @@ async function syncUserData() {
       },
       body: JSON.stringify({
         bookmarks: userData.bookmarks,
+        wrongQuestions: userData.wrongQuestions,
         answered: userData.answered,
         examHighScore: localHighScore
       })
@@ -1965,7 +2048,7 @@ async function syncUserData() {
       // Update local profile stats from server response
       localStorage.setItem('dm_user_profile', JSON.stringify(result.profile));
       document.getElementById('user-username').innerText = result.profile.username;
-      document.getElementById('user-email').innerText = result.profile.email;
+      document.getElementById('user-email').innerText = '已开启云端备份';
       
       // Update stats dashboard with server data if needed
       updateStatsDashboard();
@@ -2042,9 +2125,15 @@ function setupAuthEvents() {
           // Sync Server answered to local
           Object.assign(userData.answered, result.data.answered || {});
           // Sync Server bookmarks to local
-          result.data.bookmarks.forEach(b => {
+          (result.data.bookmarks || []).forEach(b => {
             if (!userData.bookmarks.includes(b)) {
               userData.bookmarks.push(b);
+            }
+          });
+          // Sync Server wrongQuestions to local
+          (result.data.wrongQuestions || []).forEach(w => {
+            if (!userData.wrongQuestions.includes(w)) {
+              userData.wrongQuestions.push(w);
             }
           });
           localStorage.setItem('dm_quiz_user_data', JSON.stringify(userData));
@@ -2268,21 +2357,41 @@ function setupSettingsEvents() {
   
   // Progress reset actions
   btnResetProgress.addEventListener('click', () => {
-    if (confirm('⚠️ 警告：是否确定要清空您所有的刷题与答题记录？此操作将无法撤销！如果已登录，云端记录也将同步清空。')) {
+    if (confirm('⚠️ 警告：是否确定要清空您所有的刷题与答题记录，以及全部个人成就统计数据？此操作将无法撤销！如果已登录，云端记录也将同步清空。')) {
       userData.answered = {};
+      userData.streak = 0;
+      userData.lastStudyDate = "";
+      userData.examHistory = [];
+      userData.examHighScore = 0;
+      
       saveUserData(); // saves to local & automatically pushes sync deletion to cloud KV
-      showToast('所有答题历史记录已成功清空！', 'success');
+      showToast('所有答题历史记录与统计数据已成功清空！', 'success');
       settingsModal.classList.remove('show');
       currentQuestionIndex = 0;
       renderViewport();
     }
   });
   
+  // Clear Wrong questions book
+  const btnResetWrong = document.getElementById('reset-wrong-btn');
+  if (btnResetWrong) {
+    btnResetWrong.addEventListener('click', () => {
+      if (confirm('⚠️ 警告：是否确定要清空您的整个错题本？此操作将无法撤销！如果已登录，云端记录也将同步清空。')) {
+        userData.wrongQuestions = [];
+        saveUserData();
+        showToast('错题本已成功清空！', 'success');
+        settingsModal.classList.remove('show');
+        currentQuestionIndex = 0;
+        renderViewport();
+      }
+    });
+  }
+  
   btnResetBookmarks.addEventListener('click', () => {
-    if (confirm('⚠️ 警告：是否确定要清空错题本收藏夹中的所有题目？此操作将无法撤销！如果已登录，云端错题本也将同步清空。')) {
+    if (confirm('⚠️ 警告：是否确定要清空收藏夹中的所有题目？此操作将无法撤销！如果已登录，云端收藏夹也将同步清空。')) {
       userData.bookmarks = [];
       saveUserData(); // saves to local & automatically pushes sync deletion to cloud KV
-      showToast('错题收藏夹已成功清空！', 'success');
+      showToast('收藏夹已成功清空！', 'success');
       settingsModal.classList.remove('show');
       currentQuestionIndex = 0;
       renderViewport();
@@ -2292,10 +2401,21 @@ function setupSettingsEvents() {
 
 // Helper for settings-based auto-navigation
 function handleAnswerSubmitted(isCorrect) {
-  // Update study streak if answered correctly
+  const qId = getQuestionId(QUESTIONS[currentQuestionIndex]);
+  
+  // Update wrongQuestions
   if (isCorrect) {
     updateStudyStreak();
+    const wIdx = userData.wrongQuestions.indexOf(qId);
+    if (wIdx > -1) {
+      userData.wrongQuestions.splice(wIdx, 1);
+    }
+  } else {
+    if (!userData.wrongQuestions.includes(qId)) {
+      userData.wrongQuestions.push(qId);
+    }
   }
+  saveUserData();
 
   if (practiceSettings.autoNext && isCorrect) {
     const questions = getFilteredQuestions();
