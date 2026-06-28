@@ -1,0 +1,7 @@
+node_modules/
+.wrangler/
+.agents/
+.idea/
+.vscode/
+*.log
+.tempmediaStorage/
