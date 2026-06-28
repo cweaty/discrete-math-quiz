@@ -9,6 +9,7 @@
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-primary-fade: rgba(248, 250, 252, 0.85);
   --border-color: rgba(226, 232, 240, 0.8);
   
   --text-primary: #0f172a;
@@ -46,6 +47,7 @@
   --bg-primary: #090d16;
   --bg-secondary: #111827;
   --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-primary-fade: rgba(9, 13, 22, 0.85);
   --border-color: rgba(255, 255, 255, 0.06);
   
   --text-primary: #f8fafc;
@@ -2272,4 +2274,91 @@ tr:nth-child(even) {
 
 .slide-in-left {
   animation: slideInLeft 0.22s ease-out forwards;
+}
+
+/* --- GSAP Animation System Extensions --- */
+
+/* Scroll progress bar style */
+#scroll-progress-bar {
+  background: linear-gradient(90deg, var(--primary), var(--accent)) !important;
+  box-shadow: 0 1px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Two-column layout in desktop practice mode */
+@media (min-width: 769px) {
+  .quiz-viewport.practice-two-col {
+    display: grid !important;
+    grid-template-columns: 1fr 320px !important;
+    align-items: start !important;
+    gap: 1.75rem !important;
+  }
+  
+  .quiz-viewport.practice-two-col .practice-answer-sheet-card {
+    position: sticky !important;
+    top: 110px !important;
+    z-index: 90 !important;
+    margin: 0 !important;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .quiz-viewport.practice-two-col .practice-answer-sheet-card.pinned {
+    box-shadow: var(--shadow-md) !important;
+    border-color: rgba(99, 102, 241, 0.25) !important;
+  }
+
+  /* Two-column layout in desktop exam mode */
+  .quiz-viewport.exam-two-col {
+    display: grid !important;
+    grid-template-columns: 1fr 320px !important;
+    align-items: start !important;
+    gap: 1.75rem !important;
+  }
+
+  .quiz-viewport.exam-two-col .exam-sidebar-container {
+    position: sticky !important;
+    top: 110px !important;
+    z-index: 90 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+  
+  .quiz-viewport.exam-two-col .exam-sidebar-container .exam-header-widget,
+  .quiz-viewport.exam-two-col .exam-sidebar-container .question-nav-grid {
+    margin: 0 !important;
+  }
+}
+
+/* Solution panel slide & fade animation styles */
+#solution-panel.animating {
+  display: flex !important;
+  overflow: hidden !important;
+}
+
+/* Sidebar navigation item visual enhancements */
+.nav-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 4px;
+  height: 60%;
+  background-color: var(--primary);
+  border-radius: 0 4px 4px 0;
+  transition: transform var(--transition-fast);
+  transform-origin: center;
+}
+
+.nav-item.active::after {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.nav-item:hover::after {
+  transform: translateY(-50%) scaleY(0.7);
 }
