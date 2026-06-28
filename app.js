@@ -3867,19 +3867,40 @@ function setupMobileNavigation() {
     });
   });
 
-  // Bind click for header delegation (bookmark and theme toggle)
+  // Bind click for header delegation (bookmark, theme toggle, and practice answer card)
   document.addEventListener('click', (e) => {
     if (e.target.closest('#mobile-header-bookmark-btn')) {
-      const mainBtn = document.getElementById('bookmark-btn');
-      if (mainBtn) mainBtn.click();
-      
-      // Update icon state
-      setTimeout(updateMobileNavAndHeader, 100);
+      const questions = getFilteredQuestions();
+      const q = questions[currentQuestionIndex];
+      if (q) {
+        const qId = getQuestionId(q);
+        const idx = userData.bookmarks.indexOf(qId);
+        if (idx !== -1) {
+          userData.bookmarks.splice(idx, 1);
+          showToast('已取消收藏该题', 'info');
+        } else {
+          userData.bookmarks.push(qId);
+          showToast('已成功收藏该题', 'success');
+        }
+        saveUserData();
+        
+        // Update header star state immediately
+        updateMobileNavAndHeader();
+      }
+      return;
+    }
+    
+    if (e.target.closest('#mobile-header-card-btn')) {
+      const openTrigger = document.getElementById('mob-practice-card-btn-trigger');
+      if (openTrigger) openTrigger.click();
+      return;
     }
     
     if (e.target.closest('#mobile-theme-btn')) {
       const desktopThemeBtn = document.getElementById('theme-toggle');
       if (desktopThemeBtn) desktopThemeBtn.click();
+      // Update sun/moon icon state
+      setTimeout(updateMobileNavAndHeader, 50);
     }
   });
 }
@@ -4855,6 +4876,16 @@ function renderMobilePractice(container) {
   if (headerCardBtn) {
     headerCardBtn.onclick = openPracticeSheet;
   }
+  // Create hidden trigger for global click delegation
+  let triggerBtn = container.querySelector('#mob-practice-card-btn-trigger');
+  if (!triggerBtn) {
+    triggerBtn = document.createElement('button');
+    triggerBtn.id = 'mob-practice-card-btn-trigger';
+    triggerBtn.style.display = 'none';
+    container.appendChild(triggerBtn);
+  }
+  triggerBtn.onclick = openPracticeSheet;
+
   if (practiceOverlay) practiceOverlay.onclick = closePracticeSheet;
   if (practiceSheetClose) practiceSheetClose.onclick = closePracticeSheet;
 
