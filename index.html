@@ -72,9 +72,14 @@
       <nav class="nav-section">
         <div class="nav-title">我的工具</div>
         <ul class="nav-list">
+          <li class="nav-item" data-category="wrong_questions" id="nav-wrong-questions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>我的错题本</span>
+            <span class="nav-count" id="count-wrong-questions" style="background-color: var(--error-light); color: var(--error);">0</span>
+          </li>
           <li class="nav-item" data-category="bookmarks" id="nav-bookmarks">
             <svg viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <span>错题与收藏</span>
+            <span>我的收藏夹</span>
             <span class="nav-count" id="count-bookmarks">0</span>
           </li>
           <li class="nav-item" data-category="leaderboard" id="nav-leaderboard">
@@ -145,7 +150,7 @@
       </header>
       
       <!-- Statistics Dashboard -->
-      <section class="stats-grid" id="stats-panel">
+      <section class="stats-grid" id="stats-panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
         <div class="stat-card">
           <div class="stat-icon-wrapper">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -173,6 +178,16 @@
           <div class="stat-info">
             <span class="stat-value" id="stat-accuracy">0%</span>
             <span class="stat-label">平均正确率</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper error">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-value" id="stat-wrong-questions">0</span>
+            <span class="stat-label">错题本</span>
           </div>
         </div>
         
