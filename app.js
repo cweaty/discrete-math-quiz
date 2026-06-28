@@ -4846,31 +4846,69 @@ function renderMobilePractice(container) {
     }
 
   } else if (q.category === 'fill_blank') {
-    interactive.innerHTML = `
-      <div class="glass-panel p-4 space-y-3 bg-white/40 dark:bg-slate-900/40">
-        <input type="text" id="mob-blank-input" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" placeholder="请输入您的答案，多个空用 '|' 分隔..." autocomplete="off">
-      </div>
-    `;
+    const blankCount = q.answer.includes('|') ? q.answer.split('|').length : 1;
+    const userAnsParts = userRecord ? userRecord.userAns.split('|') : [];
+    
+    let inputsHtml = '<div class="space-y-3 bg-white/40 dark:bg-slate-900/40 p-4 rounded-2xl glass-panel">';
+    for (let i = 0; i < blankCount; i++) {
+      const val = userAnsParts[i] || '';
+      inputsHtml += `
+        <div class="flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 rounded-xl px-4 py-3 border border-slate-200/50 dark:border-slate-800/50">
+          <span class="text-xs font-bold text-slate-400 shrink-0 select-none">第 ${i + 1} 空:</span>
+          <input type="text" class="mob-blank-sub-input flex-1 bg-transparent border-none outline-none text-sm text-slate-800 dark:text-slate-100 p-0" placeholder="请输入答案..." value="${val}" ${userRecord ? 'disabled' : ''}>
+        </div>
+      `;
+    }
+    inputsHtml += '</div>';
+    interactive.innerHTML = inputsHtml;
 
-    const blankInput = interactive.querySelector('#mob-blank-input');
     if (userRecord) {
-      blankInput.value = userRecord.userAns;
-      blankInput.disabled = true;
-      blankInput.classList.add(userRecord.isCorrect ? 'bg-emerald-50' : 'bg-rose-50');
+      const inputs = interactive.querySelectorAll('.mob-blank-sub-input');
+      const correctParts = q.answer.split('|');
+      inputs.forEach((input, idx) => {
+        const isPartCorrect = checkSinglePart(normalizeAnswer(input.value.trim()), normalizeAnswer(correctParts[idx] || ''));
+        input.disabled = true;
+        if (isPartCorrect) {
+          input.parentElement.style.borderColor = '#10B981';
+          input.parentElement.style.backgroundColor = 'rgba(16, 185, 129, 0.08)';
+          input.style.color = '#10B981';
+        } else {
+          input.parentElement.style.borderColor = '#EF4444';
+          input.parentElement.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+          input.style.color = '#EF4444';
+        }
+      });
       showAnswerReveal();
       mobSubmit.style.display = 'none';
     } else {
       mobSubmit.addEventListener('click', () => {
-        const val = blankInput.value.trim();
-        if (!val) {
-          showToast('请输入答案后提交！', 'warning');
+        const inputs = Array.from(interactive.querySelectorAll('.mob-blank-sub-input'));
+        const vals = inputs.map(input => input.value.trim());
+        if (vals.some(v => !v)) {
+          showToast('请填满所有空格后提交！', 'warning');
           return;
         }
-        const isCorrect = (val === q.answer);
-        userData.answered[qId] = { userAns: val, isCorrect };
+        
+        const combinedAns = vals.join('|');
+        const isCorrect = checkBlankCorrectness(combinedAns, q.answer);
+        userData.answered[qId] = { userAns: combinedAns, isCorrect };
         saveUserData();
-        blankInput.disabled = true;
-        blankInput.classList.add(isCorrect ? 'bg-emerald-50' : 'bg-rose-50');
+        
+        const correctParts = q.answer.split('|');
+        inputs.forEach((input, idx) => {
+          const isPartCorrect = checkSinglePart(normalizeAnswer(input.value.trim()), normalizeAnswer(correctParts[idx] || ''));
+          input.disabled = true;
+          if (isPartCorrect) {
+            input.parentElement.style.borderColor = '#10B981';
+            input.parentElement.style.backgroundColor = 'rgba(16, 185, 129, 0.08)';
+            input.style.color = '#10B981';
+          } else {
+            input.parentElement.style.borderColor = '#EF4444';
+            input.parentElement.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+            input.style.color = '#EF4444';
+          }
+        });
+        
         showAnswerReveal();
         mobSubmit.style.display = 'none';
 
@@ -4880,6 +4918,13 @@ function renderMobilePractice(container) {
           showToast('回答错误！', 'error');
         }
         handleAnswerSubmitted(qId, isCorrect);
+        
+        if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
+          setTimeout(() => {
+            currentQuestionIndex++;
+            renderViewport();
+          }, 1200);
+        }
       });
     }
 
@@ -5676,17 +5721,34 @@ function renderMobileExamRunner(container) {
     });
 
   } else if (q.category === 'fill_blank') {
-    interactive.innerHTML = `
-      <div class="glass-panel p-4 space-y-3 bg-white/40 dark:bg-slate-900/40">
-        <input type="text" id="mob-exam-blank-input" value="${userAns}" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" placeholder="请输入你的答案，多个空用 '|' 分隔..." autocomplete="off">
-        <button class="btn btn-primary w-full" id="mob-exam-blank-save" style="margin-top:0.25rem;">暂存答案</button>
+    const blankCount = q.answer.includes('|') ? q.answer.split('|').length : 1;
+    const userAnsParts = userAns ? userAns.split('|') : [];
+    
+    let inputsHtml = '<div class="space-y-3 bg-white/40 dark:bg-slate-900/40 p-4 rounded-2xl glass-panel">';
+    for (let i = 0; i < blankCount; i++) {
+      const val = userAnsParts[i] || '';
+      inputsHtml += `
+        <div class="flex items-center gap-3 bg-white/50 dark:bg-slate-900/50 rounded-xl px-4 py-3 border border-slate-200/50 dark:border-slate-800/50">
+          <span class="text-xs font-bold text-slate-400 shrink-0 select-none">第 ${i + 1} 空:</span>
+          <input type="text" class="mob-exam-blank-sub-input flex-1 bg-transparent border-none outline-none text-sm text-slate-800 dark:text-slate-100 p-0" placeholder="请输入答案..." value="${val}">
+        </div>
+      `;
+    }
+    inputsHtml += `
+        <button class="btn btn-primary w-full mt-2" id="mob-exam-blank-save">暂存答案</button>
       </div>
     `;
+    interactive.innerHTML = inputsHtml;
 
-    const blankInput = interactive.querySelector('#mob-exam-blank-input');
     interactive.querySelector('#mob-exam-blank-save').onclick = () => {
-      const val = blankInput.value.trim();
-      saveMobileExamAnswer(val);
+      const inputs = Array.from(interactive.querySelectorAll('.mob-exam-blank-sub-input'));
+      const vals = inputs.map(input => input.value.trim());
+      if (vals.some(v => !v)) {
+        showToast('请填满所有空格后暂存！', 'warning');
+        return;
+      }
+      const combined = vals.join('|');
+      saveMobileExamAnswer(combined);
       showToast('答案已暂存！', 'success');
     };
   } else {
