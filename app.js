@@ -3382,11 +3382,13 @@ function renderCloudflareUsageCard(container) {
 }
 
 async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
+  const token = localStorage.getItem('dm_jwt_token');
   try {
     const response = await fetch(`${API_BASE}/cf-usage`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ accountId, apiToken })
     });
