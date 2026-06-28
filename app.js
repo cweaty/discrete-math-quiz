@@ -862,6 +862,19 @@ function renderPracticeMode(container) {
     toggleSolutionBtn.style.opacity = '0.6';
     toggleSolutionBtn.style.cursor = 'not-allowed';
   } else {
+    // If it's an objective question and has not been answered, disable the toggle button to prevent leaks
+    const isObjective = ['judgment', 'single_choice', 'fill_blank'].includes(q.category);
+    if (isObjective && !userRecord) {
+      toggleSolutionBtn.disabled = true;
+      toggleSolutionBtn.innerText = '请先作答以解锁解析';
+      toggleSolutionBtn.style.opacity = '0.6';
+      toggleSolutionBtn.style.cursor = 'not-allowed';
+    } else {
+      toggleSolutionBtn.disabled = false;
+      toggleSolutionBtn.style.opacity = '1';
+      toggleSolutionBtn.style.cursor = 'pointer';
+    }
+
     // Toggle solution button listener
     toggleSolutionBtn.addEventListener('click', () => {
       if (solutionPanel.style.display === 'none') {
@@ -914,6 +927,9 @@ function renderPracticeMode(container) {
       
       // Auto open solution
       solutionPanel.style.display = 'flex';
+      toggleSolutionBtn.disabled = false;
+      toggleSolutionBtn.style.opacity = '1';
+      toggleSolutionBtn.style.cursor = 'pointer';
       toggleSolutionBtn.innerText = '隐藏答案与解析';
       renderMath(solutionPanel);
       
@@ -958,6 +974,9 @@ function renderPracticeMode(container) {
           revealChoiceStatus(optionItems, selectedKey, q.answer);
           
           solutionPanel.style.display = 'flex';
+          toggleSolutionBtn.disabled = false;
+          toggleSolutionBtn.style.opacity = '1';
+          toggleSolutionBtn.style.cursor = 'pointer';
           toggleSolutionBtn.innerText = '隐藏答案与解析';
           renderMath(solutionPanel);
           loadComments(qId, solutionPanel);
@@ -1021,6 +1040,9 @@ function renderPracticeMode(container) {
       blankSubmit.className = isCorrect ? 'btn btn-primary' : 'btn btn-outline';
       
       solutionPanel.style.display = 'flex';
+      toggleSolutionBtn.disabled = false;
+      toggleSolutionBtn.style.opacity = '1';
+      toggleSolutionBtn.style.cursor = 'pointer';
       toggleSolutionBtn.innerText = '隐藏答案与解析';
       renderMath(solutionPanel);
       loadComments(qId, solutionPanel);
