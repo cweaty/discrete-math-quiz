@@ -38,9 +38,8 @@ ${analysis || "无"}
 ${userQuery}
 `;
 
-    // We call Llama-3-8b-instruct or Qwen-1.5-14b-chat on Cloudflare
-    // Using Qwen for excellent Chinese logic capability
-    const model = "@cf/qwen/qwen1.5-14b-chat"; 
+    // Use the active high-performance Llama-3.1 model on Cloudflare
+    const model = "@cf/meta/llama-3.1-8b-instruct-fast"; 
     
     const response = await env.AI.run(model, {
       messages: [
