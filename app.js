@@ -4216,13 +4216,7 @@ function updateMobileNavAndHeader() {
       </button>
     `;
     
-    const mobTheme = document.getElementById('mobile-theme-btn');
-    if (mobTheme) {
-      mobTheme.onclick = () => {
-        const themeBtn = document.getElementById('theme-toggle');
-        if (themeBtn) themeBtn.click();
-      };
-    }
+
   }
 
   // Update navbar active state
