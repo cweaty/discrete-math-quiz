@@ -5936,7 +5936,7 @@ function renderMobileExamRunner(container) {
   const userAns = examState.answers[currentQuestionIndex] || '';
 
   // Get total progress percentage
-  const answeredCount = examState.answers.filter(a => a !== undefined && a !== '').length;
+  const answeredCount = Object.keys(examState.answers).filter(k => examState.answers[k] !== undefined && examState.answers[k] !== '').length;
   const pct = Math.round((answeredCount / examState.questions.length) * 100);
 
   container.innerHTML = `
@@ -6260,7 +6260,7 @@ function renderMobileExamResults(container) {
     examState.isActive = false;
     examState.completed = false;
     examState.questions = [];
-    examState.answers = [];
+    examState.answers = {};
     examState.score = 0;
     saveExamState();
     
