@@ -423,23 +423,33 @@
   <!-- Mobile Fixed Bottom Navigation Bar -->
   <nav class="fixed bottom-0 left-0 w-full z-[1000] h-[84px] flex justify-around items-center px-4 pb-[env(safe-area-inset-bottom,20px)] bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 md:hidden" id="mobile-nav-bar">
     <button class="flex flex-col items-center justify-center gap-1 group mobile-nav-btn text-indigo-600 dark:text-indigo-400" data-tab="lobby">
-      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">home</span>
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
       <span class="text-[10px] font-bold">大厅</span>
     </button>
     <button class="flex flex-col items-center justify-center gap-1 group mobile-nav-btn text-slate-500 dark:text-slate-400" data-tab="category">
-      <span class="material-symbols-outlined text-2xl">menu_book</span>
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 5c-1.11-.9-2.45-1.5-3.85-1.5C15.4 3.5 13.6 4.3 12 5.5 10.4 4.3 8.6 3.5 6.85 3.5c-1.4 0-2.74.6-3.85 1.5C2.36 5.54 2 6.55 2 7.5v11c0 .83.56 1.54 1.34 1.84C4.38 20.73 5.61 21 6.85 21c2.05 0 3.9-.75 5.15-1.8 1.25 1.05 3.1 1.8 5.15 1.8 1.24 0 2.47-.27 3.51-.66.78-.3 1.34-1.01 1.34-1.84v-11c0-.95-.36-1.96-1-2.5zM6.85 19c-1.16 0-2.28-.23-3.15-.65V7.65c.78-.51 1.85-.75 3.15-.75 1.48 0 2.9.5 3.85 1.25v9.85c-.95-.75-2.37-1.25-3.85-1.25zm14-1.65c-.87.42-1.99.65-3.15.65-1.48 0-2.9-.5-3.85-1.25V8.15c.95-.75 2.37-1.25 3.85-1.25 1.3 0 2.37.24 3.15.75v9.7z"/>
+      </svg>
       <span class="text-[10px] font-bold">题库</span>
     </button>
     <button class="flex flex-col items-center justify-center gap-1 group mobile-nav-btn text-slate-500 dark:text-slate-400" data-tab="exam">
-      <span class="material-symbols-outlined text-2xl">quiz</span>
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 15H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V8h10v2z"/>
+      </svg>
       <span class="text-[10px] font-bold">模考</span>
     </button>
     <button class="flex flex-col items-center justify-center gap-1 group mobile-nav-btn text-slate-500 dark:text-slate-400" data-tab="leaderboard">
-      <span class="material-symbols-outlined text-2xl">leaderboard</span>
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7.5 21H2V9h5.5v12zm6.25 0H8.25V3h5.5v18zm6.25 0h-5.5v-7h5.5v7z"/>
+      </svg>
       <span class="text-[10px] font-bold">排行榜</span>
     </button>
     <button class="flex flex-col items-center justify-center gap-1 group mobile-nav-btn text-slate-500 dark:text-slate-400" data-tab="profile">
-      <span class="material-symbols-outlined text-2xl">person</span>
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 2 4 2zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
       <span class="text-[10px] font-bold">我的</span>
     </button>
   </nav>

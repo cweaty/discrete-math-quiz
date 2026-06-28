@@ -3803,16 +3803,7 @@ function setupMobileNavigation() {
     });
   });
 
-  // Mobile theme button trigger
-  const mobThemeBtn = document.getElementById('mobile-theme-btn');
-  if (mobThemeBtn) {
-    mobThemeBtn.addEventListener('click', () => {
-      const desktopThemeBtn = document.getElementById('theme-toggle');
-      if (desktopThemeBtn) desktopThemeBtn.click();
-    });
-  }
-
-  // Bind click for header bookmark delegation
+  // Bind click for header delegation (bookmark and theme toggle)
   document.addEventListener('click', (e) => {
     if (e.target.closest('#mobile-header-bookmark-btn')) {
       const mainBtn = document.getElementById('bookmark-btn');
@@ -3820,6 +3811,11 @@ function setupMobileNavigation() {
       
       // Update icon state
       setTimeout(updateMobileNavAndHeader, 100);
+    }
+    
+    if (e.target.closest('#mobile-theme-btn')) {
+      const desktopThemeBtn = document.getElementById('theme-toggle');
+      if (desktopThemeBtn) desktopThemeBtn.click();
     }
   });
 }
@@ -3962,13 +3958,9 @@ function updateMobileNavAndHeader() {
     if (tab === currentMobileTab) {
       b.classList.remove('text-slate-500', 'dark:text-slate-400');
       b.classList.add('text-indigo-600', 'dark:text-indigo-400');
-      const icon = b.querySelector('.material-symbols-outlined');
-      if (icon) icon.style.fontVariationSettings = "'FILL' 1";
     } else {
       b.classList.remove('text-indigo-600', 'dark:text-indigo-400');
       b.classList.add('text-slate-500', 'dark:text-slate-400');
-      const icon = b.querySelector('.material-symbols-outlined');
-      if (icon) icon.style.fontVariationSettings = "'FILL' 0";
     }
   });
 }
