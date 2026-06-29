@@ -2988,7 +2988,7 @@ async function loadComments(qId, panel) {
       commentList.innerHTML = `<div class="comment-empty-msg">💬 暂无讨论。写下你的第一个疑问或心得开启话题吧！</div>`;
       if (countBadge) countBadge.innerText = "0 条讨论";
     } else {
-      const loggedInProfile = JSON.parse(localStorage.getItem('dm_profile') || '{}');
+      const loggedInProfile = JSON.parse(localStorage.getItem('dm_user_profile') || '{}');
       const currentUsername = loggedInProfile.username || '';
       let listHtml = "";
       comments.forEach(c => {
@@ -4901,7 +4901,7 @@ async function renderLobbyComments(container) {
   const itemsPerPage = 5;
 
   container.innerHTML = `
-    <div class="flex flex-col h-[calc(100vh-140px)]" style="animation: fadeIn 0.4s ease;">
+    <div class="flex flex-col h-[calc(100vh-140px)] relative" style="animation: fadeIn 0.4s ease;">
       <!-- Pagination controls at the top -->
       <div class="flex justify-between items-center py-2 px-1 border-b border-slate-200/10" id="comments-pagination-bar" style="display:none;">
         <button id="comments-prev-page" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">上一页</button>
@@ -4917,36 +4917,34 @@ async function renderLobbyComments(container) {
       </div>
       
       <!-- Bottom Input Row -->
-      <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 pt-3 px-1 flex flex-col gap-2">
-        <!-- Emoji Drawer Container -->
-        <div id="lobby-comments-emoji-drawer" style="display:none; flex-wrap:wrap; gap:0.4rem; padding:0.4rem; background:var(--bg-secondary); border-radius:10px; border:1px solid var(--border-color); animation: fadeIn 0.2s ease;">
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="😊">😊</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="😂">😂</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🤔">🤔</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="👍">👍</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🔥">🔥</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🎉">🎉</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💯">💯</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🧠">🧠</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="📚">📚</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✍️">✍️</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💻">💻</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💡">💡</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🚀">🚀</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🎓">🎓</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="👏">👏</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🙌">🙌</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✨">✨</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✔️">✔️</button>
-          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="❌">❌</button>
+      <div class="bg-white/85 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200/40 dark:border-slate-900/40 py-3 px-3 flex gap-2.5 items-center relative">
+        <!-- Floating Emoji Drawer Container (floats above input row) -->
+        <div id="lobby-comments-emoji-drawer" class="absolute bottom-16 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-3 border border-slate-200/50 dark:border-slate-800/50 shadow-xl z-50 flex-wrap gap-2 justify-center" style="display:none; animation: fadeIn 0.2s ease;">
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="😊">😊</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="😂">😂</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🤔">🤔</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="👍">👍</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🔥">🔥</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🎉">🎉</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="💯">💯</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🧠">🧠</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="📚">📚</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="✍️">✍️</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="💻">💻</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="💡">💡</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🚀">🚀</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🎓">🎓</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="👏">👏</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="🙌">🙌</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="✨">✨</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="✔️">✔️</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem; transition: transform 0.1s;" data-emoji="❌">❌</button>
         </div>
-        <div class="flex gap-2 items-center">
-          <button id="lobby-comments-emoji-toggle" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 border-none cursor-pointer text-sm" style="transition: transform 0.1s;" title="添加表情">😊</button>
-          <input type="text" id="mobile-lobby-comment-input" placeholder="说点什么..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
-          <button id="mobile-lobby-comment-send" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer">
-            <span class="material-symbols-outlined text-sm">send</span>
-          </button>
-        </div>
+        <button id="lobby-comments-emoji-toggle" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 text-slate-655 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 border-none cursor-pointer text-lg shadow-sm transition-all active:scale-90" title="添加表情">😊</button>
+        <input type="text" id="mobile-lobby-comment-input" placeholder="说点什么..." class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-full px-4 py-2.5 text-sm focus:border-indigo-500 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white transition-all shadow-inner" autocomplete="off">
+        <button id="mobile-lobby-comment-send" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg border-none cursor-pointer active:scale-95">
+          <span class="material-symbols-outlined text-sm">send</span>
+        </button>
       </div>
     </div>
   `;
@@ -4962,12 +4960,21 @@ async function renderLobbyComments(container) {
   const emojiDrawer = container.querySelector('#lobby-comments-emoji-drawer');
 
   // Toggle emoji drawer
-  emojiToggle.onclick = () => {
+  emojiToggle.onclick = (e) => {
+    e.stopPropagation();
     emojiDrawer.style.display = emojiDrawer.style.display === 'none' ? 'flex' : 'none';
   };
   
+  // Close emoji drawer when clicking anywhere else
+  document.addEventListener('click', (e) => {
+    if (emojiDrawer.style.display === 'flex' && !emojiDrawer.contains(e.target) && e.target !== emojiToggle) {
+      emojiDrawer.style.display = 'none';
+    }
+  });
+
   emojiDrawer.querySelectorAll('.emoji-drawer-btn').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
       const emoji = btn.getAttribute('data-emoji');
       inputField.value += emoji;
       inputField.focus();
@@ -5013,32 +5020,33 @@ async function renderLobbyComments(container) {
 
       sliced.forEach(c => {
         const card = document.createElement('article');
-        card.className = 'bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col gap-2 shadow-sm';
         const isMine = currentUsername && (c.username === currentUsername);
+        card.className = `bg-white/70 dark:bg-slate-900/60 border ${isMine ? 'border-indigo-500/25 border-l-4 border-l-indigo-500' : 'border-slate-200/50 dark:border-slate-800/50'} rounded-2xl p-4 flex flex-col gap-2.5 shadow-sm transition-all hover:shadow-md`;
 
         card.innerHTML = `
           <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+            <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0 select-none">
               ${c.username[0].toUpperCase()}
             </div>
-            <div class="flex flex-col flex-1">
+            <div class="flex flex-col flex-1min-w-0">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-800 dark:text-white">${c.username}</span>
-                <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[120px]">${c.username}</span>
+                <div class="flex items-center gap-1.5 shrink-0">
                   <span class="text-[9px] text-slate-400">${formatRelativeTime(c.timestamp)}</span>
-                  ${isMine ? `<button class="lobby-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">撤回</button>` : ''}
+                  ${isMine ? `<button class="lobby-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer font-semibold" data-timestamp="${c.timestamp}">撤回</button>` : ''}
                 </div>
               </div>
             </div>
           </div>
-          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${escapeHtml(c.content)}</p>
+          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed word-break">${escapeHtml(c.content)}</p>
         `;
         listContainer.appendChild(card);
       });
 
       // Bind delete button click
       listContainer.querySelectorAll('.lobby-delete-comment-btn').forEach(btn => {
-        btn.onclick = async () => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
           const timestamp = parseInt(btn.getAttribute('data-timestamp'));
           if (!confirm('确定要撤回这条消息吗？')) return;
           const token = localStorage.getItem('dm_jwt_token');
@@ -5056,6 +5064,7 @@ async function renderLobbyComments(container) {
 
             if (deleteRes.ok) {
               showToast('消息已撤回！', 'success');
+              
               // If current page is empty after deletion and it's not the first page, go back 1 page
               const responseNew = await fetch(`${API_BASE}/comments?q=lobby`);
               if (responseNew.ok) {
@@ -5089,12 +5098,14 @@ async function renderLobbyComments(container) {
     if (currentCommentsPage > 1) {
       currentCommentsPage--;
       loadLobbyCommentsList();
+      listContainer.scrollTop = 0;
     }
   };
 
   nextPageBtn.onclick = () => {
     currentCommentsPage++;
     loadLobbyCommentsList();
+    listContainer.scrollTop = 0;
   };
 
   const postLobbyComment = async () => {
@@ -5144,10 +5155,10 @@ async function renderLobbyComments(container) {
 
   await loadLobbyCommentsList();
 
-  sendBtn.addEventListener('click', postLobbyComment);
-  inputField.addEventListener('keydown', (e) => {
+  sendBtn.onclick = postLobbyComment;
+  inputField.onkeydown = (e) => {
     if (e.key === 'Enter') postLobbyComment();
-  });
+  };
 }
 
 
@@ -6060,11 +6071,20 @@ async function loadMobileQuestionComments(qId, container) {
   const emojiToggle = container.querySelector('#q-comments-emoji-toggle');
   const emojiDrawer = container.querySelector('#q-comments-emoji-drawer');
   if (emojiToggle && emojiDrawer) {
-    emojiToggle.onclick = () => {
+    emojiToggle.onclick = (e) => {
+      e.stopPropagation();
       emojiDrawer.style.display = emojiDrawer.style.display === 'none' ? 'flex' : 'none';
     };
+    
+    document.addEventListener('click', (e) => {
+      if (emojiDrawer.style.display === 'flex' && !emojiDrawer.contains(e.target) && e.target !== emojiToggle) {
+        emojiDrawer.style.display = 'none';
+      }
+    });
+
     emojiDrawer.querySelectorAll('.q-emoji-drawer-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
         const emoji = btn.getAttribute('data-emoji');
         input.value += emoji;
         input.focus();
@@ -6091,21 +6111,22 @@ async function loadMobileQuestionComments(qId, container) {
 
       comments.forEach(c => {
         const item = document.createElement('div');
-        item.className = 'bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2.5 space-y-1';
         const isMine = currentUsername && (c.username === currentUsername);
+        item.className = `bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2.5 space-y-1 border-l-2 ${isMine ? 'border-l-indigo-500' : 'border-l-transparent'}`;
         item.innerHTML = `
           <div class="flex items-center gap-1.5">
             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">${c.username}</span>
             <span class="text-[8px] text-slate-400 ml-auto">${formatRelativeTime(c.timestamp)}</span>
-            ${isMine ? `<button class="mob-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">撤回</button>` : ''}
+            ${isMine ? `<button class="mob-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer font-semibold" data-timestamp="${c.timestamp}">撤回</button>` : ''}
           </div>
-          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal">${escapeHtml(c.content)}</p>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal word-break">${escapeHtml(c.content)}</p>
         `;
         list.appendChild(item);
       });
 
       list.querySelectorAll('.mob-delete-comment-btn').forEach(btn => {
-        btn.onclick = async () => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
           const timestamp = parseInt(btn.getAttribute('data-timestamp'));
           if (!confirm('确定要撤回这条消息吗？')) return;
           const token = localStorage.getItem('dm_jwt_token');
@@ -6143,7 +6164,8 @@ async function loadMobileQuestionComments(qId, container) {
   await loadList();
 
   // Send action
-  send.onclick = async () => {
+  send.onclick = async (e) => {
+    e.stopPropagation();
     const val = input.value.trim();
     if (!val) return;
     const token = localStorage.getItem('dm_jwt_token');
