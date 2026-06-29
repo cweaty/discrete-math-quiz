@@ -4858,13 +4858,8 @@ function renderLobbyShortcutCard(container) {
         </h2>
         <span class="material-symbols-outlined text-slate-400">chevron_right</span>
       </div>
-      <div class="bg-white/40 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/20" id="mobile-lobby-shortcut-comment-content">
-        <div class="flex items-center gap-2 mb-1.5">
-          <div class="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-[10px]" id="mobile-lobby-shortcut-avatar">U</div>
-          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300" id="mobile-lobby-shortcut-user">离散学者</span>
-          <span class="text-[9px] text-slate-400 ml-auto" id="mobile-lobby-shortcut-time">--</span>
-        </div>
-        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed truncate" id="mobile-lobby-shortcut-text">点击进入讨论大厅，与同学分享学习心得与疑问！</p>
+      <div class="space-y-2" id="mobile-lobby-shortcut-comments-list">
+        <div class="text-xs text-slate-400 text-center py-2">⏳ 正在同步讨论预览...</div>
       </div>
     </div>
   `;
@@ -4883,17 +4878,28 @@ async function fetchLatestCommentPreview() {
     const response = await fetch(`${API_BASE}/comments?q=lobby`);
     if (response.ok) {
       const comments = await response.json();
+      const previewList = document.getElementById('mobile-lobby-shortcut-comments-list');
+      if (!previewList) return;
+      
       if (comments && comments.length > 0) {
-        const latest = comments[comments.length - 1];
-        const timeEl = document.getElementById('mobile-lobby-shortcut-time');
-        const userEl = document.getElementById('mobile-lobby-shortcut-user');
-        const textEl = document.getElementById('mobile-lobby-shortcut-text');
-        const avatarEl = document.getElementById('mobile-lobby-shortcut-avatar');
-        
-        if (timeEl) timeEl.innerText = formatRelativeTime(latest.timestamp);
-        if (userEl) userEl.innerText = latest.username;
-        if (textEl) textEl.innerText = latest.content;
-        if (avatarEl) avatarEl.innerText = latest.username[0].toUpperCase();
+        previewList.innerHTML = '';
+        // Slice the latest 2 comments (last 2 in array)
+        const latestTwo = comments.slice(-2);
+        latestTwo.forEach(c => {
+          const item = document.createElement('div');
+          item.className = 'bg-white/40 dark:bg-slate-900/40 rounded-xl p-2.5 border border-slate-200/10 flex flex-col gap-1';
+          item.innerHTML = `
+            <div class="flex items-center gap-1.5">
+              <div class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-650 dark:text-indigo-400 flex items-center justify-center font-bold text-[9px] select-none">${c.username[0].toUpperCase()}</div>
+              <span class="text-[11px] font-bold text-slate-700 dark:text-slate-350">${c.username}</span>
+              <span class="text-[8px] text-slate-400 ml-auto">${formatRelativeTime(c.timestamp)}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed truncate m-0">${escapeHtml(c.content)}</p>
+          `;
+          previewList.appendChild(item);
+        });
+      } else {
+        previewList.innerHTML = `<div class="text-xs text-slate-400 text-center py-2">💬 暂无学术讨论，点击发布第一条留言吧！</div>`;
       }
     }
   } catch (err) {
@@ -4901,30 +4907,10 @@ async function fetchLatestCommentPreview() {
   }
 }
 
-function formatRelativeTime(timestamp) {
-  const diff = Date.now() - timestamp;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return '刚刚';
-  if (mins < 60) return `${mins}分钟前`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}小时前`;
-  return new Date(timestamp).toLocaleDateString();
-}
-
 async function renderLobbyComments(container) {
-  currentCommentsPage = 1;
-  const itemsPerPage = 5;
-
   container.innerHTML = `
     <div class="flex flex-col h-[calc(100vh-140px)] relative" style="animation: fadeIn 0.4s ease;">
-      <!-- Pagination controls at the top -->
-      <div class="flex justify-between items-center py-2 px-1 border-b border-slate-200/10" id="comments-pagination-bar" style="display:none;">
-        <button id="comments-prev-page" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">上一页</button>
-        <span id="comments-page-indicator" style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">第 1 / 1 页</span>
-        <button id="comments-next-page" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">下一页</button>
-      </div>
-
-      <!-- Message List Area -->
+      <!-- Message List Area (Pagination removed, normal scrollbar active) -->
       <div class="flex-1 overflow-y-auto space-y-4 pr-1" id="mobile-lobby-comments-list" style="padding-bottom: 2rem; padding-top:0.5rem;">
         <div class="text-center py-8 text-slate-400">
           <span class="inline-block animate-spin mr-2">⏳</span>正在加载讨论留言...
@@ -4967,10 +4953,6 @@ async function renderLobbyComments(container) {
   const listContainer = container.querySelector('#mobile-lobby-comments-list');
   const inputField = container.querySelector('#mobile-lobby-comment-input');
   const sendBtn = container.querySelector('#mobile-lobby-comment-send');
-  const paginationBar = container.querySelector('#comments-pagination-bar');
-  const prevPageBtn = container.querySelector('#comments-prev-page');
-  const nextPageBtn = container.querySelector('#comments-next-page');
-  const pageIndicator = container.querySelector('#comments-page-indicator');
   const emojiToggle = container.querySelector('#lobby-comments-emoji-toggle');
   const emojiDrawer = container.querySelector('#lobby-comments-emoji-drawer');
 
@@ -5005,7 +4987,6 @@ async function renderLobbyComments(container) {
       listContainer.innerHTML = '';
       
       if (comments.length === 0) {
-        paginationBar.style.display = 'none';
         listContainer.innerHTML = `
           <div class="text-center py-12 text-slate-400 text-sm">
             💬 暂时没有学术讨论，说点什么发布第一条留言吧！
@@ -5014,26 +4995,10 @@ async function renderLobbyComments(container) {
         return;
       }
 
-      // Pagination calculation
-      const totalPages = Math.ceil(comments.length / itemsPerPage) || 1;
-      if (currentCommentsPage > totalPages) currentCommentsPage = totalPages;
-      if (currentCommentsPage < 1) currentCommentsPage = 1;
-
-      // Update Pagination Bar
-      paginationBar.style.display = 'flex';
-      pageIndicator.innerText = `第 ${currentCommentsPage} / ${totalPages} 页`;
-      prevPageBtn.disabled = currentCommentsPage === 1;
-      nextPageBtn.disabled = currentCommentsPage === totalPages;
-      prevPageBtn.style.opacity = currentCommentsPage === 1 ? '0.4' : '1';
-      nextPageBtn.style.opacity = currentCommentsPage === totalPages ? '0.4' : '1';
-
-      // Slice for current page
-      const sliced = comments.slice((currentCommentsPage - 1) * itemsPerPage, currentCommentsPage * itemsPerPage);
-
       const loggedInProfile = JSON.parse(localStorage.getItem('dm_user_profile') || '{}');
       const currentUsername = loggedInProfile.username || '';
 
-      sliced.forEach(c => {
+      comments.forEach(c => {
         const card = document.createElement('article');
         const isMine = currentUsername && (c.username === currentUsername);
         card.className = `bg-white/70 dark:bg-slate-900/60 border ${isMine ? 'border-indigo-500/25 border-l-4 border-l-indigo-500' : 'border-slate-200/50 dark:border-slate-800/50'} rounded-2xl p-4 flex flex-col gap-2.5 shadow-sm transition-all hover:shadow-md`;
@@ -5043,7 +5008,7 @@ async function renderLobbyComments(container) {
             <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0 select-none">
               ${c.username[0].toUpperCase()}
             </div>
-            <div class="flex flex-col flex-1min-w-0">
+            <div class="flex flex-col flex-1 min-w-0">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[120px]">${c.username}</span>
                 <div class="flex items-center gap-1.5 shrink-0">
@@ -5079,16 +5044,6 @@ async function renderLobbyComments(container) {
 
             if (deleteRes.ok) {
               showToast('消息已撤回！', 'success');
-              
-              // If current page is empty after deletion and it's not the first page, go back 1 page
-              const responseNew = await fetch(`${API_BASE}/comments?q=lobby`);
-              if (responseNew.ok) {
-                const commentsNew = await responseNew.json();
-                const totalPagesNew = Math.ceil(commentsNew.length / itemsPerPage) || 1;
-                if (currentCommentsPage > totalPagesNew) {
-                  currentCommentsPage = totalPagesNew;
-                }
-              }
               await loadLobbyCommentsList();
             } else {
               const errData = await deleteRes.json();
@@ -5100,6 +5055,7 @@ async function renderLobbyComments(container) {
         };
       });
 
+      listContainer.scrollTop = listContainer.scrollHeight;
     } catch (err) {
       listContainer.innerHTML = `
         <div class="text-center py-12 text-red-500 text-sm">
@@ -5107,20 +5063,6 @@ async function renderLobbyComments(container) {
         </div>
       `;
     }
-  };
-
-  prevPageBtn.onclick = () => {
-    if (currentCommentsPage > 1) {
-      currentCommentsPage--;
-      loadLobbyCommentsList();
-      listContainer.scrollTop = 0;
-    }
-  };
-
-  nextPageBtn.onclick = () => {
-    currentCommentsPage++;
-    loadLobbyCommentsList();
-    listContainer.scrollTop = 0;
   };
 
   const postLobbyComment = async () => {
@@ -5152,13 +5094,6 @@ async function renderLobbyComments(container) {
         inputField.value = '';
         emojiDrawer.style.display = 'none'; // hide emoji drawer after send
         showToast('发布留言成功！', 'success');
-        
-        // Go to the last page to see the newly added comment
-        const responseNew = await fetch(`${API_BASE}/comments?q=lobby`);
-        if (responseNew.ok) {
-          const commentsNew = await responseNew.json();
-          currentCommentsPage = Math.ceil(commentsNew.length / itemsPerPage) || 1;
-        }
         await loadLobbyCommentsList();
       } else {
         showToast(result.error || '发布失败，请重试！', 'error');
