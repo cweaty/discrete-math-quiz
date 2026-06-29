@@ -7055,33 +7055,35 @@ async function renderAdminQuestionsTab(container) {
     editorContainer.innerHTML = `
       <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; border:2.5px solid var(--primary); background:var(--bg-card); width:100%; box-sizing:border-box;">
         <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);" id="editor-title">${isNew ? "➕ 新增离散数学题目" : "✏️ 编辑离散题目资料"}</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; flex-wrap:wrap;">
-          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+        <!-- Meta fields: responsive flex row -->
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1; min-width:160px;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">题型类别 (Category)</label>
-            <select id="edit-q-category" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
-              <option value="judgment" ${q.category === 'judgment' ? 'selected' : ''}>判断题 (judgment)</option>
-              <option value="single_choice" ${q.category === 'single_choice' ? 'selected' : ''}>单选题 (single_choice)</option>
-              <option value="fill_blank" ${q.category === 'fill_blank' ? 'selected' : ''}>填空题 (fill_blank)</option>
-              <option value="calculation" ${q.category === 'calculation' ? 'selected' : ''}>计算题 (calculation)</option>
-              <option value="proof" ${q.category === 'proof' ? 'selected' : ''}>证明题 (proof)</option>
-              <option value="application" ${q.category === 'application' ? 'selected' : ''}>应用题 (application)</option>
+            <select id="edit-q-category" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%;">
+              <option value="judgment" ${q.category === 'judgment' ? 'selected' : ''}>判断题</option>
+              <option value="single_choice" ${q.category === 'single_choice' ? 'selected' : ''}>单选题</option>
+              <option value="fill_blank" ${q.category === 'fill_blank' ? 'selected' : ''}>填空题</option>
+              <option value="calculation" ${q.category === 'calculation' ? 'selected' : ''}>计算/简答题</option>
+              <option value="proof" ${q.category === 'proof' ? 'selected' : ''}>证明题</option>
+              <option value="application" ${q.category === 'application' ? 'selected' : ''}>应用题</option>
             </select>
           </div>
-          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1; min-width:160px;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">学科专题 (Topic)</label>
-            <select id="edit-q-topic" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
-              <option value="propositional_logic" ${q.topic === 'propositional_logic' ? 'selected' : ''}>命题逻辑 (propositional_logic)</option>
-              <option value="predicate_logic" ${q.topic === 'predicate_logic' ? 'selected' : ''}>谓词逻辑 (predicate_logic)</option>
-              <option value="set_theory" ${q.topic === 'set_theory' ? 'selected' : ''}>集合论 (set_theory)</option>
-              <option value="binary_relations" ${q.topic === 'binary_relations' ? 'selected' : ''}>二元关系 (binary_relations)</option>
-              <option value="graph_theory" ${q.topic === 'graph_theory' ? 'selected' : ''}>图论 (graph_theory)</option>
+            <select id="edit-q-topic" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%;">
+              <option value="propositional_logic" ${q.topic === 'propositional_logic' ? 'selected' : ''}>命题逻辑</option>
+              <option value="predicate_logic" ${q.topic === 'predicate_logic' ? 'selected' : ''}>谓词逻辑</option>
+              <option value="set_theory" ${q.topic === 'set_theory' ? 'selected' : ''}>集合论</option>
+              <option value="binary_relations" ${q.topic === 'binary_relations' ? 'selected' : ''}>二元关系</option>
+              <option value="graph_theory" ${q.topic === 'graph_theory' ? 'selected' : ''}>图论</option>
             </select>
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem;" class="admin-editor-main-grid">
-          <!-- Input fields -->
-          <div style="display:flex; flex-direction:column; gap:0.85rem;">
+        <!-- Main content: responsive flex, stacks on mobile -->
+        <div style="display:flex; gap:1.25rem; flex-wrap:wrap;" class="admin-editor-main-grid">
+          <!-- Input fields: flex grow to fill available space, min-width for mobile -->
+          <div style="display:flex; flex-direction:column; gap:0.85rem; flex:1; min-width:280px;">
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">题干内容 (支持 LaTeX $公式$ 包裹)</label>
               <textarea id="edit-q-text" rows="5" placeholder="例如：$p \\wedge q$ 的真值为对。（ ）" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.question || ""}</textarea>
@@ -7098,8 +7100,8 @@ async function renderAdminQuestionsTab(container) {
             </div>
           </div>
 
-          <!-- Preview box -->
-          <div style="display:flex; flex-direction:column; gap:0.85rem; border-left:1px dashed var(--border-color); padding-left:1.25rem; min-height:100%;">
+          <!-- Preview box: flex grow, min-width for wrapping on mobile -->
+          <div style="display:flex; flex-direction:column; gap:0.85rem; border-left:1px dashed var(--border-color); padding-left:1.25rem; flex:1; min-width:260px;">
             <label style="font-size:0.75rem; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:0.25rem;">✨ 实时公式渲染预览 (LaTeX Preview)</label>
             <div style="flex:1; border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.015); overflow-y:auto; font-size:0.85rem; min-height:280px; box-sizing:border-box;" id="edit-q-preview-box">
               <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">题干预览：</div>
@@ -7343,6 +7345,31 @@ async function renderAdminQuestionsTab(container) {
     openEditor({ category: 'judgment', options: [], question: "", answer: "", analysis: "", topic: "propositional_logic" }, true);
   };
 
+  // Bind markdown import button → trigger file picker
+  const mdImportBtn = container.querySelector('#admin-q-import-md-btn');
+  const mdFileInput = container.querySelector('#admin-q-md-file-input');
+  const importPanel = container.querySelector('#admin-q-import-panel');
+
+  mdImportBtn.onclick = () => mdFileInput.click();
+
+  mdFileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const parsed = parseMarkdownQuestions(text);
+      if (parsed.length === 0) {
+        showToast('未能从文件中识别出任何题目，请检查格式是否正确！', 'error');
+        return;
+      }
+      openMarkdownImportPanel(importPanel, parsed, saveQuestionsToCloud, renderQuestionsList);
+    };
+    reader.readAsText(file, 'utf-8');
+    // Reset so same file can be re-imported
+    mdFileInput.value = '';
+  };
+
   // Bind filter events
   filterCat.onchange = () => { currentPage = 1; renderQuestionsList(); };
   filterTopic.onchange = () => { currentPage = 1; renderQuestionsList(); };
@@ -7350,6 +7377,312 @@ async function renderAdminQuestionsTab(container) {
 
   // Load initially
   renderQuestionsList();
+}
+
+// =================== MARKDOWN QUESTION PARSER ===================
+/**
+ * Parse a markdown/plain-text string into an array of question objects
+ * compatible with the QUESTIONS array schema.
+ * Supported types: 单选题, 多选题, 判断题, 填空题, 简答题/计算题
+ */
+function parseMarkdownQuestions(text) {
+  const results = [];
+
+  // Detect current section type from heading lines
+  let currentType = 'calculation'; // default fallback
+
+  const JUDGMENT_ANSWERS = new Set(['正确', '对', '错', '错误', '√', '×', 'true', 'false', 'yes', 'no']);
+
+  // Normalize line endings
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+  // Build blocks: each block = contiguous lines for one question
+  // We split on lines that look like a question number start: /^\d+[\.\.、]\s*/
+  const qStartRegex = /^(\d+)[.．、]\s*(.*)/;
+  const headingRegex = /^[#*\s]*(单选题|多选题|判断题|填空题|单空填空题|简答题|计算题|证明题|应用题)[#*\s]*$/i;
+  const optionRegex = /^([A-Za-z])[.．、]\s*(.*)/;
+  const answerRegex = /^答案[：:]\s*(.*)/;
+  const analysisRegex = /^解析[：:]\s*(.*)/;
+
+  // Map heading string to internal category
+  const typeMap = {
+    '单选题': 'single_choice',
+    '多选题': 'single_choice', // map to single_choice, answer will be multi-char
+    '判断题': 'judgment',
+    '填空题': 'fill_blank',
+    '单空填空题': 'fill_blank',
+    '简答题': 'calculation',
+    '计算题': 'calculation',
+    '证明题': 'proof',
+    '应用题': 'application',
+  };
+
+  // Collect raw question blocks
+  let blocks = []; // Each block: { typeHint, lines[] }
+  let currentBlock = null;
+  let pendingType = 'calculation';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      // blank line — if inside a block, end it
+      if (currentBlock) {
+        blocks.push(currentBlock);
+        currentBlock = null;
+      }
+      continue;
+    }
+
+    // Check for section heading
+    const hm = headingRegex.exec(trimmed);
+    if (hm) {
+      if (currentBlock) { blocks.push(currentBlock); currentBlock = null; }
+      pendingType = typeMap[hm[1]] || 'calculation';
+      continue;
+    }
+
+    // Check for question start
+    const qm = qStartRegex.exec(trimmed);
+    if (qm) {
+      if (currentBlock) blocks.push(currentBlock);
+      currentBlock = { typeHint: pendingType, lines: [trimmed] };
+      continue;
+    }
+
+    // Otherwise append to current block
+    if (currentBlock) {
+      currentBlock.lines.push(trimmed);
+    }
+  }
+  if (currentBlock) blocks.push(currentBlock);
+
+  // Parse each block into a question object
+  for (const block of blocks) {
+    const { typeHint, lines: blines } = block;
+    if (!blines.length) continue;
+
+    // Extract question number + first line of question text
+    const firstLine = blines[0];
+    const qStartMatch = qStartRegex.exec(firstLine);
+    if (!qStartMatch) continue;
+
+    let questionText = qStartMatch[2].trim();
+
+    // Detect 【填空题】 marker for single-blank
+    let forceCategory = typeHint;
+    if (questionText.includes('【填空题】')) {
+      questionText = questionText.replace('【填空题】', '').trim();
+      forceCategory = 'fill_blank';
+    }
+
+    const options = [];
+    let answer = '';
+    let analysis = '';
+    let questionContinuation = true; // lines before first option/answer still belong to question
+
+    for (let i = 1; i < blines.length; i++) {
+      const bl = blines[i].trim();
+
+      // Answer line
+      const am = answerRegex.exec(bl);
+      if (am) {
+        answer = am[1].trim();
+        questionContinuation = false;
+        continue;
+      }
+
+      // Analysis line
+      const anm = analysisRegex.exec(bl);
+      if (anm) {
+        const aval = anm[1].trim();
+        if (aval && aval !== '无') analysis = aval;
+        questionContinuation = false;
+        continue;
+      }
+
+      // Option line (A. B. C. D.)
+      const om = optionRegex.exec(bl);
+      if (om) {
+        options.push(om[2].trim());
+        questionContinuation = false;
+        continue;
+      }
+
+      // Continuation of question text (before options)
+      if (questionContinuation) {
+        questionText += '\n' + bl;
+      } else {
+        // Could be multi-line analysis
+        if (analysis) analysis += '\n' + bl;
+      }
+    }
+
+    if (!questionText || !answer) continue; // skip malformed
+
+    // Auto-detect category refinement based on answer content
+    let category = forceCategory;
+    const ansNorm = answer.replace(/\s/g, '');
+    if (category === 'judgment' || JUDGMENT_ANSWERS.has(answer)) {
+      category = 'judgment';
+      // Normalize judgment answer
+      if (['正确', '对', '√', 'true', 'yes'].includes(answer)) answer = '对';
+      else if (['错误', '错', '×', 'false', 'no'].includes(answer)) answer = '错';
+    } else if (options.length > 0) {
+      category = 'single_choice';
+    } else if (category === 'fill_blank' || ansNorm.includes('|')) {
+      category = 'fill_blank';
+    }
+
+    // Compute next original_num for this category
+    const inCat = QUESTIONS.filter(qi => qi.category === category);
+    const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
+
+    results.push({
+      _parsed: true,           // marker to distinguish from saved
+      category,
+      original_num: nextNum,
+      question: questionText.trim(),
+      options,
+      answer,
+      analysis: analysis || '',
+      topic: 'propositional_logic', // default; user can change per-question in preview
+    });
+  }
+
+  return results;
+}
+
+// =================== MARKDOWN IMPORT PREVIEW PANEL ===================
+function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud, renderQuestionsList) {
+  panelEl.style.display = 'block';
+  panelEl.scrollIntoView({ behavior: 'smooth' });
+
+  const TOPIC_OPTIONS = [
+    { value: 'propositional_logic', label: '命题逻辑' },
+    { value: 'predicate_logic', label: '谓词逻辑' },
+    { value: 'set_theory', label: '集合论' },
+    { value: 'binary_relations', label: '二元关系' },
+    { value: 'graph_theory', label: '图论' },
+  ];
+
+  const CAT_LABEL = {
+    judgment: '判断题', single_choice: '单选题', fill_blank: '填空题',
+    calculation: '计算/简答题', proof: '证明题', application: '应用题'
+  };
+
+  const topicOptsHtml = TOPIC_OPTIONS.map(t =>
+    `<option value="${t.value}">${t.label}</option>`
+  ).join('');
+
+  const questionsHtml = parsedQuestions.map((q, idx) => {
+    const catLabel = CAT_LABEL[q.category] || q.category;
+    const optPreview = q.options.length > 0
+      ? `<div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.3rem;">${q.options.map((o, i) => `${String.fromCharCode(65+i)}. ${o}`).join(' / ')}</div>`
+      : '';
+    return `
+      <div class="import-q-row" data-idx="${idx}" style="display:flex; gap:0.75rem; align-items:flex-start; padding:0.85rem; border-radius:12px; border:1px solid var(--border-color); background:var(--bg-secondary); box-sizing:border-box;">
+        <input type="checkbox" class="import-q-check" data-idx="${idx}" checked
+          style="width:18px; height:18px; margin-top:0.2rem; cursor:pointer; flex-shrink:0; accent-color:var(--primary);">
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.4rem; align-items:center;">
+            <span style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;">${catLabel}</span>
+            <select class="import-q-topic" data-idx="${idx}"
+              style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">
+              ${topicOptsHtml}
+            </select>
+            <select class="import-q-cat" data-idx="${idx}"
+              style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">
+              <option value="judgment" ${q.category==='judgment'?'selected':''}>判断题</option>
+              <option value="single_choice" ${q.category==='single_choice'?'selected':''}>单选题</option>
+              <option value="fill_blank" ${q.category==='fill_blank'?'selected':''}>填空题</option>
+              <option value="calculation" ${q.category==='calculation'?'selected':''}>计算/简答题</option>
+              <option value="proof" ${q.category==='proof'?'selected':''}>证明题</option>
+              <option value="application" ${q.category==='application'?'selected':''}>应用题</option>
+            </select>
+          </div>
+          <div style="font-size:0.82rem; color:var(--text-primary); line-height:1.5; word-break:break-all;">${q.question}</div>
+          ${optPreview}
+          <div style="margin-top:0.4rem; font-size:0.75rem; color:var(--success); font-weight:700;">答案：${q.answer}</div>
+          ${q.analysis ? `<div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.2rem;">解析：${q.analysis}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  panelEl.innerHTML = `
+    <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1rem; border:2.5px solid var(--primary); background:var(--bg-card);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+        <div>
+          <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);">📄 Markdown 批量导入预览</h3>
+          <p style="margin:0.3rem 0 0; font-size:0.78rem; color:var(--text-muted);">共识别出 <strong>${parsedQuestions.length}</strong> 道题目，勾选需要导入的题目，可修改题型和专题分类后再导入。</p>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button id="import-select-all" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">全选</button>
+          <button id="import-select-none" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">取消全选</button>
+          <button id="import-confirm-btn" class="btn btn-primary" style="padding:0.4rem 1.1rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">✅ 确认导入选中题目</button>
+          <button id="import-cancel-btn" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer; color:var(--error); border-color:rgba(239,68,68,0.3);">✖ 取消</button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.65rem; max-height:60vh; overflow-y:auto; padding-right:0.25rem;" id="import-q-list">
+        ${questionsHtml}
+      </div>
+    </div>
+  `;
+
+  // Wire up controls
+  panelEl.querySelector('#import-cancel-btn').onclick = () => {
+    panelEl.style.display = 'none';
+    panelEl.innerHTML = '';
+  };
+
+  panelEl.querySelector('#import-select-all').onclick = () => {
+    panelEl.querySelectorAll('.import-q-check').forEach(cb => cb.checked = true);
+  };
+
+  panelEl.querySelector('#import-select-none').onclick = () => {
+    panelEl.querySelectorAll('.import-q-check').forEach(cb => cb.checked = false);
+  };
+
+  panelEl.querySelector('#import-confirm-btn').onclick = async () => {
+    const selectedRows = panelEl.querySelectorAll('.import-q-check:checked');
+    if (selectedRows.length === 0) {
+      showToast('请至少勾选一道题目再导入！', 'error');
+      return;
+    }
+
+    let importedCount = 0;
+    selectedRows.forEach(cb => {
+      const idx = parseInt(cb.dataset.idx);
+      const q = parsedQuestions[idx];
+      // Read topic and category from the dropdowns in that row
+      const topicEl = panelEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
+      const catEl = panelEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
+      const topic = topicEl ? topicEl.value : (q.topic || 'propositional_logic');
+      const category = catEl ? catEl.value : q.category;
+
+      // Recompute original_num fresh (may have changed since parse time)
+      const inCat = QUESTIONS.filter(qi => qi.category === category);
+      const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
+
+      QUESTIONS.push({
+        category,
+        original_num: nextNum,
+        question: q.question,
+        options: q.options || [],
+        answer: q.answer,
+        analysis: q.analysis || '',
+        topic,
+      });
+      importedCount++;
+    });
+
+    await saveQuestionsToCloud();
+    panelEl.style.display = 'none';
+    panelEl.innerHTML = '';
+    showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
+    renderQuestionsList();
+  };
 }
 
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
