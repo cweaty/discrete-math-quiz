@@ -17,7 +17,8 @@ export async function onRequestPost(context) {
         });
       }
 
-      const activeModel = model || "@cf/qwen/qwen3-30b-a3b-fp8";
+      // Default to the highly stable llama-3.3-70b-instruct-fp8-fast model used elsewhere on the site
+      const activeModel = model || "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
       const enhanceSystemPrompt = `你是一位专业的离散数学题库编辑与LaTeX数学排版专家。你的任务是对给定的题目进行质量优化，并以严格的JSON格式返回结果。
 
@@ -29,7 +30,7 @@ export async function onRequestPost(context) {
 5. 保持题型(category)和专题(topic)不变
 6. 禁止改变题目的标准答案
 
-返回格式必须是合法JSON（不要包裹在Markdown代码块中）：
+返回格式必须是合法JSON（不要包裹在Markdown代码块中，不要有任何多余的解释性文字，仅返回一个JSON对象）：
 {
   "question": "优化后的题干（保留LaTeX格式）",
   "analysis": "完整的逐步解析推导（使用LaTeX格式）",
@@ -62,35 +63,63 @@ export async function onRequestPost(context) {
         });
       }
 
-      const enhanceResponse = await env.AI.run(activeModel, {
-        messages: enhanceMessages,
-        max_tokens: 2000
-      });
+      // Try running the AI model with multiple fallback options to prevent 500 when specific model goes offline
+      let enhanceResponse;
+      const modelsToTry = [activeModel, "@cf/qwen/qwq-32b", "@cf/meta/llama-3.1-8b-instruct"];
+      let lastError = null;
+
+      for (const currentModel of modelsToTry) {
+        try {
+          enhanceResponse = await env.AI.run(currentModel, {
+            messages: enhanceMessages,
+            max_tokens: 2000
+          });
+          if (enhanceResponse && (enhanceResponse.response || enhanceResponse.text)) {
+            break; // Success
+          }
+        } catch (runErr) {
+          console.error(`AI Model execution failed for ${currentModel}: ${runErr.message}`);
+          lastError = runErr;
+        }
+      }
+
+      if (!enhanceResponse) {
+        return new Response(JSON.stringify({ 
+          error: "AI 服务暂时不可用: " + (lastError ? lastError.message : "未知错误")
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
 
       let rawText = enhanceResponse.response || enhanceResponse.text || "";
       
       // Strip markdown code fences if model wrapped JSON
       rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-      let parsed;
+      let parsed = null;
       try {
         parsed = JSON.parse(rawText);
       } catch (e) {
         // Try to extract JSON object from text
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          try { parsed = JSON.parse(jsonMatch[0]); } catch (_) {}
+          try { 
+            parsed = JSON.parse(jsonMatch[0]); 
+          } catch (_) {
+            console.error("Failed to parse extracted JSON object.");
+          }
         }
       }
 
+      // Fallback: If JSON parsing completely fails, do not return a 500 error!
+      // Return a structured object with raw text in analysis so the admin can review/edit it manually.
       if (!parsed) {
-        return new Response(JSON.stringify({ 
-          error: "AI 返回格式解析失败",
-          raw: rawText.substring(0, 500) 
-        }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        });
+        parsed = {
+          question: question,
+          analysis: rawText || "AI 优化解析失败，请点击编辑手动补充。",
+          tips: "⚠️ AI 未能按 JSON 格式返回，已将原始输出存入解析中。"
+        };
       }
 
       return new Response(JSON.stringify(parsed), {
@@ -98,6 +127,7 @@ export async function onRequestPost(context) {
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
       });
     }
+
 
     // ── MODE: regular AI tutor ─────────────────────────────────────────────────
     if (!question) {
