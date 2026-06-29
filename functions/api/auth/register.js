@@ -78,6 +78,7 @@ export async function onRequestPost(context) {
       answeredCount: 0,
       correctRate: 0,
       examHighScore: 0,
+      role,
       updatedAt: Math.floor(Date.now() / 1000)
     };
     await putDb(env, `user:profile:${userId}`, JSON.stringify(profileData));

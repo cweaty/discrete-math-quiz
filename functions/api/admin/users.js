@@ -30,15 +30,9 @@ export async function onRequestGet(context) {
         try {
           const profile = JSON.parse(profileStr);
           
-          // Also fetch account info to get the current role
+          // Retrieve role directly from profile
           const normUsername = profile.username.trim().toLowerCase();
-          const accountStr = await getDb(env, `user:account:${normUsername}`);
-          if (accountStr) {
-            const account = JSON.parse(accountStr);
-            profile.role = account.role || "user";
-          } else {
-            profile.role = "user";
-          }
+          profile.role = profile.role || (normUsername === "admin" ? "admin" : "user");
           
           profiles.push(profile);
         } catch (parseErr) {
@@ -102,6 +96,19 @@ export async function onRequestPost(context) {
       const account = JSON.parse(accountStr);
       account.role = newRole;
       await putDb(env, `user:account:${normUsername}`, JSON.stringify(account));
+      
+      // Also update role in profile
+      const targetUserId = account.userId;
+      const profileStr = await getDb(env, `user:profile:${targetUserId}`);
+      if (profileStr) {
+        try {
+          const profile = JSON.parse(profileStr);
+          profile.role = newRole;
+          await putDb(env, `user:profile:${targetUserId}`, JSON.stringify(profile));
+        } catch (pErr) {
+          console.error("Profile role update error:", pErr);
+        }
+      }
       
       return new Response(JSON.stringify({ message: `用户 ${targetUsername} 角色已修改为 ${newRole}` }), {
         status: 200,

@@ -6880,6 +6880,9 @@ async function renderAdminQuestionsTab(container) {
   const filterTopic = container.querySelector('#admin-q-topic-filter');
   const searchInput = container.querySelector('#admin-q-search');
 
+  let currentPage = 1;
+  const itemsPerPage = 10;
+
   const renderQuestionsList = () => {
     const selectedCat = filterCat.value;
     const selectedTopic = filterTopic.value;
@@ -6907,8 +6910,19 @@ async function renderAdminQuestionsTab(container) {
       return;
     }
 
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    if (currentPage > totalPages) {
+      currentPage = totalPages || 1;
+    }
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageItems = filtered.slice(startIndex, endIndex);
+
     questionsListContainer.innerHTML = '';
-    filtered.forEach((q, index) => {
+    
+    // Render only the items for the current page
+    pageItems.forEach((q) => {
       const qDiv = document.createElement('div');
       qDiv.style.border = '1px solid var(--border-color)';
       qDiv.style.borderRadius = '12px';
@@ -6963,6 +6977,35 @@ async function renderAdminQuestionsTab(container) {
 
       questionsListContainer.appendChild(qDiv);
     });
+
+    // Render Pagination Controls at the bottom
+    const paginationDiv = document.createElement('div');
+    paginationDiv.style.display = 'flex';
+    paginationDiv.style.justifyContent = 'center';
+    paginationDiv.style.alignItems = 'center';
+    paginationDiv.style.gap = '1.25rem';
+    paginationDiv.style.marginTop = '1.25rem';
+    paginationDiv.style.fontSize = '0.82rem';
+    
+    paginationDiv.innerHTML = `
+      <button class="btn btn-outline" id="admin-q-prev-btn" ${currentPage === 1 ? 'disabled' : ''} style="padding:0.45rem 1rem; cursor:pointer; font-weight:700; border-radius:10px;">◀ 上一页</button>
+      <span style="font-weight:800; color:var(--text-secondary);">第 ${currentPage} / ${totalPages || 1} 页</span>
+      <button class="btn btn-outline" id="admin-q-next-btn" ${currentPage >= totalPages ? 'disabled' : ''} style="padding:0.45rem 1rem; cursor:pointer; font-weight:700; border-radius:10px;">下一页 ▶</button>
+    `;
+
+    paginationDiv.querySelector('#admin-q-prev-btn').onclick = () => {
+      currentPage--;
+      renderQuestionsList();
+      container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    paginationDiv.querySelector('#admin-q-next-btn').onclick = () => {
+      currentPage++;
+      renderQuestionsList();
+      container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    questionsListContainer.appendChild(paginationDiv);
   };
 
   const openEditor = (q, isNew = false) => {
@@ -7185,9 +7228,9 @@ async function renderAdminQuestionsTab(container) {
   };
 
   // Bind filter events
-  filterCat.onchange = renderQuestionsList;
-  filterTopic.onchange = renderQuestionsList;
-  searchInput.oninput = renderQuestionsList;
+  filterCat.onchange = () => { currentPage = 1; renderQuestionsList(); };
+  filterTopic.onchange = () => { currentPage = 1; renderQuestionsList(); };
+  searchInput.oninput = () => { currentPage = 1; renderQuestionsList(); };
 
   // Load initially
   renderQuestionsList();
