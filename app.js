@@ -7739,8 +7739,8 @@ function parseMarkdownQuestions(text) {
     let questionText = qm.rest;
     let forceCategory = typeHint;
 
-    // Inline category markers
-    if (/【填空题】/.test(questionText)) { questionText = questionText.replace(/【填空题】/, '').trim(); forceCategory = 'fill_blank'; }
+    // Inline category markers - Detect but DO NOT strip 【填空题】 so it is preserved in the question text
+    if (/【填空题】/.test(questionText)) { forceCategory = 'fill_blank'; }
     if (/【判断题】/.test(questionText)) { questionText = questionText.replace(/【判断题】/, '').trim(); forceCategory = 'judgment'; }
     if (/【单选题】/.test(questionText)) { questionText = questionText.replace(/【单选题】/, '').trim(); forceCategory = 'single_choice'; }
 
@@ -7794,6 +7794,13 @@ function parseMarkdownQuestions(text) {
       else if (['错误', '错', '×', 'false', 'no'].includes(answer.toLowerCase())) answer = '错';
     } else if (options.length > 0) {
       category = 'single_choice';
+    }
+
+    // Rule: 如果填空题只有一个答案 则在题号/题干前面加上 "【填空题】"
+    if (category === 'fill_blank' && !answer.includes('|')) {
+      if (!questionText.startsWith('【填空题】')) {
+        questionText = '【填空题】' + questionText;
+      }
     }
 
     const inCat = QUESTIONS.filter(qi => qi.category === category);
@@ -8046,17 +8053,39 @@ D. $q \\to \\neg p$
             analysis: q.analysis,
             category: catEl ? catEl.value : q.category,
             topic: topicEl ? topicEl.value : q.topic,
+            options: q.options || [],
           })
         });
         const result = await res.json();
         if (res.ok && result.question) {
           parsedQuestions[idx].question = result.question;
           parsedQuestions[idx].analysis = result.analysis || q.analysis;
+          parsedQuestions[idx].answer = result.answer || q.answer;
+          if (result.options) parsedQuestions[idx].options = result.options;
+
           // Update inputs if body is open
           const textInput = rowEl.querySelector(`.import-q-text-input`);
+          const ansInputEl = rowEl.querySelector(`.import-q-ans-input`);
           const anaInput = rowEl.querySelector(`.import-q-ana-input`);
           if (textInput) textInput.value = result.question;
+          if (ansInputEl) ansInputEl.value = result.answer || '';
           if (anaInput) anaInput.value = result.analysis || '';
+
+          // Update header badges
+          const answerBadge = rowEl.querySelector('.import-q-answer-badge');
+          if (answerBadge) answerBadge.textContent = '→ ' + (result.answer || '');
+
+          const optsPreviewEl = rowEl.querySelector('.import-q-opts-preview');
+          if (optsPreviewEl && result.options) {
+            optsPreviewEl.innerHTML = '';
+            result.options.forEach((o, i) => {
+              const sp = document.createElement('span');
+              sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
+              sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
+              optsPreviewEl.appendChild(sp);
+            });
+          }
+
           // Show tips
           const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
           if (tipsEl && result.tips) {
@@ -8131,19 +8160,40 @@ D. $q \\to \\neg p$
             analysis: q.analysis,
             category: catEl ? catEl.value : q.category,
             topic: topicEl ? topicEl.value : q.topic,
+            options: q.options || [],
           })
         });
         const result = await res.json();
         if (res.ok && result.question) {
           parsedQuestions[idx].question = result.question;
           parsedQuestions[idx].analysis = result.analysis || q.analysis;
+          parsedQuestions[idx].answer = result.answer || q.answer;
+          if (result.options) parsedQuestions[idx].options = result.options;
+
           if (rowEl) {
             const textInput = rowEl.querySelector('.import-q-text-input');
+            const ansInputEl = rowEl.querySelector('.import-q-ans-input');
             const anaInput = rowEl.querySelector('.import-q-ana-input');
             const summaryText = rowEl.querySelector('.import-q-summary-text');
+            const answerBadge = rowEl.querySelector('.import-q-answer-badge');
+            const optsPreviewEl = rowEl.querySelector('.import-q-opts-preview');
+
             if (textInput) textInput.value = result.question;
+            if (ansInputEl) ansInputEl.value = result.answer || '';
             if (anaInput) anaInput.value = result.analysis || '';
             if (summaryText) summaryText.textContent = result.question.substring(0, 80) + (result.question.length > 80 ? '...' : '');
+            if (answerBadge) answerBadge.textContent = '→ ' + (result.answer || '');
+
+            if (optsPreviewEl && result.options) {
+              optsPreviewEl.innerHTML = '';
+              result.options.forEach((o, i) => {
+                const sp = document.createElement('span');
+                sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
+                sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
+                optsPreviewEl.appendChild(sp);
+              });
+            }
+
             const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
             if (tipsEl && result.tips) { tipsEl.textContent = '✅ ' + result.tips; tipsEl.classList.add('visible'); }
           }
@@ -8192,10 +8242,20 @@ D. $q \\to \\neg p$
 
       if (!question || !answer) continue;
 
+      // Format options to object list expected by the database schema (e.g. { key: "A", text: "..." })
+      const formattedOptions = (q.options || []).map((opt, i) => {
+        if (typeof opt === 'object' && opt !== null && opt.key && opt.text) {
+          return opt;
+        }
+        const key = String.fromCharCode(65 + i);
+        const text = typeof opt === 'object' ? (opt.text || '') : opt;
+        return { key, text };
+      });
+
       const inCat = QUESTIONS.filter(qi => qi.category === category);
       const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
 
-      QUESTIONS.push({ category, original_num: nextNum, question, options: q.options || [], answer, analysis: analysis || '', topic });
+      QUESTIONS.push({ category, original_num: nextNum, question, options: formattedOptions, answer, analysis: analysis || '', topic });
       importedCount++;
     }
 

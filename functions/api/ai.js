@@ -22,19 +22,28 @@ export async function onRequestPost(context) {
 
       const enhanceSystemPrompt = `你是一位专业的离散数学题库编辑与LaTeX数学排版专家。你的任务是对给定的题目进行质量优化，并以严格的JSON格式返回结果。
 
-优化规则：
-1. 检查并修正题干中所有LaTeX公式语法（行内公式使用 $...$，独立行公式使用 $$...$$）
-2. 如果题干表述不清，进行语义优化（保持题意不变）
-3. 为解析生成完整的逐步推导过程，包含所使用的定理依据
-4. 如果解析为空或过于简单，根据答案反推完整解析
-5. 保持题型(category)和专题(topic)不变
-6. 禁止改变题目的标准答案
+优化与格式规范：
+1. 检查并修正题干中所有LaTeX公式语法（行内公式使用 $...$，独立行公式使用 $$...$$）。
+2. 如果题干表述不清，进行语义优化（保持题意不变）。
+3. 填空题规范：
+   - 填空题若有多个空/多个答案，答案部分必须用竖线 '|' 隔开，如 '春 | 夏 | 秋'。
+   - 如果填空题只有一个答案，则在题干最前面必须加上 '【填空题】'，如 '【填空题】我国古典四大名著是...'。
+4. 判断题规范：
+   - 答案必须标准化为 '对' 或 '错' 之一。
+5. 选择题规范：
+   - 选项列表中，每一个选项文本内容中不能包含字母前缀（如不能包含 'A.'、'A、'、'A) '），仅保留选项文字本身。
+6. 解析与答案标记规范：
+   - 答案、解析后面在生成段落时要有冒号，例如在解析文本或生成 Markdown 排版中，使用 '答案：'、'解析：'。
+   - 解析中如果有公式或逐步推演过程，必须使用标准的 LaTeX 排版。
+7. 保持题型(category)和专题(topic)不变，禁止改变题目的标准答案。
 
-返回格式必须是合法JSON（不要包裹在Markdown代码块中，不要有任何多余的解释性文字，仅返回一个JSON对象）：
+返回格式必须是合法JSON（不要包裹在Markdown代码块中，仅返回一个JSON对象）：
 {
-  "question": "优化后的题干（保留LaTeX格式）",
+  "question": "优化后的题干（保留LaTeX格式，单空填空题需包含【填空题】前缀）",
+  "options": ["选项A的文本", "选项B的文本", "选项C的文本", "选项D的文本"],
+  "answer": "标准答案（判断题为 对/错；多答案填空题用|隔开）",
   "analysis": "完整的逐步解析推导（使用LaTeX格式）",
-  "tips": "给管理员的简短优化说明（1-2句）"
+  "tips": "优化说明（1-2句）"
 }`;
 
       const enhanceMessages = [
@@ -44,6 +53,7 @@ export async function onRequestPost(context) {
 题型：${category || '未知'}
 专题：${topic || '未知'}
 题干：${question}
+当前选项：${JSON.stringify(body.options || [])}
 当前答案：${answer || '未提供'}
 当前解析：${analysis || '（无解析，请根据答案生成完整解析）'}
 
@@ -52,9 +62,16 @@ export async function onRequestPost(context) {
 
       if (!env.AI) {
         // Local dev mock
+        const isSingleBlank = category === 'fill_blank' && !answer.includes('|');
+        let formattedQuestion = question;
+        if (isSingleBlank && !question.startsWith('【填空题】')) {
+          formattedQuestion = '【填空题】' + question;
+        }
         const mockResult = {
-          question: question,
-          analysis: analysis || `根据题意分析：\n\n**解题步骤：**\n1. 分析题干条件\n2. 应用相关定理\n3. 得出结论：${answer || '（请填写答案）'}`,
+          question: formattedQuestion,
+          options: category === 'single_choice' ? (body.options || ['选项A', '选项B', '选项C', '选项D']) : [],
+          answer: answer || (category === 'judgment' ? '对' : '答案'),
+          analysis: analysis || `根据题意分析：\n\n解析：\n1. 分析题干条件\n2. 应用相关定理\n3. 得出结论：${answer || '（请填写答案）'}`,
           tips: "【本地开发模式】此为模拟优化结果，部署至 Cloudflare 后将调用真实 AI 进行优化。"
         };
         return new Response(JSON.stringify(mockResult), {
