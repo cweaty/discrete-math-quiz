@@ -93,7 +93,10 @@ let userData = {
   bookmarks: [], // Array of question IDs: 'cat_originalnum' e.g. 'judgment_1'
   wrongQuestions: [], // Auto-added incorrect questions
   answered: {},  // Map of question ID -> { userAns: '', isCorrect: true/false }
-  examHistory: []
+  examHistory: [],
+  dailyChallenge: { date: '', questions: [], completed: false },
+  streak: 0,
+  lastStudyDate: ''
 };
 
 // Exam State
@@ -111,6 +114,7 @@ let examState = {
 document.addEventListener('DOMContentLoaded', async () => {
   await loadDynamicQuestions();
   loadUserData();
+  initDailyChallenge();
   setupSidebarCounts();
   setupCategoryNavigation();
   setupModeToggle();
@@ -152,11 +156,30 @@ function loadUserData() {
       if (!userData.wrongQuestions) userData.wrongQuestions = [];
       if (!userData.answered) userData.answered = {};
       if (!userData.examHistory) userData.examHistory = [];
+      if (!userData.dailyChallenge) userData.dailyChallenge = { date: '', questions: [], completed: false };
+      if (userData.streak === undefined) userData.streak = 0;
+      if (userData.lastStudyDate === undefined) userData.lastStudyDate = '';
     } catch (e) {
       console.error('Error parsing user data, resetting...', e);
     }
   }
   updateStatsDashboard();
+}
+
+function initDailyChallenge() {
+  const todayStr = new Date().toLocaleDateString('zh-CN');
+  if (!userData.dailyChallenge || userData.dailyChallenge.date !== todayStr || !userData.dailyChallenge.questions || userData.dailyChallenge.questions.length === 0) {
+    const available = QUESTIONS.map(q => getQuestionId(q));
+    if (available.length > 0) {
+      const shuffled = shuffleArray(available);
+      userData.dailyChallenge = {
+        date: todayStr,
+        questions: shuffled.slice(0, 3),
+        completed: false
+      };
+      saveUserData();
+    }
+  }
 }
 
 let syncTimeoutId = null;
@@ -239,7 +262,7 @@ function updateMasteryPanel() {
   let predCorrect = 0;
   
   for (const qKey in userData.answered) {
-    const qObj = QUESTIONS.find(q => `${q.category}_${q.original_num}` === qKey);
+    const qObj = QUESTIONS.find(q => getQuestionId(q) === qKey);
     if (qObj) {
       if (qObj.topic === 'propositional_logic') {
         propAnswered++;
@@ -283,6 +306,10 @@ function getFilteredQuestions() {
   }
   if (currentCategory === 'wrong_questions') {
     return QUESTIONS.filter(q => userData.wrongQuestions.includes(getQuestionId(q)));
+  }
+  if (currentCategory === 'daily_challenge') {
+    if (!userData.dailyChallenge || !userData.dailyChallenge.questions) return [];
+    return QUESTIONS.filter(q => userData.dailyChallenge.questions.includes(getQuestionId(q)));
   }
   if (currentCategory === 'all') {
     return QUESTIONS;
@@ -356,6 +383,24 @@ function setupSidebarCounts() {
     countWrongEl.innerText = userData.wrongQuestions.length;
   }
   document.getElementById('count-bookmarks').innerText = userData.bookmarks.length;
+
+  const streakCountVal = document.getElementById('streak-count-val');
+  if (streakCountVal) {
+    streakCountVal.innerText = userData.streak || 0;
+  }
+  
+  const countDailyChallenge = document.getElementById('count-daily-challenge');
+  if (countDailyChallenge) {
+    if (userData.dailyChallenge && userData.dailyChallenge.completed) {
+      countDailyChallenge.innerText = '已完';
+      countDailyChallenge.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+      countDailyChallenge.style.color = '#10B981';
+    } else {
+      countDailyChallenge.innerText = '新';
+      countDailyChallenge.style.backgroundColor = 'var(--accent)';
+      countDailyChallenge.style.color = 'white';
+    }
+  }
 }
 
 function setupCategoryNavigation() {
@@ -2667,7 +2712,12 @@ function handleAnswerSubmitted(qId, isCorrect) {
       userData.wrongQuestions.push(qId);
     }
   }
-  saveUserData();
+  
+  if (currentCategory === 'daily_challenge') {
+    checkDailyChallengeCompletion();
+  } else {
+    saveUserData();
+  }
 
   if (practiceSettings.autoNext && isCorrect) {
     const questions = getFilteredQuestions();
@@ -2700,7 +2750,7 @@ function updateRadarChart() {
   };
   
   for (const qKey in userData.answered) {
-    const qObj = QUESTIONS.find(q => `${q.category}_${q.original_num}` === qKey);
+    const qObj = QUESTIONS.find(q => getQuestionId(q) === qKey);
     if (qObj && qObj.sub_topic && userData.answered[qKey].isCorrect) {
       correctCounts[qObj.sub_topic]++;
     }
@@ -2832,11 +2882,25 @@ function checkDailyChallengeCompletion() {
     updateStudyStreak();
     saveUserData();
     
+    // Update subtitle if on desktop
+    const subtitleEl = document.getElementById('view-subtitle');
+    if (subtitleEl && currentCategory === 'daily_challenge') {
+      subtitleEl.innerText = `今日挑战进度: 3/3 (已完成今日打卡 🔥)`;
+    }
+    
     showToast('恭喜！今日挑战全部完成，打卡成功！', 'success');
     
     // Confetti explosion
     if (typeof confetti === 'function') {
       confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+    }
+  } else {
+    saveUserData();
+    // Update subtitle if on desktop
+    const subtitleEl = document.getElementById('view-subtitle');
+    if (subtitleEl && currentCategory === 'daily_challenge') {
+      const completedCount = userData.dailyChallenge.questions.filter(qKey => userData.answered[qKey] && userData.answered[qKey].isCorrect).length;
+      subtitleEl.innerText = `今日挑战进度: ${completedCount}/3 (答对全部3道题即完成今日打卡)`;
     }
   }
 }
@@ -4438,8 +4502,9 @@ function renderCategoryGrid(container) {
     { id: 'single_choice', title: '单项选择题', desc: '四选一选择最符合要求的逻辑推导或式子。', total: QUESTIONS.filter(q => q.category === 'single_choice').length, icon: 'radio_button_checked', bg: 'bg-amber-100 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-400' },
     { id: 'fill_blank', title: '填空题型', desc: '填入最终计算真值或命题公式简写。', total: QUESTIONS.filter(q => q.category === 'fill_blank').length, icon: 'edit_square', bg: 'bg-rose-100 dark:bg-rose-950/30', text: 'text-rose-600 dark:text-rose-400' },
     { id: 'subjective', title: '主观证明题', desc: '范式展开、演绎推理以及大题综合分析。', total: QUESTIONS.filter(q => ['calculation', 'proof', 'application'].includes(q.category)).length, icon: 'description', bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300' },
-    { id: 'set_theory', title: '集合论', desc: '集合运算、幂集、等值变换（正在整理库）。', total: 0, icon: 'category', bg: 'bg-pink-100 dark:bg-pink-950/30', text: 'text-pink-600 dark:text-pink-400' },
-    { id: 'graph_theory', title: '图论学说', desc: '通路与回路、树以及连通图（正在整理库）。', total: 0, icon: 'share', bg: 'bg-teal-100 dark:bg-teal-950/30', text: 'text-teal-600 dark:text-teal-400' }
+    { id: 'set_theory', title: '集合论', desc: '集合运算、幂集、等值变换与证明。', total: QUESTIONS.filter(q => q.topic === 'set_theory').length, icon: 'category', bg: 'bg-pink-100 dark:bg-pink-950/30', text: 'text-pink-600 dark:text-pink-400' },
+    { id: 'binary_relations', title: '二元关系', desc: '笛卡尔积、关系运算与等价自反偏序性质。', total: QUESTIONS.filter(q => q.topic === 'binary_relations').length, icon: 'join_left', bg: 'bg-orange-100 dark:bg-orange-950/30', text: 'text-orange-600 dark:text-orange-400' },
+    { id: 'graph_theory', title: '图论学说', desc: '通路与回路、树以及连通图结构。', total: QUESTIONS.filter(q => q.topic === 'graph_theory').length, icon: 'share', bg: 'bg-teal-100 dark:bg-teal-950/30', text: 'text-teal-600 dark:text-teal-400' }
   ];
 
   let cardsHtml = '';
@@ -4762,10 +4827,11 @@ function renderMobileLobby(container) {
   const accuracy = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
   
   // Topic Mastery counts
-  let propCorrect = 0;
-  let propAnswered = 0;
-  let predCorrect = 0;
-  let predAnswered = 0;
+  let propCorrect = 0, propAnswered = 0;
+  let predCorrect = 0, predAnswered = 0;
+  let setCorrect = 0, setAnswered = 0;
+  let relationCorrect = 0, relationAnswered = 0;
+  let graphCorrect = 0, graphAnswered = 0;
   
   answeredKeys.forEach(key => {
     const q = QUESTIONS.find(qi => getQuestionId(qi) === key);
@@ -4776,14 +4842,40 @@ function renderMobileLobby(container) {
       } else if (q.topic === 'predicate_logic') {
         predAnswered++;
         if (userData.answered[key].isCorrect) predCorrect++;
+      } else if (q.topic === 'set_theory') {
+        setAnswered++;
+        if (userData.answered[key].isCorrect) setCorrect++;
+      } else if (q.topic === 'binary_relations') {
+        relationAnswered++;
+        if (userData.answered[key].isCorrect) relationCorrect++;
+      } else if (q.topic === 'graph_theory') {
+        graphAnswered++;
+        if (userData.answered[key].isCorrect) graphCorrect++;
       }
     }
   });
 
   const propTotal = QUESTIONS.filter(q => q.topic === 'propositional_logic').length || 26;
   const predTotal = QUESTIONS.filter(q => q.topic === 'predicate_logic').length || 30;
+  const setTotal = QUESTIONS.filter(q => q.topic === 'set_theory').length || 0;
+  const relationTotal = QUESTIONS.filter(q => q.topic === 'binary_relations').length || 0;
+  const graphTotal = QUESTIONS.filter(q => q.topic === 'graph_theory').length || 0;
+
   const propMastery = propAnswered > 0 ? Math.round((propCorrect / propTotal) * 100) : 0;
   const predMastery = predAnswered > 0 ? Math.round((predCorrect / predTotal) * 100) : 0;
+  const setMastery = setTotal > 0 ? Math.round((setCorrect / setTotal) * 100) : 0;
+  const relationMastery = relationTotal > 0 ? Math.round((relationCorrect / relationTotal) * 100) : 0;
+  const graphMastery = graphTotal > 0 ? Math.round((graphCorrect / graphTotal) * 100) : 0;
+
+  const completedDailyCount = userData.dailyChallenge && userData.dailyChallenge.questions ? userData.dailyChallenge.questions.filter(qKey => userData.answered[qKey] && userData.answered[qKey].isCorrect).length : 0;
+  const isDailyCompleted = userData.dailyChallenge && userData.dailyChallenge.completed;
+  
+  let dailyProgressText = `今日挑战进度: ${completedDailyCount}/3 (答对全部3道题即完成今日打卡)`;
+  let dailyBtnText = '去挑战';
+  if (isDailyCompleted) {
+    dailyProgressText = '今日挑战已全部完成，打卡成功！ 🔥';
+    dailyBtnText = '查看挑战';
+  }
 
   // Render main structure
   container.innerHTML = `
@@ -4793,6 +4885,27 @@ function renderMobileLobby(container) {
         <h1 class="text-2xl font-bold text-slate-900 dark:text-white">您好，同学</h1>
         <p class="text-xs text-outline">准备好开始今天的离散数学练习了吗？</p>
       </div>
+
+      <!-- Daily Challenge Card -->
+      <section class="glass-panel p-5 relative overflow-hidden rounded-2xl bg-white/40 dark:bg-slate-900/40 cursor-pointer border border-primary/10 hover:border-primary/30 transition-colors" id="mob-lobby-daily-card">
+        <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-3xl"></div>
+        <div class="relative z-10 flex justify-between items-center">
+          <div class="space-y-1">
+            <h2 class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+              每日一练 (Daily Challenge)
+            </h2>
+            <p class="text-[11px] text-outline font-medium">
+              ${dailyProgressText}
+            </p>
+          </div>
+          <div class="bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+            <span class="text-[10px] text-primary font-bold">
+              ${dailyBtnText}
+            </span>
+          </div>
+        </div>
+      </section>
 
       <!-- Cloud Quota Card -->
       <section class="glass-panel p-5 relative overflow-hidden rounded-2xl bg-white/40 dark:bg-slate-900/40 cursor-pointer" id="mob-lobby-quota-card">
@@ -4883,20 +4996,29 @@ function renderMobileLobby(container) {
           </div>
           <div class="space-y-1">
             <div class="flex justify-between items-center text-[10px]">
-              <span class="text-slate-500 font-bold">集合论 (Set Theory)</span>
-              <span class="font-bold text-slate-400">0%</span>
+              <span class="text-slate-800 dark:text-slate-200 font-bold">集合论 (Set Theory)</span>
+              <span class="font-bold text-emerald-500">${setMastery}%</span>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-              <div class="bg-slate-300 dark:bg-slate-700 h-full rounded-full" style="width: 0%"></div>
+              <div class="bg-emerald-500 h-full rounded-full" style="width: ${setMastery}%"></div>
             </div>
           </div>
           <div class="space-y-1">
             <div class="flex justify-between items-center text-[10px]">
-              <span class="text-slate-500 font-bold">图论 (Graph Theory)</span>
-              <span class="font-bold text-slate-400">0%</span>
+              <span class="text-slate-800 dark:text-slate-200 font-bold">二元关系 (Relations)</span>
+              <span class="font-bold text-amber-500">${relationMastery}%</span>
             </div>
             <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-              <div class="bg-slate-300 dark:bg-slate-700 h-full rounded-full" style="width: 0%"></div>
+              <div class="bg-amber-500 h-full rounded-full" style="width: ${relationMastery}%"></div>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between items-center text-[10px]">
+              <span class="text-slate-800 dark:text-slate-200 font-bold">图论学说 (Graph Theory)</span>
+              <span class="font-bold text-rose-500">${graphMastery}%</span>
+            </div>
+            <div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+              <div class="bg-rose-500 h-full rounded-full" style="width: ${graphMastery}%"></div>
             </div>
           </div>
         </div>
@@ -4916,6 +5038,16 @@ function renderMobileLobby(container) {
     currentMobileTab = 'quota_details';
     renderViewport();
   };
+
+  const mobDailyCard = container.querySelector('#mob-lobby-daily-card');
+  if (mobDailyCard) {
+    mobDailyCard.onclick = () => {
+      currentMobileTab = 'category';
+      currentCategory = 'daily_challenge';
+      currentQuestionIndex = 0;
+      renderViewport();
+    };
+  }
 
   // Run async CF fetch to update progress
   fetchLobbyQuotaDetails();
@@ -5306,13 +5438,6 @@ function renderMobilePractice(container) {
             showToast('回答错误！', 'error');
           }
           handleAnswerSubmitted(qId, isCorrect);
-          
-          if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
-            setTimeout(() => {
-              currentQuestionIndex++;
-              renderViewport();
-            }, 1200);
-          }
         });
       });
     }
@@ -5356,13 +5481,6 @@ function renderMobilePractice(container) {
             showToast('回答错误！', 'error');
           }
           handleAnswerSubmitted(qId, isCorrect);
-          
-          if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
-            setTimeout(() => {
-              currentQuestionIndex++;
-              renderViewport();
-            }, 1200);
-          }
         });
       });
     }
@@ -5440,13 +5558,6 @@ function renderMobilePractice(container) {
           showToast('回答错误！', 'error');
         }
         handleAnswerSubmitted(qId, isCorrect);
-        
-        if (isCorrect && practiceSettings.autoNext && currentQuestionIndex < questions.length - 1) {
-          setTimeout(() => {
-            currentQuestionIndex++;
-            renderViewport();
-          }, 1200);
-        }
       });
     }
 
