@@ -2316,6 +2316,32 @@ function escapeHtml(text) {
 
 const API_BASE = "/api";
 
+// --- Client-Side Comments Cache and API Performance Optimizations ---
+const commentsCache = {};
+const CACHE_TTL_MS = 5000; // 5 seconds TTL to prevent double-fetching on tab switching
+
+async function getCachedComments(qId) {
+  const cached = commentsCache[qId];
+  const now = Date.now();
+  if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.data;
+  }
+  
+  const response = await fetch(`${API_BASE}/comments?q=${qId}`);
+  if (!response.ok) throw new Error("Failed to fetch comments");
+  
+  const comments = await response.json();
+  commentsCache[qId] = {
+    data: comments,
+    timestamp: now
+  };
+  return comments;
+}
+
+function invalidateCommentsCache(qId) {
+  delete commentsCache[qId];
+}
+
 // Check if user is logged in and render profile
 async function checkAuthStatus() {
   const token = localStorage.getItem('dm_jwt_token');
@@ -2979,10 +3005,7 @@ async function loadComments(qId, panel) {
   commentList.innerHTML = `<div class="comment-empty-msg">正在加载讨论帖子...</div>`;
   
   try {
-    const response = await fetch(`${API_BASE}/comments?q=${qId}`);
-    if (!response.ok) throw new Error("加载失败");
-    
-    const comments = await response.json();
+    const comments = await getCachedComments(qId);
     
     if (comments.length === 0) {
       commentList.innerHTML = `<div class="comment-empty-msg">💬 暂无讨论。写下你的第一个疑问或心得开启话题吧！</div>`;
@@ -4885,9 +4908,7 @@ function renderLobbyShortcutCard(container) {
 
 async function fetchLatestCommentPreview() {
   try {
-    const response = await fetch(`${API_BASE}/comments?q=lobby`);
-    if (response.ok) {
-      const comments = await response.json();
+    const comments = await getCachedComments('lobby');
       const previewList = document.getElementById('mobile-lobby-shortcut-comments-list');
       if (!previewList) return;
       
@@ -4911,7 +4932,6 @@ async function fetchLatestCommentPreview() {
       } else {
         previewList.innerHTML = `<div class="text-xs text-slate-400 text-center py-2">💬 暂无学术讨论，点击发布第一条留言吧！</div>`;
       }
-    }
   } catch (err) {
     console.error("Error previewing comments", err);
   }
@@ -4990,10 +5010,7 @@ async function renderLobbyComments(container) {
 
   const loadLobbyCommentsList = async () => {
     try {
-      const response = await fetch(`${API_BASE}/comments?q=lobby`);
-      if (!response.ok) throw new Error("Failed to fetch comments");
-      
-      const comments = await response.json();
+      const comments = await getCachedComments('lobby');
       listContainer.innerHTML = '';
       
       if (comments.length === 0) {
@@ -5053,6 +5070,7 @@ async function renderLobbyComments(container) {
             });
 
             if (deleteRes.ok) {
+              invalidateCommentsCache('lobby');
               showToast('消息已撤回！', 'success');
               await loadLobbyCommentsList();
             } else {
@@ -5101,6 +5119,7 @@ async function renderLobbyComments(container) {
       
       const result = await response.json();
       if (response.ok) {
+        invalidateCommentsCache('lobby');
         inputField.value = '';
         emojiDrawer.style.display = 'none'; // hide emoji drawer after send
         showToast('发布留言成功！', 'success');
@@ -6056,9 +6075,7 @@ async function loadMobileQuestionComments(qId, container) {
 
   async function loadList() {
     try {
-      const res = await fetch(`${API_BASE}/comments?q=${qId}`);
-      if (!res.ok) throw new Error('comments failed');
-      const comments = await res.json();
+      const comments = await getCachedComments(qId);
       countBadge.innerText = `共 ${comments.length} 条讨论`;
       
       list.innerHTML = '';
@@ -6105,6 +6122,7 @@ async function loadMobileQuestionComments(qId, container) {
             });
 
             if (deleteRes.ok) {
+              invalidateCommentsCache(qId);
               showToast('消息已撤回！', 'success');
               await loadList();
             } else {
@@ -6143,6 +6161,7 @@ async function loadMobileQuestionComments(qId, container) {
         body: JSON.stringify({ qId, content: val })
       });
       if (res.ok) {
+        invalidateCommentsCache(qId);
         input.value = '';
         if (emojiDrawer) emojiDrawer.style.display = 'none'; // hide drawer after sending
         await loadList();
