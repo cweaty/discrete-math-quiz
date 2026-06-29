@@ -3,11 +3,10 @@ import { getDb, putDb, deleteDb } from "../../_db.js";
 
 export async function onRequestPost(context) {
   const { request, env, data } = context;
-  const db = env.DB_KV;
   const user = data.user; // Attached by authentication middleware
   
-  if (!db) {
-    return new Response(JSON.stringify({ error: "Cloudflare KV Namespace binding 'DB_KV' is missing!" }), {
+  if (!env.DB_KV && !env.DB_R2) {
+    return new Response(JSON.stringify({ error: "Cloudflare database bindings ('DB_KV' or 'DB_R2') are missing!" }), {
       status: 500,
       headers: { "Content-Type": "application/json" }
     });

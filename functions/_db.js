@@ -4,36 +4,37 @@
 // R2 is 33 times more generous for writes, making it ideal for progress sync and comments.
 
 export async function getDb(env, key) {
-  // 1. Try reading from R2 first
-  if (env.DB_R2) {
-    try {
-      const obj = await env.DB_R2.get(key);
-      if (obj) {
-        return await obj.text();
-      }
-    } catch (err) {
-      console.error("R2 read error for key:", key, err);
-    }
-  }
-
-  // 2. Fallback to KV
+  // 1. Try reading from KV first (edge-cached, low latency)
   if (env.DB_KV) {
     try {
       const val = await env.DB_KV.get(key);
-      if (val) {
-        // Transparently migrate to R2
-        if (env.DB_R2) {
-          try {
-            await env.DB_R2.put(key, val);
-            console.log(`Successfully migrated key ${key} from KV to R2.`);
-          } catch (migrateErr) {
-            console.error("R2 migration write error for key:", key, migrateErr);
-          }
-        }
+      if (val !== null) {
         return val;
       }
     } catch (err) {
       console.error("KV read error for key:", key, err);
+    }
+  }
+
+  // 2. Fallback to R2 (durable backing store)
+  if (env.DB_R2) {
+    try {
+      const obj = await env.DB_R2.get(key);
+      if (obj) {
+        const textVal = await obj.text();
+        // Populate back into KV for low-latency future reads
+        if (env.DB_KV) {
+          try {
+            await env.DB_KV.put(key, textVal);
+            console.log(`Successfully cached key ${key} from R2 to KV.`);
+          } catch (kvErr) {
+            console.error("KV caching error for key:", key, kvErr);
+          }
+        }
+        return textVal;
+      }
+    } catch (err) {
+      console.error("R2 read error for key:", key, err);
     }
   }
 
