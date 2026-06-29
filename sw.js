@@ -1,15 +1,15 @@
 // sw.js — Service Worker for discrete-math-quiz
 // Strategy: NetworkFirst for HTML/JS/CSS so updates land immediately on refresh
-const CACHE_NAME = 'dmq-v1';
+const CACHE_NAME = 'dmq-v2';
 
 // Files to cache on install (core shell)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/style.css',
-  '/app.js',
-  '/questions.js',
-  '/animations.js',
+  '/style.css?v=2',
+  '/app.js?v=2',
+  '/questions.js?v=2',
+  '/animations.js?v=2',
 ];
 
 // ── Install: pre-cache core assets ──────────────────────────────────
