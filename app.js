@@ -7098,8 +7098,10 @@ async function renderAdminQuestionsTab(container) {
       <!-- Markdown Import Panel (Hidden by default) -->
       <div id="admin-q-import-panel" style="display:none;"></div>
 
-      <!-- Controls Bar -->
-      <div class="admin-q-controls">
+      <!-- List Wrapper (Hidden when editor/import is open) -->
+      <div id="admin-q-list-wrapper" style="display:flex; flex-direction:column; gap:1.25rem;">
+        <!-- Controls Bar -->
+        <div class="admin-q-controls">
         <!-- Filter row: 3 columns, collapses on mobile -->
         <div class="admin-q-filter-row">
           <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; width:100%;">
@@ -7138,11 +7140,13 @@ async function renderAdminQuestionsTab(container) {
         <h3 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text-primary);" id="admin-q-count">动态题库：加载中...</h3>
         <div style="display:flex; flex-direction:column; gap:0.75rem;" id="admin-questions-list-container"></div>
       </div>
+      </div>
     </div>
   `;
 
   const token = localStorage.getItem('dm_jwt_token');
   const editorContainer = container.querySelector('#admin-q-editor-container');
+  const listWrapper = container.querySelector('#admin-q-list-wrapper');
   const questionsListContainer = container.querySelector('#admin-questions-list-container');
   const qCountHeader = container.querySelector('#admin-q-count');
   
@@ -7281,12 +7285,18 @@ async function renderAdminQuestionsTab(container) {
   };
 
   const openEditor = (q, isNew = false) => {
+    if (listWrapper) listWrapper.style.display = 'none';
     editorContainer.style.display = 'block';
     editorContainer.scrollIntoView({ behavior: 'smooth' });
 
     editorContainer.innerHTML = `
       <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; border:2.5px solid var(--primary); background:var(--bg-card); width:100%; box-sizing:border-box;">
-        <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);" id="editor-title">${isNew ? "➕ 新增离散数学题目" : "✏️ 编辑离散题目资料"}</h3>
+        <div style="display:flex; align-items:center; gap:0.5rem; border-bottom: 1.5px solid var(--border-color); padding-bottom:0.75rem; width:100%;">
+          <button id="edit-q-back-btn" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:0.25rem;">
+            ← 返回题库列表
+          </button>
+          <h3 style="margin:0; font-size:1.05rem; font-weight:800; color:var(--primary); margin-left:0.5rem;" id="editor-title">${isNew ? "➕ 新增离散数学题目" : "✏️ 编辑离散题目资料"}</h3>
+        </div>
         <!-- Meta fields: responsive flex row -->
         <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
           <div style="display:flex; flex-direction:column; gap:0.35rem; flex:1; min-width:160px;">
@@ -7463,10 +7473,16 @@ async function renderAdminQuestionsTab(container) {
     updatePreview();
     updateAnswerUI();
 
-    // Cancel
-    editorContainer.querySelector('#edit-q-cancel').onclick = () => {
+    // Cancel / Back to List
+    const closeEditorAction = () => {
       editorContainer.style.display = 'none';
+      if (listWrapper) listWrapper.style.display = 'flex';
+      renderQuestionsList();
     };
+
+    editorContainer.querySelector('#edit-q-cancel').onclick = closeEditorAction;
+    const backBtn = editorContainer.querySelector('#edit-q-back-btn');
+    if (backBtn) backBtn.onclick = closeEditorAction;
 
     // Save Question Click
     editorContainer.querySelector('#edit-q-save').onclick = async () => {
@@ -7546,6 +7562,7 @@ async function renderAdminQuestionsTab(container) {
 
       await saveQuestionsToCloud();
       editorContainer.style.display = 'none';
+      if (listWrapper) listWrapper.style.display = 'flex';
     };
   };
 
@@ -7582,6 +7599,7 @@ async function renderAdminQuestionsTab(container) {
   const importPanel = container.querySelector('#admin-q-import-panel');
 
   mdImportBtn.onclick = () => {
+    if (listWrapper) listWrapper.style.display = 'none';
     openMarkdownImportPanel(importPanel, "", saveQuestionsToCloud, renderQuestionsList);
   };
 
@@ -7805,6 +7823,8 @@ function parseMarkdownQuestions(text) {
 }
 
 function openMarkdownImportPanel(panelEl, initialText, saveQuestionsToCloud, renderQuestionsList) {
+  const listWrapper = panelEl.parentNode.querySelector('#admin-q-list-wrapper');
+  if (listWrapper) listWrapper.style.display = 'none';
   panelEl.style.display = 'block';
   panelEl.scrollIntoView({ behavior: 'smooth' });
 
@@ -8273,6 +8293,7 @@ D. 违法占用应急车道行驶
       await saveQuestionsToCloud();
       panelEl.style.display = 'none';
       panelEl.innerHTML = '';
+      if (listWrapper) listWrapper.style.display = 'flex';
       showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
       renderQuestionsList();
     } catch (err) {
@@ -8289,6 +8310,7 @@ D. 违法占用应急车道行驶
     }
     panelEl.style.display = 'none';
     panelEl.innerHTML = '';
+    if (listWrapper) listWrapper.style.display = 'flex';
   };
 }
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
