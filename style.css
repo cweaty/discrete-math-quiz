@@ -2958,8 +2958,9 @@ tr:nth-child(even) {
   color: #ffffff !important;
 }
 
-/* Dark Mode specific style overrides for option items */
-[data-theme="dark"] .option-item {
+/* Dark Mode specific style overrides for option items and judgment buttons */
+[data-theme="dark"] .option-item,
+[data-theme="dark"] .judgment-btn {
   border-color: rgba(255, 255, 255, 0.6) !important; /* White border outline */
   color: #ffffff !important; /* White text font color */
   background-color: rgba(255, 255, 255, 0.03) !important; /* Slightly glass background */
@@ -2971,18 +2972,29 @@ tr:nth-child(even) {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
-[data-theme="dark"] .option-item .option-text {
+[data-theme="dark"] .option-item .option-text,
+[data-theme="dark"] .judgment-btn span {
   color: #ffffff !important;
 }
 
+[data-theme="dark"] .judgment-btn svg {
+  stroke: #ffffff !important;
+}
+
 /* Hover and selection states in dark mode */
-[data-theme="dark"] .option-item:hover {
+[data-theme="dark"] .option-item:hover,
+[data-theme="dark"] .judgment-btn:hover {
   border-color: #ffffff !important;
   background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .option-item:hover .option-prefix {
   border-color: #ffffff !important;
+}
+
+[data-theme="dark"] .judgment-btn:hover svg {
+  stroke: #ffffff !important;
 }
 
 /* Selected state overrides in dark mode */
@@ -2997,10 +3009,22 @@ tr:nth-child(even) {
   background-color: var(--primary) !important;
 }
 
+/* Judgment button selected states in dark mode */
+[data-theme="dark"] .judgment-btn.selected-true {
+  border-color: var(--primary) !important;
+  background-color: var(--primary-light) !important;
+  color: #ffffff !important;
+}
+[data-theme="dark"] .judgment-btn.selected-true svg {
+  stroke: #ffffff !important;
+}
+
 /* Correct state overrides in dark mode */
-[data-theme="dark"] .option-item.correct {
+[data-theme="dark"] .option-item.correct,
+[data-theme="dark"] .judgment-btn.correct {
   border-color: var(--success) !important;
   background-color: var(--success-light) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .option-item.correct .option-prefix {
@@ -3009,14 +3033,24 @@ tr:nth-child(even) {
   background-color: var(--success) !important;
 }
 
+[data-theme="dark"] .judgment-btn.correct svg {
+  stroke: #ffffff !important;
+}
+
 /* Incorrect state overrides in dark mode */
-[data-theme="dark"] .option-item.incorrect {
+[data-theme="dark"] .option-item.incorrect,
+[data-theme="dark"] .judgment-btn.incorrect {
   border-color: var(--error) !important;
   background-color: var(--error-light) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .option-item.incorrect .option-prefix {
   border-color: var(--error) !important;
   color: #ffffff !important;
   background-color: var(--error) !important;
+}
+
+[data-theme="dark"] .judgment-btn.incorrect svg {
+  stroke: #ffffff !important;
 }
