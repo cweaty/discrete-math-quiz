@@ -1049,20 +1049,31 @@ function renderPracticeMode(container) {
     }
     
   } else if (q.category === 'fill_blank') {
-    // Fill Blank rendering
-    interactiveArea.innerHTML = `
-      <div class="fill-blank-wrapper">
-        <input type="text" class="fill-input" id="blank-input" placeholder="请输入你的答案，多个空用 '|' 分隔..." autocomplete="off">
-        <button class="btn btn-primary" id="blank-submit">提交答案</button>
+    const correctParts = q.answer.split('|').map(s => s.trim());
+    const blankCount = correctParts.length;
+    const userAnsParts = userRecord ? userRecord.userAns.split('|').map(s => s.trim()) : [];
+    
+    let inputsHtml = `<div class="fill-blank-container" style="display:flex; flex-direction:column; gap:0.75rem; width:100%;">`;
+    for (let i = 0; i < blankCount; i++) {
+      const val = userAnsParts[i] || '';
+      inputsHtml += `
+        <div style="display:flex; align-items:center; gap:0.5rem; width:100%;">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); min-width:3.5rem;">第 ${i + 1} 空:</span>
+          <input type="text" class="fill-input-box" id="blank-input-${i}" placeholder="请输入第 ${i + 1} 空答案..." autocomplete="off" value="${val}" ${userRecord ? 'disabled' : ''} style="padding:0.7rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; flex:1; box-sizing:border-box;">
+        </div>
+      `;
+    }
+    inputsHtml += `
+        <button class="btn btn-primary" id="blank-submit" style="margin-top:0.5rem;">提交答案</button>
       </div>
     `;
     
-    const blankInput = interactiveArea.querySelector('#blank-input');
+    interactiveArea.innerHTML = inputsHtml;
+    
+    const blankInputs = Array.from(interactiveArea.querySelectorAll('.fill-input-box'));
     const blankSubmit = interactiveArea.querySelector('#blank-submit');
     
     if (userRecord) {
-      blankInput.value = userRecord.userAns;
-      blankInput.disabled = true;
       blankSubmit.disabled = true;
       blankSubmit.innerText = userRecord.isCorrect ? '回答正确' : '回答错误';
       blankSubmit.className = userRecord.isCorrect ? 'btn btn-primary' : 'btn btn-outline';
@@ -1076,22 +1087,30 @@ function renderPracticeMode(container) {
       }
     } else {
       blankSubmit.addEventListener('click', () => submitBlank());
-      blankInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') submitBlank();
+      blankInputs.forEach((input, idx) => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            if (idx < blankInputs.length - 1) {
+              blankInputs[idx + 1].focus();
+            } else {
+              submitBlank();
+            }
+          }
+        });
       });
     }
     
     function submitBlank() {
-      const userAns = blankInput.value.trim();
-      if (!userAns) {
-        showToast('请输入答案！', 'error');
+      const vals = blankInputs.map(input => input.value.trim());
+      if (vals.some(v => !v)) {
+        showToast('请将所有空格填写完整！', 'error');
         return;
       }
-      
+      const userAns = vals.join(' | ');
       const isCorrect = checkBlankCorrectness(userAns, q.answer);
       userData.answered[qId] = { userAns: userAns, isCorrect: isCorrect };
       
-      blankInput.disabled = true;
+      blankInputs.forEach(input => input.disabled = true);
       blankSubmit.disabled = true;
       blankSubmit.innerText = isCorrect ? '回答正确' : '回答错误';
       blankSubmit.className = isCorrect ? 'btn btn-primary' : 'btn btn-outline';
@@ -1748,14 +1767,29 @@ function renderExamRunner(container) {
     });
     
   } else if (q.category === 'fill_blank') {
-    interactiveArea.innerHTML = `
-      <div class="fill-blank-wrapper">
-        <input type="text" class="fill-input" id="blank-input" placeholder="请在这里输入答案..." value="${userAns || ''}">
-      </div>
-    `;
-    const input = interactiveArea.querySelector('#blank-input');
-    input.addEventListener('input', () => {
-      saveExamAnswer(input.value);
+    const correctParts = q.answer.split('|').map(s => s.trim());
+    const blankCount = correctParts.length;
+    const userAnsParts = (userAns || '').split('|').map(s => s.trim());
+    
+    let inputsHtml = `<div class="fill-blank-container" style="display:flex; flex-direction:column; gap:0.75rem; width:100%;">`;
+    for (let i = 0; i < blankCount; i++) {
+      const val = userAnsParts[i] || '';
+      inputsHtml += `
+        <div style="display:flex; align-items:center; gap:0.5rem; width:100%;">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); min-width:3.5rem;">第 ${i + 1} 空:</span>
+          <input type="text" class="exam-blank-sub-input" id="exam-blank-input-${i}" placeholder="请输入第 ${i + 1} 空答案..." value="${val}" style="padding:0.7rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; flex:1; box-sizing:border-box;">
+        </div>
+      `;
+    }
+    inputsHtml += `</div>`;
+    interactiveArea.innerHTML = inputsHtml;
+    
+    const examInputs = Array.from(interactiveArea.querySelectorAll('.exam-blank-sub-input'));
+    examInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        const combined = examInputs.map(i => i.value.trim()).join(' | ');
+        saveExamAnswer(combined);
+      });
     });
     
   } else {
