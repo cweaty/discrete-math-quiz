@@ -4022,7 +4022,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
               📈 24小时实时使用趋势图
             </h3>
             <div style="display:flex; background:var(--bg-secondary); border-radius:8px; padding:0.2rem; border:1px solid var(--border-color);">
-              <button id="trend-tab-pages" style="border:none; background:var(--primary); color:white; font-size:0.7rem; font-weight:700; padding:0.25rem 0.5rem; border-radius:6px; cursor:pointer; transition:all 0.15s;">Pages 请求</button>
+              <button id="trend-tab-pages" style="border:none; background:var(--primary); color:white; font-size:0.7rem; font-weight:700; padding:0.25rem 0.5rem; border-radius:6px; cursor:pointer; transition:all 0.15s;">平台请求</button>
               <button id="trend-tab-ai" style="border:none; background:transparent; color:var(--text-secondary); font-size:0.7rem; font-weight:700; padding:0.25rem 0.5rem; border-radius:6px; cursor:pointer; transition:all 0.15s; margin-left:0.2rem;">AI Neurons</button>
             </div>
           </div>
@@ -4031,7 +4031,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
           <div id="cf-trend-chart-canvas" style="width:100%; height:160px; display:flex; align-items:center; justify-content:center;"></div>
           
           <div style="font-size:0.72rem; color:var(--text-muted); background:var(--bg-secondary); padding:0.5rem 0.75rem; border-radius:10px; border:1.5px solid var(--border-color); line-height:1.45;" id="cf-trend-insight">
-            💡 <strong>使用分析:</strong> 根据当前走势，今日 Pages 请求活动主要集中在上午及晚上答题时间，当前配额极度充足，可放心使用。
+            💡 <strong>使用分析:</strong> 根据当前走势，今日平台请求活动主要集中在上午及晚上答题时间，当前配额极度充足，可放心使用。
           </div>
         </div>
       `;
@@ -4052,8 +4052,8 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
         tabPages.style.color = 'white';
         tabAi.style.background = 'transparent';
         tabAi.style.color = 'var(--text-secondary)';
-        drawUsageTrendChart(chartCanvas, pages, '次', '#6366f1');
-        insightEl.innerHTML = `💡 <strong>使用分析:</strong> 今日 Pages 请求累计为 <strong>${pages}次</strong>，曲线显示活动主要分布在答题刷题高峰期。全站网络状态流畅，无需担心限流问题。`;
+        drawUsageTrendChart(chartCanvas, total, '次', '#6366f1');
+        insightEl.innerHTML = `💡 <strong>使用分析:</strong> 今日 Workers/Pages 平台累计请求为 <strong>${total}次</strong>，包含 Pages 项目运行与 Workers 其他服务，当前配额充足，网络流畅。`;
       };
 
       const drawAiChart = () => {
