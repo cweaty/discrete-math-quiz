@@ -3091,11 +3091,13 @@ function setupFloatingAiTutor() {
         <div style="display:flex; flex-direction:column; gap:0.2rem;">
           <span style="font-size: 0.68rem; font-weight: 700; color: var(--text-muted);">🔮 选择大模型:</span>
           <select id="ai-model-selector" style="font-size: 0.72rem; padding: 0.2rem 0.3rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background-color: var(--bg-primary); color: var(--text-primary); cursor: pointer; outline: none; font-weight:600; width:100%;">
-            <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast" selected>Llama 3.3 70B (旗舰)</option>
-            <option value="@cf/qwen/qwen3-30b-a3b-fp8">Qwen 3 MoE (中文)</option>
-            <option value="@cf/qwen/qwen2.5-coder-32b-instruct">Qwen Coder (代码)</option>
-            <option value="@cf/qwen/qwq-32b">QwQ 32B (数学)</option>
-            <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 (推理)</option>
+            <option value="@cf/qwen/qwq-32b" selected>🏆 QwQ-32B (数学推理专项)</option>
+            <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">🧠 DeepSeek R1-32B (超强推理链)</option>
+            <option value="@cf/qwen/qwen3-30b-a3b-fp8">⚡ Qwen3-30B MoE (推理+中文)</option>
+            <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">🦙 Llama 3.3-70B (旗舰通用)</option>
+            <option value="@cf/openai/gpt-oss-20b">🤖 GPT-OSS-20B (OpenAI轻量推理)</option>
+            <option value="@cf/google/gemma-4-26b-a4b-it">💎 Gemma 4-26B (Google推理)</option>
+            <option value="@cf/zhipuai/glm-4.7-flash">🚀 GLM-4.7-Flash (中文快速)</option>
           </select>
         </div>
         <div style="display:flex; flex-direction:column; gap:0.2rem;">
@@ -7362,10 +7364,13 @@ async function renderAdminSystemTab(container) {
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认 AI 助教语言模型 (Workers AI)</label>
             <select id="sys-default-model" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
-              <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">Llama 3.3 70B Instruct (高速度、高准确)</option>
-              <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 Distill Qwen 32B (极致推理思考链)</option>
-              <option value="@cf/meta/llama-3-8b-instruct">Llama 3 8B Instruct (中轻量级)</option>
-              <option value="@cf/qwen/qwen1.5-14b-chat">Qwen 1.5 14B Chat (中文流畅)</option>
+              <option value="@cf/qwen/qwq-32b">🏆 QwQ-32B — 数学推理专项 (Reasoning, 32B)</option>
+              <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">🧠 DeepSeek R1-Distill-32B — 超强推理链 (Reasoning, 32B)</option>
+              <option value="@cf/qwen/qwen3-30b-a3b-fp8">⚡ Qwen3-30B MoE — 推理+中文优化 (Reasoning, MoE)</option>
+              <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">🦙 Llama 3.3-70B-FP8 — 旗舰通用高速 (General, 70B)</option>
+              <option value="@cf/openai/gpt-oss-20b">🤖 GPT-OSS-20B — OpenAI轻量推理 (Reasoning, 20B)</option>
+              <option value="@cf/google/gemma-4-26b-a4b-it">💎 Gemma 4-26B MoE — Google推理 (Reasoning, MoE)</option>
+              <option value="@cf/zhipuai/glm-4.7-flash">🚀 GLM-4.7-Flash — 中文极速响应 (131k ctx)</option>
             </select>
           </div>
 
