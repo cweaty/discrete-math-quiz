@@ -7127,7 +7127,7 @@ async function renderAdminQuestionsTab(container) {
             ➕ 手动新增题目
           </button>
           <button class="btn btn-outline" id="admin-q-import-md-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:160px; display:flex; align-items:center; justify-content:center; gap:0.35rem; color:var(--primary); border-color:var(--primary);">
-            📄 批量导入 Markdown
+            📄 批量导入题目
           </button>
           <input type="file" id="admin-q-md-file-input" accept=".md,.txt" style="display:none;">
         </div>
@@ -8181,6 +8181,114 @@ D. 违法占用应急车道行驶
 
       previewList.appendChild(card);
     });
+  };
+
+  // Wire initial parsing & bindings
+  textarea.value = initialText || "";
+  runLiveParse();
+
+  textarea.oninput = () => runLiveParse();
+
+  // File loading triggers
+  importFileBtn.onclick = () => fileInput.click();
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      textarea.value = ev.target.result;
+      runLiveParse();
+      showToast(`📁 成功读取文件: ${file.name}`, 'success');
+    };
+    reader.readAsText(file, 'utf-8');
+    fileInput.value = '';
+  };
+
+  // Case Modal triggers
+  showExampleBtn.onclick = () => exampleModal.style.display = 'flex';
+  modalCloseBtn.onclick = () => exampleModal.style.display = 'none';
+  exampleModal.onclick = (e) => { if (e.target === exampleModal) exampleModal.style.display = 'none'; };
+
+  // Submit trigger
+  submitBtn.onclick = async () => {
+    if (currentlyParsed.length === 0) {
+      showToast('没有识别出有效的题目，请先在左侧输入！', 'error');
+      return;
+    }
+
+    let errors = 0;
+    currentlyParsed.forEach(q => {
+      if (!q.question.trim() || !q.answer.trim()) errors++;
+    });
+
+    if (errors > 0) {
+      if (!confirm(`当前有 ${errors} 道题目信息不完整（缺少题干或答案），确定要忽略并导入其它 ${currentlyParsed.length - errors} 道正确的题目吗？`)) {
+        return;
+      }
+    }
+
+    let importedCount = 0;
+    for (const q of currentlyParsed) {
+      if (!q.question.trim() || !q.answer.trim()) continue;
+
+      const category = q.category;
+      const topic = q.topic || 'propositional_logic';
+      const question = q.question.trim();
+      const answer = q.answer.trim();
+      const analysis = q.analysis.trim();
+
+      // Format options to match database structure { key, text }
+      const formattedOptions = (q.options || []).map((opt, i) => {
+        if (typeof opt === 'object' && opt !== null && opt.key && opt.text) {
+          return opt;
+        }
+        const key = String.fromCharCode(65 + i);
+        const text = typeof opt === 'object' ? (opt.text || '') : opt;
+        return { key, text };
+      });
+
+      const inCat = QUESTIONS.filter(qi => qi.category === category);
+      const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
+
+      QUESTIONS.push({
+        category,
+        original_num: nextNum,
+        question,
+        options: formattedOptions,
+        answer,
+        analysis: analysis || '',
+        topic
+      });
+      importedCount++;
+    }
+
+    if (importedCount === 0) {
+      showToast('没有有效题目可导入！', 'error');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ 导入中...';
+    try {
+      await saveQuestionsToCloud();
+      panelEl.style.display = 'none';
+      panelEl.innerHTML = '';
+      showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
+      renderQuestionsList();
+    } catch (err) {
+      showToast('导入同步失败！', 'error');
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = '提交';
+  };
+
+  // Close trigger
+  closeBtn.onclick = () => {
+    if (textarea.value.trim() && !confirm('确定要关闭吗？输入的内容将不会被保存。')) {
+      return;
+    }
+    panelEl.style.display = 'none';
+    panelEl.innerHTML = '';
   };
 }
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
