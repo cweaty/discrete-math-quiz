@@ -7810,387 +7810,255 @@ function openMarkdownImportPanel(panelEl, initialText, saveQuestionsToCloud, ren
 
   // Render the split-screen shell
   panelEl.innerHTML = `
-        <span id="import-batch-progress-text">正在 AI 优化题目...</span>
-        <div class="admin-import-batch-bar-wrap">
-          <div class="admin-import-batch-bar" id="import-batch-bar"></div>
+    <div class="admin-import-split-grid">
+      <!-- Left Pane: Batch Input Area -->
+      <div class="admin-import-left-pane">
+        <div class="admin-import-header-row">
+          <h3 class="admin-import-pane-title">📝 批量输入框</h3>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <button id="panel-import-file-btn" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">📁 导入文件</button>
+            <button id="panel-show-example-btn" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer; color:var(--primary); border-color:var(--primary);">查看案例</button>
+            <input type="file" id="panel-file-input" accept=".md,.txt" style="display:none;">
+          </div>
         </div>
-        <span id="import-batch-count" style="white-space:nowrap; font-size:0.75rem;">0 / ${parsedQuestions.length}</span>
+        <div class="admin-import-textarea-wrap">
+          <textarea id="panel-import-textarea" class="admin-import-textarea" placeholder="在此输入或粘贴 Markdown 格式的试题..."></textarea>
+        </div>
       </div>
 
-      <!-- Format Guide Accordion -->
-      <div class="admin-import-guide">
-        <button class="admin-import-guide-toggle" id="import-guide-toggle">
-          📖 支持的 Markdown 格式说明（点击展开）
-          <span style="font-size:0.8rem;">▼</span>
-        </button>
-        <div class="admin-import-guide-content" id="import-guide-content">
-          <p>支持以下题目格式（可混用多种格式）：</p>
-          <pre>## 判断题
-1. 命题 $p \\wedge q$ 的真值表有 4 行。（ ）
-答案：对
-解析：两个变量各取真假，共 $2^2=4$ 行。
+      <!-- Right Pane: Real-time Preview Area -->
+      <div class="admin-import-right-pane">
+        <div class="admin-import-header-row">
+          <h3 class="admin-import-pane-title">👁️ 预览题目</h3>
+          <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+            <span style="font-size:0.75rem; color:var(--text-secondary);">错误：</span>
+            <span class="admin-import-badge-red" id="panel-error-count">0</span>
+            <span style="font-size:0.75rem; color:var(--text-secondary); margin-left:0.3rem;">总数：</span>
+            <span class="admin-import-badge-blue" id="panel-total-count">0</span>
+            <button id="panel-submit-btn" class="btn btn-primary" style="padding:0.35rem 1rem; font-size:0.75rem; border-radius:8px; cursor:pointer; margin-left:0.3rem;">提交</button>
+            <button id="panel-close-btn" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer; color:var(--error); border-color:rgba(239,68,68,0.3);">关闭</button>
+          </div>
+        </div>
 
+        <!-- Category counts bar -->
+        <div class="admin-import-stats-bar" id="panel-stats-bar">
+          暂无解析题目数据
+        </div>
+
+        <!-- Preview list area -->
+        <div class="admin-import-list" id="panel-preview-list" style="flex:1; min-height:400px; display:flex; flex-direction:column; gap:0.75rem; overflow-y:auto; padding-right:0.25rem;">
+          <!-- Questions will render here dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Case Example Modal -->
+    <div id="panel-example-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center; padding:1.5rem; box-sizing:border-box;">
+      <div style="background:var(--bg-card); border-radius:16px; padding:1.5rem; max-width:650px; width:100%; max-height:85vh; display:flex; flex-direction:column; gap:1rem; box-shadow:0 10px 25px rgba(0,0,0,0.15); box-sizing:border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.5rem;">
+          <h4 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text-primary);">📝 标准试题 Markdown 模板</h4>
+          <button id="panel-modal-close" style="background:transparent; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-secondary);">&times;</button>
+        </div>
+        <div style="flex:1; overflow-y:auto; font-size:0.78rem; line-height:1.5; color:var(--text-secondary);">
+          <p>请按以下示例格式编写（支持各种公式，单空填空题前面请带上【填空题】）：</p>
+          <pre style="background:var(--bg-secondary); border-radius:8px; padding:0.75rem; font-family:monospace; font-size:0.74rem; overflow-x:auto; border:1px solid var(--border-color); margin:0.5rem 0; white-space:pre-wrap; word-break:break-all;">
 ## 单选题
-1. $p \\to q$ 的逆命题是：
-A. $q \\to p$
-B. $\\neg p \\to q$
-C. $\\neg q \\to \\neg p$
-D. $q \\to \\neg p$
-答案：A
-解析：逆命题交换前后件。
+1. 命题 $p \\wedge q$ 为对。驾驶人有下列哪种违法行为一次记6分？
+A. 使用其他车辆行驶证
+B. 饮酒后驾驶机动车
+C. 车速超过规定时速50%以上
+D. 违法占用应急车道行驶
+答案:D
+解析:请仔细阅读交规
+
+## 判断题
+1. 国际象棋起源于英国吗？
+答案:对
+解析:起源于印度，后传入欧洲。
 
 ## 填空题
-（1）$p \\vee q$ 当 $p=T, q=F$ 时真值为___。
-答案：T</pre>
-          <p>支持的题号格式：<code>1.</code> <code>1、</code> <code>1）</code> <code>（1）</code> <code>Q1:</code></p>
-          <p>支持的选项格式：<code>A.</code> <code>A、</code> <code>(A)</code> <code>（A）</code></p>
-          <p>支持的答案标记：<code>答案：</code> <code>【答案】</code> <code>Answer:</code></p>
+1. 我国古典四大名著是（）（）（）（）
+答案:红楼梦|水浒传|三国演义|西游记
+解析:无
+
+## 单空填空题
+1. 【填空题】我国第一个社会主义国家是哪个？
+答案:苏联
+解析:无
+          </pre>
         </div>
       </div>
-
-      <!-- Questions List -->
-      <div class="admin-import-list" id="import-q-list"></div>
     </div>
   `;
 
-  // Toggle format guide
-  panelEl.querySelector('#import-guide-toggle').onclick = () => {
-    const content = panelEl.querySelector('#import-guide-content');
-    content.classList.toggle('open');
-    panelEl.querySelector('#import-guide-toggle').querySelector('span').textContent =
-      content.classList.contains('open') ? '▲' : '▼';
+  // Get elements
+  const textarea = panelEl.querySelector('#panel-import-textarea');
+  const errorCountBadge = panelEl.querySelector('#panel-error-count');
+  const totalCountBadge = panelEl.querySelector('#panel-total-count');
+  const statsBar = panelEl.querySelector('#panel-stats-bar');
+  const previewList = panelEl.querySelector('#panel-preview-list');
+  const submitBtn = panelEl.querySelector('#panel-submit-btn');
+  const closeBtn = panelEl.querySelector('#panel-close-btn');
+
+  const importFileBtn = panelEl.querySelector('#panel-import-file-btn');
+  const fileInput = panelEl.querySelector('#panel-file-input');
+  const showExampleBtn = panelEl.querySelector('#panel-show-example-btn');
+  const exampleModal = panelEl.querySelector('#panel-example-modal');
+  const modalCloseBtn = panelEl.querySelector('#panel-modal-close');
+
+  const CAT_LABELS = {
+    judgment: '判断题',
+    single_choice: '单选题',
+    fill_blank: '填空题',
+    calculation: '计算/简答题',
+    proof: '证明题',
+    application: '应用题'
   };
 
-  // Build question rows
-  const listEl = panelEl.querySelector('#import-q-list');
+  let currentlyParsed = [];
 
-  const buildRow = (q, idx) => {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'import-q-row-v2';
-    rowEl.dataset.idx = idx;
+  // Live parsing implementation
+  const runLiveParse = () => {
+    const text = textarea.value;
+    const parsed = parseMarkdownQuestions(text);
+    currentlyParsed = parsed;
 
-    const optPreview = q.options.length > 0
-      ? q.options.map((o, i) => `<span style="font-size:0.72rem; color:var(--text-secondary);">${String.fromCharCode(65 + i)}. ${o}</span>`).join('  ')
-      : '';
+    // 1. Calculate categories and errors
+    const counts = { judgment: 0, single_choice: 0, fill_blank: 0, calculation: 0, proof: 0, application: 0 };
+    let errors = 0;
 
-    // Build structure WITHOUT user content in innerHTML (to avoid XSS / broken HTML from LaTeX)
-    rowEl.innerHTML = `
-      <div class="import-q-row-header">
-        <input type="checkbox" class="import-q-check" data-idx="${idx}" checked
-          style="width:18px; height:18px; margin-top:0.15rem; cursor:pointer; flex-shrink:0; accent-color:var(--primary);">
-        <div style="flex:1; min-width:0;">
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.35rem; align-items:center;">
-            <span class="import-q-cat-badge" style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;"></span>
-            <select class="import-q-topic" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${topicOptsHtml}</select>
-            <select class="import-q-cat" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${catOptsHtml(q.category)}</select>
-            <button class="import-q-ai-btn" data-idx="${idx}">✨ AI 优化</button>
-            <button class="import-q-expand-btn" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.5rem; border-radius:6px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); cursor:pointer;">编辑 ▼</button>
-          </div>
-          <div class="import-q-summary" style="font-size:0.82rem; color:var(--text-primary); line-height:1.5; display:flex; gap:0.5rem; align-items:baseline; flex-wrap:wrap;">
-            <span class="import-q-summary-text" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
-            <span class="import-q-answer-badge" style="font-size:0.75rem; color:var(--success); font-weight:700; flex-shrink:0;"></span>
-          </div>
-          <div class="import-q-opts-preview" style="margin-top:0.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
-          <div class="import-q-tips" data-idx="${idx}"></div>
+    parsed.forEach(q => {
+      if (counts[q.category] !== undefined) {
+        counts[q.category]++;
+      }
+      if (!q.question.trim() || !q.answer.trim()) {
+        errors++;
+      }
+    });
+
+    // 2. Update badges
+    errorCountBadge.textContent = errors;
+    if (errors > 0) {
+      errorCountBadge.style.background = '#ef4444';
+      errorCountBadge.style.color = 'white';
+    } else {
+      errorCountBadge.style.background = '#fef2f2';
+      errorCountBadge.style.color = '#ef4444';
+    }
+    totalCountBadge.textContent = parsed.length;
+
+    // 3. Render stats bar
+    const statsHtml = Object.entries(counts)
+      .filter(([_, count]) => count > 0)
+      .map(([cat, count]) => `${CAT_LABELS[cat]}: <span class="admin-import-stat-badge">(${count})</span>`)
+      .join('  ');
+    statsBar.innerHTML = statsHtml || '暂无解析题目数据';
+
+    // 4. Render Preview list
+    previewList.innerHTML = '';
+    if (parsed.length === 0) {
+      previewList.innerHTML = `
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--text-muted); font-size:0.85rem; height:100%; gap:0.5rem; min-height:300px;">
+          <span>📝 左侧输入框输入题目，右侧将实时渲染预览。</span>
         </div>
-      </div>
-      <div class="import-q-row-body" data-idx="${idx}">
-        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">题干（支持 LaTeX $...$ 公式）</label>
-        <textarea class="import-q-text-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;"></textarea>
-        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">答案</label>
-        <input type="text" class="import-q-ans-input" data-idx="${idx}" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; box-sizing:border-box; width:100%; outline:none;">
-        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">解析（留空则由 AI 补全）</label>
-        <textarea class="import-q-ana-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;"></textarea>
-        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">LaTeX 预览</label>
-        <div class="import-q-preview-box import-q-render-${idx}"></div>
-      </div>
-    `;
-
-    // ── Safely fill user content using textContent / .value (no HTML injection) ──
-    const summarySpan = rowEl.querySelector('.import-q-summary-text');
-    const answerBadge = rowEl.querySelector('.import-q-answer-badge');
-    const catBadge    = rowEl.querySelector('.import-q-cat-badge');
-    const optsPreview = rowEl.querySelector('.import-q-opts-preview');
-    const textTA      = rowEl.querySelector('.import-q-text-input');
-    const ansInput    = rowEl.querySelector('.import-q-ans-input');
-    const anaTA       = rowEl.querySelector('.import-q-ana-input');
-
-    // Summary line (plain text, truncated)
-    const summaryTxt = q.question || '';
-    summarySpan.textContent = summaryTxt.substring(0, 80) + (summaryTxt.length > 80 ? '...' : '');
-
-    // Answer badge
-    answerBadge.textContent = '→ ' + (q.answer || '');
-
-    // Category badge
-    catBadge.textContent = CAT_LABEL[q.category] || q.category;
-
-    // Options preview (plain text spans)
-    if (q.options && q.options.length > 0) {
-      q.options.forEach((o, i) => {
-        const sp = document.createElement('span');
-        sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
-        sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
-        optsPreview.appendChild(sp);
-      });
+      `;
+      return;
     }
 
-    // Textarea / input values (.value is safe — never parsed as HTML)
-    textTA.value  = q.question  || '';
-    ansInput.value = q.answer   || '';
-    anaTA.value   = q.analysis  || '';
+    parsed.forEach((q, idx) => {
+      const card = document.createElement('div');
+      card.className = 'import-preview-q-card';
 
+      const optHtml = q.options && q.options.length > 0
+        ? `<div class="import-preview-q-opts">
+            ${q.options.map((o, i) => `<div class="import-preview-q-opt">${String.fromCharCode(65 + i)}、${o}</div>`).join('')}
+           </div>`
+        : '';
 
+      card.innerHTML = `
+        <div class="import-preview-q-header">
+          <span class="import-preview-q-index">${idx + 1}、</span>
+          <span class="import-preview-q-cat">${CAT_LABELS[q.category] || q.category}</span>
+        </div>
+        <div class="import-preview-q-stem"></div>
+        ${optHtml}
+        <div class="import-preview-q-ans-box">答案：${q.answer}</div>
+        ${q.analysis ? `<div class="import-preview-q-analysis-box">解析：${q.analysis}</div>` : ''}
+      `;
 
-    // Sync question data from inputs
-    const syncFromInputs = (idx) => {
-      const textEl = rowEl.querySelector(`.import-q-text-input[data-idx="${idx}"]`);
-      const ansEl = rowEl.querySelector(`.import-q-ans-input[data-idx="${idx}"]`);
-      const anaEl = rowEl.querySelector(`.import-q-ana-input[data-idx="${idx}"]`);
-      if (textEl) parsedQuestions[idx].question = textEl.value;
-      if (ansEl) parsedQuestions[idx].answer = ansEl.value;
-      if (anaEl) parsedQuestions[idx].analysis = anaEl.value;
-    };
-
-    const updatePreview = (idx) => {
-      syncFromInputs(idx);
-      const previewEl = rowEl.querySelector(`.import-q-render-${idx}`);
-      if (previewEl) {
-        previewEl.innerHTML = marked.parse(parsedQuestions[idx].question || '_无题干_');
-        renderMath(previewEl);
+      // Safely parse Markdown and LaTeX formulas
+      const stemEl = card.querySelector('.import-preview-q-stem');
+      if (stemEl) {
+        stemEl.innerHTML = marked.parse(q.question || '');
+        renderMath(stemEl);
       }
-      // update summary
-      const summaryText = rowEl.querySelector('.import-q-summary-text');
-      if (summaryText) {
-        const txt = parsedQuestions[idx].question;
-        summaryText.textContent = txt.substring(0, 80) + (txt.length > 80 ? '...' : '');
+
+      const analysisEl = card.querySelector('.import-preview-q-analysis-box');
+      if (analysisEl) {
+        analysisEl.innerHTML = marked.parse('解析：' + q.analysis);
+        renderMath(analysisEl);
       }
-    };
 
-    // Wire expand button
-    rowEl.querySelector('.import-q-expand-btn').onclick = () => {
-      const body = rowEl.querySelector(`.import-q-row-body[data-idx="${idx}"]`);
-      const isOpen = body.classList.toggle('open');
-      rowEl.querySelector('.import-q-expand-btn').textContent = isOpen ? '收起 ▲' : '编辑 ▼';
-      if (isOpen) updatePreview(idx);
-    };
-
-    // Live preview on input
-    rowEl.querySelector(`.import-q-text-input`).oninput = () => updatePreview(idx);
-    rowEl.querySelector(`.import-q-ans-input`).oninput = () => syncFromInputs(idx);
-    rowEl.querySelector(`.import-q-ana-input`).oninput = () => syncFromInputs(idx);
-
-    // AI optimize single question
-    rowEl.querySelector('.import-q-ai-btn').onclick = async (e) => {
-      syncFromInputs(idx);
-      const q = parsedQuestions[idx];
-      const catEl = rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
-      const topicEl = rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      btn.textContent = '⏳ 优化中...';
-
-      try {
-        const res = await fetch(`${API_BASE}/ai`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'enhance_question',
-            question: q.question,
-            answer: q.answer,
-            analysis: q.analysis,
-            category: catEl ? catEl.value : q.category,
-            topic: topicEl ? topicEl.value : q.topic,
-            options: q.options || [],
-          })
-        });
-        const result = await res.json();
-        if (res.ok && result.question) {
-          parsedQuestions[idx].question = result.question;
-          parsedQuestions[idx].analysis = result.analysis || q.analysis;
-          parsedQuestions[idx].answer = result.answer || q.answer;
-          if (result.options) parsedQuestions[idx].options = result.options;
-
-          // Update inputs if body is open
-          const textInput = rowEl.querySelector(`.import-q-text-input`);
-          const ansInputEl = rowEl.querySelector(`.import-q-ans-input`);
-          const anaInput = rowEl.querySelector(`.import-q-ana-input`);
-          if (textInput) textInput.value = result.question;
-          if (ansInputEl) ansInputEl.value = result.answer || '';
-          if (anaInput) anaInput.value = result.analysis || '';
-
-          // Update header badges
-          const answerBadge = rowEl.querySelector('.import-q-answer-badge');
-          if (answerBadge) answerBadge.textContent = '→ ' + (result.answer || '');
-
-          const optsPreviewEl = rowEl.querySelector('.import-q-opts-preview');
-          if (optsPreviewEl && result.options) {
-            optsPreviewEl.innerHTML = '';
-            result.options.forEach((o, i) => {
-              const sp = document.createElement('span');
-              sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
-              sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
-              optsPreviewEl.appendChild(sp);
-            });
-          }
-
-          // Show tips
-          const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
-          if (tipsEl && result.tips) {
-            tipsEl.textContent = '✅ AI 优化完成：' + result.tips;
-            tipsEl.classList.add('visible');
-          }
-          updatePreview(idx);
-          btn.textContent = '✅ 已优化';
-        } else {
-          showToast('AI 优化失败：' + (result.error || '未知错误'), 'error');
-          btn.textContent = '✨ AI 优化';
-        }
-      } catch (err) {
-        showToast('AI 接口连接失败！', 'error');
-        btn.textContent = '✨ AI 优化';
-      }
-      btn.disabled = false;
-    };
-
-    return rowEl;
+      previewList.appendChild(card);
+    });
   };
 
-  parsedQuestions.forEach((q, idx) => {
-    listEl.appendChild(buildRow(q, idx));
-  });
+  // Set initial text and run parse
+  textarea.value = initialText || "";
+  runLiveParse();
 
-  // Controls
-  panelEl.querySelector('#import-cancel-btn').onclick = () => {
-    panelEl.style.display = 'none';
-    panelEl.innerHTML = '';
+  // Wire textarea input event
+  textarea.oninput = () => runLiveParse();
+
+  // File loading bindings
+  importFileBtn.onclick = () => fileInput.click();
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      textarea.value = ev.target.result;
+      runLiveParse();
+      showToast(`📁 成功读取文件: ${file.name}`, 'success');
+    };
+    reader.readAsText(file, 'utf-8');
+    fileInput.value = ''; // Reset
   };
 
-  panelEl.querySelector('#import-select-all').onclick = () => {
-    panelEl.querySelectorAll('.import-q-check').forEach(cb => cb.checked = true);
-  };
+  // Example modal bindings
+  showExampleBtn.onclick = () => exampleModal.style.display = 'flex';
+  modalCloseBtn.onclick = () => exampleModal.style.display = 'none';
+  exampleModal.onclick = (e) => { if (e.target === exampleModal) exampleModal.style.display = 'none'; };
 
-  panelEl.querySelector('#import-select-none').onclick = () => {
-    panelEl.querySelectorAll('.import-q-check').forEach(cb => cb.checked = false);
-  };
-
-  // Batch AI optimize selected questions
-  panelEl.querySelector('#import-batch-ai-btn').onclick = async () => {
-    const checkedBoxes = [...panelEl.querySelectorAll('.import-q-check:checked')];
-    if (checkedBoxes.length === 0) { showToast('请先勾选需要优化的题目！', 'error'); return; }
-
-    const progressEl = panelEl.querySelector('#import-batch-progress');
-    const barEl = panelEl.querySelector('#import-batch-bar');
-    const countEl = panelEl.querySelector('#import-batch-count');
-    progressEl.classList.add('active');
-    panelEl.querySelector('#import-batch-ai-btn').disabled = true;
-
-    let done = 0;
-    const total = checkedBoxes.length;
-
-    for (const cb of checkedBoxes) {
-      const idx = parseInt(cb.dataset.idx);
-      const q = parsedQuestions[idx];
-      const rowEl = listEl.querySelector(`.import-q-row-v2[data-idx="${idx}"]`);
-      const catEl = rowEl && rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
-      const topicEl = rowEl && rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
-      const aiBtnEl = rowEl && rowEl.querySelector('.import-q-ai-btn');
-      if (aiBtnEl) { aiBtnEl.disabled = true; aiBtnEl.textContent = '⏳ 优化中...'; }
-
-      try {
-        const res = await fetch(`${API_BASE}/ai`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'enhance_question',
-            question: q.question,
-            answer: q.answer,
-            analysis: q.analysis,
-            category: catEl ? catEl.value : q.category,
-            topic: topicEl ? topicEl.value : q.topic,
-            options: q.options || [],
-          })
-        });
-        const result = await res.json();
-        if (res.ok && result.question) {
-          parsedQuestions[idx].question = result.question;
-          parsedQuestions[idx].analysis = result.analysis || q.analysis;
-          parsedQuestions[idx].answer = result.answer || q.answer;
-          if (result.options) parsedQuestions[idx].options = result.options;
-
-          if (rowEl) {
-            const textInput = rowEl.querySelector('.import-q-text-input');
-            const ansInputEl = rowEl.querySelector('.import-q-ans-input');
-            const anaInput = rowEl.querySelector('.import-q-ana-input');
-            const summaryText = rowEl.querySelector('.import-q-summary-text');
-            const answerBadge = rowEl.querySelector('.import-q-answer-badge');
-            const optsPreviewEl = rowEl.querySelector('.import-q-opts-preview');
-
-            if (textInput) textInput.value = result.question;
-            if (ansInputEl) ansInputEl.value = result.answer || '';
-            if (anaInput) anaInput.value = result.analysis || '';
-            if (summaryText) summaryText.textContent = result.question.substring(0, 80) + (result.question.length > 80 ? '...' : '');
-            if (answerBadge) answerBadge.textContent = '→ ' + (result.answer || '');
-
-            if (optsPreviewEl && result.options) {
-              optsPreviewEl.innerHTML = '';
-              result.options.forEach((o, i) => {
-                const sp = document.createElement('span');
-                sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
-                sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
-                optsPreviewEl.appendChild(sp);
-              });
-            }
-
-            const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
-            if (tipsEl && result.tips) { tipsEl.textContent = '✅ ' + result.tips; tipsEl.classList.add('visible'); }
-          }
-          if (aiBtnEl) aiBtnEl.textContent = '✅ 已优化';
-        } else {
-          if (aiBtnEl) aiBtnEl.textContent = '⚠️ 失败';
-        }
-      } catch (err) {
-        if (aiBtnEl) aiBtnEl.textContent = '⚠️ 失败';
-      }
-      if (aiBtnEl) aiBtnEl.disabled = false;
-
-      done++;
-      const pct = Math.round((done / total) * 100);
-      barEl.style.width = pct + '%';
-      countEl.textContent = `${done} / ${total}`;
+  // Submit button
+  submitBtn.onclick = async () => {
+    if (currentlyParsed.length === 0) {
+      showToast('没有识别出有效的题目，请先在左侧输入！', 'error');
+      return;
     }
 
-    progressEl.classList.remove('active');
-    panelEl.querySelector('#import-batch-ai-btn').disabled = false;
-    showToast(`🎉 已完成 ${done} 道题目的 AI 优化！`, 'success');
-  };
+    let errors = 0;
+    currentlyParsed.forEach(q => {
+      if (!q.question.trim() || !q.answer.trim()) errors++;
+    });
 
-  // Confirm import
-  panelEl.querySelector('#import-confirm-btn').onclick = async () => {
-    const selectedBoxes = [...panelEl.querySelectorAll('.import-q-check:checked')];
-    if (selectedBoxes.length === 0) { showToast('请至少勾选一道题目再导入！', 'error'); return; }
+    if (errors > 0) {
+      if (!confirm(`当前有 ${errors} 道题目信息不完整（缺少题干或答案），确定要忽略并导入其它 ${currentlyParsed.length - errors} 道正确的题目吗？`)) {
+        return;
+      }
+    }
 
     let importedCount = 0;
-    for (const cb of selectedBoxes) {
-      const idx = parseInt(cb.dataset.idx);
-      const q = parsedQuestions[idx];
-      const rowEl = listEl.querySelector(`.import-q-row-v2[data-idx="${idx}"]`);
-      const catEl = rowEl && rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
-      const topicEl = rowEl && rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
-      const category = catEl ? catEl.value : q.category;
-      const topic = topicEl ? topicEl.value : (q.topic || 'propositional_logic');
+    for (const q of currentlyParsed) {
+      if (!q.question.trim() || !q.answer.trim()) continue;
 
-      // Re-read from live inputs in case user edited inline
-      const textInput = rowEl && rowEl.querySelector('.import-q-text-input');
-      const ansInput = rowEl && rowEl.querySelector('.import-q-ans-input');
-      const anaInput = rowEl && rowEl.querySelector('.import-q-ana-input');
-      const question = textInput ? textInput.value.trim() : q.question;
-      const answer = ansInput ? ansInput.value.trim() : q.answer;
-      const analysis = anaInput ? anaInput.value.trim() : q.analysis;
+      const category = q.category;
+      const topic = q.topic || 'propositional_logic';
+      const question = q.question.trim();
+      const answer = q.answer.trim();
+      const analysis = q.analysis.trim();
 
-      if (!question || !answer) continue;
-
-      // Format options to object list expected by the database schema (e.g. { key: "A", text: "..." })
+      // Format options to match database structure { key, text }
       const formattedOptions = (q.options || []).map((opt, i) => {
         if (typeof opt === 'object' && opt !== null && opt.key && opt.text) {
           return opt;
@@ -8203,21 +8071,47 @@ D. $q \\to \\neg p$
       const inCat = QUESTIONS.filter(qi => qi.category === category);
       const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
 
-      QUESTIONS.push({ category, original_num: nextNum, question, options: formattedOptions, answer, analysis: analysis || '', topic });
+      QUESTIONS.push({
+        category,
+        original_num: nextNum,
+        question,
+        options: formattedOptions,
+        answer,
+        analysis: analysis || '',
+        topic
+      });
       importedCount++;
     }
 
-    if (importedCount === 0) { showToast('没有有效题目可导入！', 'error'); return; }
+    if (importedCount === 0) {
+      showToast('没有有效题目可导入！', 'error');
+      return;
+    }
 
-    await saveQuestionsToCloud();
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ 导入中...';
+    try {
+      await saveQuestionsToCloud();
+      panelEl.style.display = 'none';
+      panelEl.innerHTML = '';
+      showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
+      renderQuestionsList();
+    } catch (err) {
+      showToast('导入同步失败！', 'error');
+    }
+    submitBtn.disabled = false;
+    submitBtn.textContent = '提交';
+  };
+
+  // Close button
+  closeBtn.onclick = () => {
+    if (textarea.value.trim() && !confirm('确定要关闭吗？输入的内容将不会被保存。')) {
+      return;
+    }
     panelEl.style.display = 'none';
     panelEl.innerHTML = '';
-    showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
-    renderQuestionsList();
   };
 }
-
-
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
 async function renderAdminSystemTab(container) {
   container.innerHTML = `
