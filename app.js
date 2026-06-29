@@ -7136,7 +7136,10 @@ async function renderAdminQuestionsTab(container) {
 
     const updateAnswerUI = () => {
       const category = catSelect.value;
-      const currentAns = q.answer || "";
+      // Prefer the current live value in the DOM over the stale q.answer from closure
+      const liveAnswerEl = answerWrapper.querySelector('#edit-q-answer');
+      const currentAns = liveAnswerEl ? liveAnswerEl.value : (q.answer || "");
+
       if (category === 'judgment') {
         answerWrapper.innerHTML = `
           <select id="edit-q-answer" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%;">
@@ -7145,7 +7148,9 @@ async function renderAdminQuestionsTab(container) {
           </select>
         `;
       } else if (category === 'single_choice') {
-        const currentOpts = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map((_, idx) => String.fromCharCode(65 + idx));
+        // Count currently rendered option rows to build the answer dropdown
+        const currentOptRows = Array.from(optionsList.querySelectorAll('.edit-q-opt-input'));
+        const currentOpts = currentOptRows.map((_, idx) => String.fromCharCode(65 + idx));
         if (currentOpts.length === 0) {
           currentOpts.push('A', 'B', 'C', 'D');
         }
@@ -7165,7 +7170,12 @@ async function renderAdminQuestionsTab(container) {
     };
     
     catSelect.addEventListener('change', () => {
-      optionsWrapper.style.display = (catSelect.value === 'single_choice') ? 'flex' : 'none';
+      const newCat = catSelect.value;
+      optionsWrapper.style.display = (newCat === 'single_choice') ? 'flex' : 'none';
+      // When switching TO single_choice with no existing option rows, auto-fill 4 default rows
+      if (newCat === 'single_choice' && optionsList.querySelectorAll('.edit-q-opt-input').length === 0) {
+        renderOptionsRows(['', '', '', '']);
+      }
       updateAnswerUI();
     });
 
@@ -7227,16 +7237,31 @@ async function renderAdminQuestionsTab(container) {
       const category = catSelect.value;
       const topic = editorContainer.querySelector('#edit-q-topic').value;
       const questionText = editorContainer.querySelector('#edit-q-text').value.trim();
-      const answer = editorContainer.querySelector('#edit-q-answer').value.trim();
+
+      // Safely read the answer element (it's dynamically re-rendered by updateAnswerUI)
+      const answerEl = answerWrapper.querySelector('#edit-q-answer');
+      if (!answerEl) {
+        showToast('答案组件渲染异常，请刷新后重试！', 'error');
+        return;
+      }
+      const answer = answerEl.value.trim();
       const analysis = editorContainer.querySelector('#edit-q-analysis').value.trim();
-      
+
       let options = [];
       if (category === 'single_choice') {
-        options = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map(i => i.value.trim());
+        options = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map(i => i.value.trim()).filter(v => v !== '');
+        if (options.length < 2) {
+          showToast('单选题至少需要填写 2 个选项内容！', 'error');
+          return;
+        }
       }
 
-      if (!questionText || !answer) {
-        showToast('题干和标准答案均不能为空！', 'error');
+      if (!questionText) {
+        showToast('题干内容不能为空！', 'error');
+        return;
+      }
+      if (!answer) {
+        showToast('标准答案不能为空！', 'error');
         return;
       }
 
@@ -7244,7 +7269,7 @@ async function renderAdminQuestionsTab(container) {
         // Calculate max original_num in this category
         const inCat = QUESTIONS.filter(qi => qi.category === category);
         const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
-        
+
         const newQObj = {
           category,
           original_num: nextNum,
@@ -7254,18 +7279,32 @@ async function renderAdminQuestionsTab(container) {
           analysis,
           topic
         };
-        
+
         QUESTIONS.push(newQObj);
       } else {
-        // Find existing index
-        const qIdx = QUESTIONS.findIndex(qi => qi.category === q.category && qi.original_num === q.original_num);
+        // Find existing index using the ORIGINAL category & num captured in q at edit-open time
+        const origCategory = q.category;
+        const origNum = q.original_num;
+        const qIdx = QUESTIONS.findIndex(qi => qi.category === origCategory && qi.original_num === origNum);
         if (qIdx !== -1) {
+          // If the category changed, renumber within the new category
+          if (QUESTIONS[qIdx].category !== category) {
+            const inNewCat = QUESTIONS.filter((qi, i) => qi.category === category && i !== qIdx);
+            const nextNum = inNewCat.length > 0 ? Math.max(...inNewCat.map(qi => qi.original_num)) + 1 : 1;
+            QUESTIONS[qIdx].original_num = nextNum;
+          }
           QUESTIONS[qIdx].category = category;
           QUESTIONS[qIdx].question = questionText;
           QUESTIONS[qIdx].options = options;
           QUESTIONS[qIdx].answer = answer;
           QUESTIONS[qIdx].analysis = analysis;
           QUESTIONS[qIdx].topic = topic;
+          // Update q reference so subsequent edits without re-opening still work
+          q.category = category;
+          q.original_num = QUESTIONS[qIdx].original_num;
+        } else {
+          showToast('未找到原题目记录，保存失败！请刷新后重试。', 'error');
+          return;
         }
       }
 
