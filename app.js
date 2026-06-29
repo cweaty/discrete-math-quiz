@@ -5297,30 +5297,81 @@ function renderMobilePractice(container) {
 
   } else {
     // Subjective (calculation, proof, application)
-    interactive.innerHTML = `
-      <div class="glass-panel p-4 space-y-3 bg-white/40 dark:bg-slate-900/40">
-        <textarea id="mob-subjective-input" rows="4" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" placeholder="请在这里草稿您的解题思路（主观证明题需要自主对照解析核对）..."></textarea>
-      </div>
-    `;
-
-    const subInput = interactive.querySelector('#mob-subjective-input');
     if (userRecord) {
-      subInput.value = userRecord.userAns;
-      subInput.disabled = true;
+      interactive.innerHTML = `
+        <div class="glass-panel p-4 space-y-3 bg-white/40 dark:bg-slate-900/40">
+          <textarea id="mob-subjective-input" rows="4" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm placeholder:text-slate-400 text-slate-900 dark:text-white" disabled>${userRecord.userAns}</textarea>
+          <div class="flex flex-col gap-2 mt-3">
+            <div class="text-sm font-bold ${userRecord.isCorrect ? 'text-emerald-500' : 'text-rose-500'}">
+              自我评估结果：${userRecord.isCorrect ? '做对了 ✓' : '做错了 / 没做出来 ✗'}
+            </div>
+            <button class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer w-fit" id="mob-change-grade-btn">重新评估</button>
+          </div>
+        </div>
+      `;
       showAnswerReveal();
       mobSubmit.style.display = 'none';
-    } else {
-      mobSubmit.innerText = '核对并看解析';
-      mobSubmit.addEventListener('click', () => {
-        const val = subInput.value.trim();
-        userData.answered[qId] = { userAns: val || '已核对自评', isCorrect: true };
+
+      interactive.querySelector('#mob-change-grade-btn').onclick = () => {
+        delete userData.answered[qId];
         saveUserData();
+        renderViewport();
+      };
+    } else {
+      interactive.innerHTML = `
+        <div class="glass-panel p-4 space-y-3 bg-white/40 dark:bg-slate-900/40" id="mob-subjective-input-container">
+          <textarea id="mob-subjective-input" rows="4" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" placeholder="请在这里草稿您的解题思路（主观证明题需要自主对照解析核对）..."></textarea>
+          <div id="mob-subjective-eval-area" class="hidden flex flex-col gap-2 pt-2 border-t border-slate-200/20">
+            <p class="text-xs font-bold text-slate-800 dark:text-slate-200">对照参考答案，你做对了吗？</p>
+            <div class="flex gap-3">
+              <button class="bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 text-xs font-bold py-2.5 rounded-xl border border-emerald-500/20 cursor-pointer flex-1" id="mob-grade-correct">做对了</button>
+              <button class="bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 text-rose-600 dark:text-rose-400 text-xs font-bold py-2.5 rounded-xl border border-rose-500/20 cursor-pointer flex-1" id="mob-grade-incorrect">做错了 / 没做出来</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const subInput = interactive.querySelector('#mob-subjective-input');
+      const evalArea = interactive.querySelector('#mob-subjective-eval-area');
+
+      mobSubmit.innerText = '核对并看解析';
+      mobSubmit.onclick = () => {
+        const val = subInput.value.trim();
         subInput.disabled = true;
         showAnswerReveal();
         mobSubmit.style.display = 'none';
-        showToast('请自主对照参考解析核对！', 'info');
-        handleAnswerSubmitted(qId, true);
-      });
+        evalArea.classList.remove('hidden');
+
+        interactive.querySelector('#mob-grade-correct').onclick = () => selectGrade(true);
+        interactive.querySelector('#mob-grade-incorrect').onclick = () => selectGrade(false);
+
+        function selectGrade(isCorrect) {
+          userData.answered[qId] = {
+            userAns: val || '已核对自评',
+            isCorrect: isCorrect
+          };
+          
+          if (isCorrect) {
+            updateStudyStreak();
+            const wIdx = userData.wrongQuestions.indexOf(qId);
+            if (wIdx > -1) {
+              userData.wrongQuestions.splice(wIdx, 1);
+            }
+          } else {
+            if (!userData.wrongQuestions.includes(qId)) {
+              userData.wrongQuestions.push(qId);
+            }
+          }
+          saveUserData();
+          showToast(isCorrect ? '太棒了，继续加油！' : '没关系，看懂解析才是关键', isCorrect ? 'success' : 'info');
+          
+          // Execute the general completion/navigation logic
+          handleAnswerSubmitted(qId, isCorrect);
+          
+          // Re-render viewport to show the result state
+          renderViewport();
+        }
+      };
     }
   }
 }
