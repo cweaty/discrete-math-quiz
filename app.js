@@ -5997,6 +5997,39 @@ function renderMobileProfile(container) {
         </button>
       </section>
 
+      <!-- Data Management Settings -->
+      <section class="glass-panel overflow-hidden bg-white/40 dark:bg-slate-900/40 mb-6">
+        <div class="px-5 py-3 border-b border-slate-200/50 dark:border-slate-800/50">
+          <h3 class="text-xs font-bold text-outline tracking-wider">数据管理</h3>
+        </div>
+        <div class="flex flex-col">
+          <!-- Reset Answered (Keep stats) -->
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-reset-answered">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">history</span>
+              <span>清空刷题历史（保留统计数据）</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+          <!-- Reset Wrong Questions -->
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-reset-wrong">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">delete_sweep</span>
+              <span>清空错题本</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+          <!-- Reset Bookmarks -->
+          <button class="flex items-center justify-between p-4 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-reset-bookmarks">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">bookmark_remove</span>
+              <span>清空收藏夹</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+        </div>
+      </section>
+
       <!-- Advanced Settings List -->
       <section class="glass-panel overflow-hidden bg-white/40 dark:bg-slate-900/40">
         <div class="px-5 py-3 border-b border-slate-200/50 dark:border-slate-800/50">
@@ -6087,9 +6120,82 @@ function renderMobileProfile(container) {
     logout();
   };
 
-  container.querySelector('#mob-btn-wipe').onclick = () => {
-    const wipeBtn = document.getElementById('reset-progress-btn');
-    if (wipeBtn) wipeBtn.click();
+  // Data Cleansers
+  container.querySelector('#mob-btn-reset-answered').onclick = () => {
+    if (confirm('⚠️ 警告：是否确定要清空您所有的刷题与答题记录？（此操作将保留打卡天数和模考成绩等个人统计数据）该操作无法撤销！如果已登录，云端备份也将同步清空。')) {
+      userData.answered = {};
+      saveUserData(true);
+      showToast('刷题历史记录已成功清空！', 'success');
+      currentQuestionIndex = 0;
+      renderViewport();
+    }
+  };
+
+  container.querySelector('#mob-btn-reset-wrong').onclick = () => {
+    if (confirm('⚠️ 警告：是否确定要清空您的整个错题本？此操作将无法撤销！如果已登录，云端记录也将同步清空。')) {
+      userData.wrongQuestions = [];
+      saveUserData(true);
+      showToast('错题本已成功清空！', 'success');
+      currentQuestionIndex = 0;
+      renderViewport();
+    }
+  };
+
+  container.querySelector('#mob-btn-reset-bookmarks').onclick = () => {
+    if (confirm('⚠️ 警告：是否确定要清空收藏夹中的所有题目？此操作将无法撤销！如果已登录，云端收藏夹也将同步清空。')) {
+      userData.bookmarks = [];
+      saveUserData(true);
+      showToast('收藏夹已成功清空！', 'success');
+      currentQuestionIndex = 0;
+      renderViewport();
+    }
+  };
+
+  // Account Deletion
+  container.querySelector('#mob-btn-wipe').onclick = async () => {
+    const firstConfirm = confirm('⚠️ 警告：您正在请求注销该离散数学刷题账户！\n\n注销后：\n1. 您的用户名与账户将被立即注销释放。\n2. 您的云端刷题进度、打卡天数和错题藏书将被永久彻底抹除。\n\n您确定要继续吗？');
+    if (!firstConfirm) return;
+    
+    const secondConfirm = confirm('⚠️ 再次确认：此操作不可撤销，云端数据将彻底被粉碎！\n\n您真的确定要彻底注销此账号吗？');
+    if (!secondConfirm) return;
+    
+    const token = localStorage.getItem('dm_jwt_token');
+    if (!token) {
+      showToast('未检测到登录凭证，无法注销云端账号！', 'error');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE}/auth/delete`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const result = await response.json();
+      if (response.ok) {
+        localStorage.removeItem('dm_jwt_token');
+        localStorage.removeItem('dm_user_profile');
+        userData.answered = {};
+        userData.bookmarks = [];
+        userData.wrongQuestions = [];
+        userData.streak = 0;
+        userData.lastStudyDate = "";
+        userData.examHistory = [];
+        userData.examHighScore = 0;
+        saveUserData();
+        
+        showToast('账号注销成功，所有本地及云端数据已彻底擦除！', 'success');
+        currentMobileTab = 'lobby';
+        renderViewport();
+      } else {
+        showToast(result.error || '注销失败，请重试！', 'error');
+      }
+    } catch (err) {
+      showToast('服务器连接失败，请稍后重试！', 'error');
+    }
   };
 }
 
