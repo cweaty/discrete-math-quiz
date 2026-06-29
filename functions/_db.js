@@ -81,3 +81,23 @@ export async function deleteDb(env, key) {
     }
   }
 }
+
+export async function listDbKeys(env, prefix) {
+  if (env.DB_KV) {
+    try {
+      const res = await env.DB_KV.list({ prefix });
+      return res.keys.map(k => k.name);
+    } catch (err) {
+      console.error("KV list error with prefix:", prefix, err);
+    }
+  }
+  if (env.DB_R2) {
+    try {
+      const res = await env.DB_R2.list({ prefix });
+      return res.objects.map(o => o.key);
+    } catch (err) {
+      console.error("R2 list error with prefix:", prefix, err);
+    }
+  }
+  return [];
+}

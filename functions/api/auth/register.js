@@ -53,12 +53,14 @@ export async function onRequestPost(context) {
     const salt = generateRandomSalt();
     const passwordHash = await hashPassword(password, salt);
     const userId = `usr_${crypto.randomUUID().replace(/-/g, "").substring(0, 16)}`;
+    const role = (normUsername === "admin") ? "admin" : "user";
     
     // Save account index
     const accountData = {
       userId,
       passwordHash,
-      salt
+      salt,
+      role
     };
     await putDb(env, `user:account:${normUsername}`, JSON.stringify(accountData));
     

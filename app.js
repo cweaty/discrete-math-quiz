@@ -30,6 +30,25 @@ function getExpectedCfScriptName() {
   return 'pages-discrete-math-quiz';
 }
 
+async function loadDynamicQuestions() {
+  try {
+    const res = await fetch("/api/questions");
+    if (res.ok) {
+      const dbQuestions = await res.json();
+      if (dbQuestions && Array.isArray(dbQuestions) && dbQuestions.length > 0) {
+        if (!window.STATIC_QUESTIONS) {
+          window.STATIC_QUESTIONS = [...QUESTIONS];
+        }
+        QUESTIONS.length = 0;
+        QUESTIONS.push(...dbQuestions);
+        console.log(`Successfully loaded ${dbQuestions.length} custom questions from database.`);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load dynamic questions from database:", err);
+  }
+}
+
 function loadSettings() {
   const saved = localStorage.getItem('dm_quiz_settings');
   if (saved) {
@@ -74,7 +93,8 @@ let examState = {
 };
 
 // --- Initialization ---
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDynamicQuestions();
   loadUserData();
   setupSidebarCounts();
   setupCategoryNavigation();
@@ -240,6 +260,9 @@ function getQuestionId(q) {
 
 // Get lists of questions filtered by currentCategory
 function getFilteredQuestions() {
+  if (currentCategory === 'admin') {
+    return [];
+  }
   if (currentCategory === 'bookmarks') {
     return QUESTIONS.filter(q => userData.bookmarks.includes(getQuestionId(q)));
   }
@@ -348,6 +371,8 @@ function setupCategoryNavigation() {
         subtitleEl.innerText = '全站刷题与考试积分高分榜前50名';
       } else if (currentCategory === 'profile') {
         subtitleEl.innerText = '查看您的个人做题战绩、连续打卡天数与账号同步状态';
+      } else if (currentCategory === 'admin') {
+        subtitleEl.innerText = '全局系统配置、用户角色变更、题库管理与大模型调试后台';
       } else {
         const count = getFilteredQuestions().length;
         subtitleEl.innerText = `当前分类下共收录了 ${count} 道题目`;
@@ -441,6 +466,10 @@ function renderViewport() {
       renderMobileProfile(container);
       return;
     }
+    if (currentMobileTab === 'admin') {
+      renderAdminView(container);
+      return;
+    }
   } else {
     // Original Desktop View Dispatcher
     if (cfPanel) {
@@ -466,6 +495,10 @@ function renderViewport() {
     }
     if (currentCategory === 'profile') {
       renderProfileView(container);
+      return;
+    }
+    if (currentCategory === 'admin') {
+      renderAdminView(container);
       return;
     }
     if (currentMode === 'practice') {
@@ -2135,6 +2168,8 @@ async function checkAuthStatus() {
   const token = localStorage.getItem('dm_jwt_token');
   const userProfile = document.getElementById('user-profile');
   const loginTriggerBtn = document.getElementById('login-trigger-btn');
+  const adminNav = document.getElementById('nav-admin');
+  const role = localStorage.getItem('dm_user_role');
   
   if (token) {
     // If token exists, display profile
@@ -2148,6 +2183,9 @@ async function checkAuthStatus() {
         
         userProfile.style.display = 'flex';
         loginTriggerBtn.style.display = 'none';
+        if (adminNav) {
+          adminNav.style.display = (role === 'admin') ? 'flex' : 'none';
+        }
         
         // Trigger initial sync to merge data
         syncUserData();
@@ -2161,6 +2199,9 @@ async function checkAuthStatus() {
   // Default logged out state
   userProfile.style.display = 'none';
   loginTriggerBtn.style.display = 'flex';
+  if (adminNav) {
+    adminNav.style.display = 'none';
+  }
 }
 
 // Sync local storage data with Cloudflare KV database
@@ -2278,6 +2319,9 @@ function setupAuthEvents() {
       if (response.ok) {
         localStorage.setItem('dm_jwt_token', result.token);
         localStorage.setItem('dm_user_profile', JSON.stringify(result.profile));
+        if (result.role) {
+          localStorage.setItem('dm_user_role', result.role);
+        }
         
         // Merge progress data from server
         if (result.data) {
@@ -2356,6 +2400,7 @@ function setupAuthEvents() {
 function logout() {
   localStorage.removeItem('dm_jwt_token');
   localStorage.removeItem('dm_user_profile');
+  localStorage.removeItem('dm_user_role');
   checkAuthStatus();
   renderViewport();
 }
@@ -5810,6 +5855,16 @@ function renderMobileProfile(container) {
             </div>
             <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
           </button>
+          <!-- Admin Control Button (Show only if admin) -->
+          ${localStorage.getItem('dm_user_role') === 'admin' ? `
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-admin">
+            <div class="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+              <span class="material-symbols-outlined text-indigo-500 text-lg">settings</span>
+              <span>进入管理员后台面板</span>
+            </div>
+            <span class="material-symbols-outlined text-indigo-500 text-sm">chevron_right</span>
+          </button>
+          ` : ''}
           <!-- Logout -->
           <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-logout">
             <div class="flex items-center gap-3 text-on-surface text-sm">
@@ -5854,6 +5909,15 @@ function renderMobileProfile(container) {
     currentMobileTab = 'quota_details';
     renderViewport();
   };
+
+  const mobBtnAdmin = container.querySelector('#mob-btn-admin');
+  if (mobBtnAdmin) {
+    mobBtnAdmin.onclick = () => {
+      currentCategory = 'admin';
+      currentMobileTab = 'admin';
+      renderViewport();
+    };
+  }
 
   container.querySelector('#mob-btn-logout').onclick = () => {
     logout();
@@ -6501,4 +6565,819 @@ function renderMobileExamResults(container) {
     
     renderViewport();
   };
+}
+
+
+// ============================================================================
+//                         ADMIN DASHBOARD HANDLERS
+// ============================================================================
+
+let adminActiveTab = 'users'; // 'users', 'questions', 'system'
+
+async function renderAdminView(container) {
+  const token = localStorage.getItem('dm_jwt_token');
+  const role = localStorage.getItem('dm_user_role');
+  
+  if (!token || role !== 'admin') {
+    container.innerHTML = `
+      <div class="empty-bookmarks-card" style="max-width: 600px; text-align: center; gap: 1.25rem; margin: 2rem auto;">
+        <div class="empty-icon" style="background-color: var(--error-light); color: var(--error); margin: 0 auto;">🔒</div>
+        <h2>未授权访问</h2>
+        <p style="color: var(--text-secondary); max-width: 420px; margin: 0 auto;">
+          本区域仅面向系统管理员开放，请确认您已登录管理员账户。
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="admin-dashboard-container" style="display:flex; flex-direction:column; gap:1.5rem; animation:fadeIn 0.4s ease; padding-bottom:3rem; max-width:1000px; margin:0 auto; width:100%;">
+      <!-- Tab Header Segmented Controls -->
+      <div style="display:flex; background:var(--bg-secondary); padding:0.3rem; border-radius:16px; border:1px solid var(--border-color); gap:0.3rem; width:100%; box-sizing:border-box;">
+        <button class="segment-btn ${adminActiveTab === 'users' ? 'active' : ''}" data-admin-tab="users" style="flex:1; border:none; padding:0.7rem; font-size:0.85rem; font-weight:700; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.4rem; transition:all 0.2s;">
+          👥 用户账户管理
+        </button>
+        <button class="segment-btn ${adminActiveTab === 'questions' ? 'active' : ''}" data-admin-tab="questions" style="flex:1; border:none; padding:0.7rem; font-size:0.85rem; font-weight:700; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.4rem; transition:all 0.2s;">
+          📚 题库动态配置
+        </button>
+        <button class="segment-btn ${adminActiveTab === 'system' ? 'active' : ''}" data-admin-tab="system" style="flex:1; border:none; padding:0.7rem; font-size:0.85rem; font-weight:700; border-radius:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.4rem; transition:all 0.2s;">
+          ⚙️ 全局与AI设置
+        </button>
+      </div>
+
+      <!-- Active Content Area -->
+      <div id="admin-active-tab-content"></div>
+    </div>
+  `;
+
+  // Bind Tab Click Handlers
+  const tabContent = container.querySelector('#admin-active-tab-content');
+  const tabs = container.querySelectorAll('[data-admin-tab]');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      adminActiveTab = tab.getAttribute('data-admin-tab');
+      renderActiveAdminTab(tabContent);
+    });
+  });
+
+  // Render initial active tab
+  renderActiveAdminTab(tabContent);
+}
+
+async function renderActiveAdminTab(container) {
+  if (adminActiveTab === 'users') {
+    await renderAdminUsersTab(container);
+  } else if (adminActiveTab === 'questions') {
+    await renderAdminQuestionsTab(container);
+  } else if (adminActiveTab === 'system') {
+    await renderAdminSystemTab(container);
+  }
+}
+
+// ---------------- USER MANAGEMENT TAB ----------------
+async function renderAdminUsersTab(container) {
+  container.innerHTML = `
+    <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--text-primary);">👥 全站注册用户画像列表</h3>
+        <span style="font-size:0.75rem; color:var(--primary); background:var(--primary-light); padding:0.25rem 0.6rem; border-radius:99px; font-weight:700;" id="admin-user-count">加载中...</span>
+      </div>
+      <div style="position:relative; width:100%;">
+        <input type="text" id="admin-user-search" placeholder="输入用户名模糊检索过滤..." style="width:100%; padding:0.75rem 1rem; border-radius:14px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none; font-size:0.85rem; box-sizing:border-box;">
+      </div>
+      <div style="overflow-x:auto; width:100%; border-radius:14px; border:1px solid var(--border-color); background:var(--bg-card);">
+        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem;">
+          <thead>
+            <tr style="background:var(--bg-secondary); border-bottom:1px solid var(--border-color);">
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary);">用户名</th>
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary);">角色身份</th>
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary);">已答题数</th>
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary);">答题正确率</th>
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary);">模考最高分</th>
+              <th style="padding:0.75rem 1rem; font-weight:700; color:var(--text-secondary); text-align:right;">操作动作</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-table-body">
+            <tr>
+              <td colspan="6" style="padding:3rem; text-align:center; color:var(--text-muted);">正在拉取全局用户数据库信息...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const token = localStorage.getItem('dm_jwt_token');
+  let allUsers = [];
+
+  const loadUsersList = async () => {
+    try {
+      const res = await fetch('/api/admin/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        allUsers = await res.json();
+        container.querySelector('#admin-user-count').innerText = `共 ${allUsers.length} 位注册用户`;
+        renderUsersTable(allUsers);
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || '获取用户列表失败', 'error');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('无法连接用户管理 API！', 'error');
+    }
+  };
+
+  const renderUsersTable = (users) => {
+    const tbody = container.querySelector('#admin-users-table-body');
+    if (users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="padding:3rem; text-align:center; color:var(--text-muted);">暂无匹配的用户记录</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = '';
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border-color)';
+      
+      const roleBadge = user.role === 'admin' 
+        ? `<span style="background-color:#FEF3C7; color:#D97706; padding:0.15rem 0.4rem; border-radius:6px; font-size:0.7rem; font-weight:800;">管理员</span>`
+        : `<span style="background-color:#E0F2FE; color:#0284C7; padding:0.15rem 0.4rem; border-radius:6px; font-size:0.7rem; font-weight:800;">学生</span>`;
+      
+      const accuracyText = user.answeredCount > 0 ? `${user.correctRate}%` : 'N/A';
+      const examHighScoreText = user.examHighScore > 0 ? `${user.examHighScore} 分` : '暂无记录';
+      
+      tr.innerHTML = `
+        <td style="padding:0.75rem 1rem; font-weight:700; color:var(--text-primary);">${user.username}</td>
+        <td style="padding:0.75rem 1rem;">${roleBadge}</td>
+        <td style="padding:0.75rem 1rem; font-weight:700;">${user.answeredCount || 0} 题</td>
+        <td style="padding:0.75rem 1rem; font-weight:700; color:var(--success);">${accuracyText}</td>
+        <td style="padding:0.75rem 1rem; font-weight:700; color:var(--warning);">${examHighScoreText}</td>
+        <td style="padding:0.75rem 1rem; text-align:right; display:flex; gap:0.5rem; justify-content:flex-end; align-items:center;">
+          <button class="btn btn-outline admin-change-role-btn" data-username="${user.username}" data-role="${user.role || 'user'}" style="padding:0.35rem 0.6rem; font-size:0.7rem; font-weight:700; cursor:pointer;">
+            🔄 ${user.role === 'admin' ? '设为学生' : '设为管理员'}
+          </button>
+          <button class="btn btn-outline admin-delete-user-btn" data-userid="${user.userId}" data-username="${user.username}" style="padding:0.35rem 0.6rem; font-size:0.7rem; font-weight:700; color:var(--error); border-color:rgba(239,68,68,0.25); cursor:pointer;">
+            🗑️ 销户
+          </button>
+        </td>
+      `;
+
+      // Change Role Event
+      tr.querySelector('.admin-change-role-btn').onclick = async (e) => {
+        const username = e.currentTarget.getAttribute('data-username');
+        const currentRole = e.currentTarget.getAttribute('data-role');
+        const newRole = currentRole === 'admin' ? 'user' : 'admin';
+        
+        if (username.toLowerCase() === 'admin' && newRole === 'user') {
+          showToast('无法降低系统创始管理员 (admin) 的权限！', 'error');
+          return;
+        }
+
+        if (!confirm(`确认要将用户 ${username} 的权限修改为 ${newRole === 'admin' ? '管理员' : '普通学生'} 吗？`)) {
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: 'changeRole', targetUsername: username, newRole })
+          });
+          if (res.ok) {
+            showToast('权限角色更新成功！', 'success');
+            loadUsersList();
+          } else {
+            const errData = await res.json();
+            showToast(errData.error || '修改失败', 'error');
+          }
+        } catch (err) {
+          showToast('修改失败，网络异常', 'error');
+        }
+      };
+
+      // Delete User Event
+      tr.querySelector('.admin-delete-user-btn').onclick = async (e) => {
+        const userId = e.currentTarget.getAttribute('data-userid');
+        const username = e.currentTarget.getAttribute('data-username');
+        
+        if (username.toLowerCase() === 'admin') {
+          showToast('禁止注销创始管理员 (admin) 账号！', 'error');
+          return;
+        }
+
+        const firstConfirm = confirm(`⚠️ 警告：您正在强行销户用户 "${username}"！\n\n该操作将永久抹除其云端全部进度、做题历史、模考记录以及账号凭证。是否继续？`);
+        if (!firstConfirm) return;
+        const secondConfirm = confirm(`⚠️ 销户确认：用户 "${username}" 的所有数据将直接被粉碎。是否进行最终销户？`);
+        if (!secondConfirm) return;
+
+        try {
+          const res = await fetch('/api/admin/users', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: 'delete', targetUserId: userId, targetUsername: username })
+          });
+          if (res.ok) {
+            showToast(`用户 ${username} 的账号已被彻底强制注销销户！`, 'success');
+            loadUsersList();
+          } else {
+            const errData = await res.json();
+            showToast(errData.error || '销户失败', 'error');
+          }
+        } catch (err) {
+          showToast('销户失败，网络异常', 'error');
+        }
+      };
+
+      tbody.appendChild(tr);
+    });
+  };
+
+  // Search logic
+  const searchInput = container.querySelector('#admin-user-search');
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    const filtered = allUsers.filter(u => u.username.toLowerCase().includes(query));
+    renderUsersTable(filtered);
+  });
+
+  // Load initially
+  loadUsersList();
+}
+
+// ---------------- QUESTIONS MANAGEMENT TAB ----------------
+async function renderAdminQuestionsTab(container) {
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:1.25rem;">
+      <!-- Editor Container (Hidden by default) -->
+      <div id="admin-q-editor-container" style="display:none; transition:all 0.3s ease;"></div>
+
+      <!-- Controls Bar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; flex:1;">
+          <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer;">
+            <option value="all">所有题型</option>
+            <option value="judgment">判断题</option>
+            <option value="single_choice">单选题</option>
+            <option value="fill_blank">填空题</option>
+            <option value="calculation">计算题</option>
+            <option value="proof">证明题</option>
+            <option value="application">应用题</option>
+          </select>
+          <select id="admin-q-topic-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer;">
+            <option value="all">所有专题科目</option>
+            <option value="propositional_logic">命题逻辑</option>
+            <option value="predicate_logic">谓词逻辑</option>
+            <option value="set_theory">集合论</option>
+            <option value="binary_relations">二元关系</option>
+            <option value="graph_theory">图论</option>
+          </select>
+          <input type="text" id="admin-q-search" placeholder="搜索题干内容关键字..." style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; flex:1; min-width:180px; outline:none; box-sizing:border-box;">
+        </div>
+        <button class="btn btn-primary" id="admin-q-add-btn" style="padding:0.6rem 1.2rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex-shrink:0;">
+          ➕ 新增题目
+        </button>
+      </div>
+
+      <!-- Question Pool List -->
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1rem;">
+        <h3 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text-primary);" id="admin-q-count">动态题库：加载中...</h3>
+        <div style="display:flex; flex-direction:column; gap:0.85rem;" id="admin-questions-list-container"></div>
+      </div>
+    </div>
+  `;
+
+  const token = localStorage.getItem('dm_jwt_token');
+  const editorContainer = container.querySelector('#admin-q-editor-container');
+  const questionsListContainer = container.querySelector('#admin-questions-list-container');
+  const qCountHeader = container.querySelector('#admin-q-count');
+  
+  const filterCat = container.querySelector('#admin-q-category-filter');
+  const filterTopic = container.querySelector('#admin-q-topic-filter');
+  const searchInput = container.querySelector('#admin-q-search');
+
+  const renderQuestionsList = () => {
+    const selectedCat = filterCat.value;
+    const selectedTopic = filterTopic.value;
+    const query = searchInput.value.toLowerCase().trim();
+
+    let filtered = QUESTIONS;
+    if (selectedCat !== 'all') {
+      if (selectedCat === 'subjective') {
+        filtered = filtered.filter(q => ['calculation', 'proof', 'application'].includes(q.category));
+      } else {
+        filtered = filtered.filter(q => q.category === selectedCat);
+      }
+    }
+    if (selectedTopic !== 'all') {
+      filtered = filtered.filter(q => q.topic === selectedTopic);
+    }
+    if (query) {
+      filtered = filtered.filter(q => q.question.toLowerCase().includes(query));
+    }
+
+    qCountHeader.innerText = `动态题库：共收录 ${QUESTIONS.length} 题 (已筛选展示 ${filtered.length} 题)`;
+
+    if (filtered.length === 0) {
+      questionsListContainer.innerHTML = `<div style="text-align:center; padding:3rem; color:var(--text-muted);">暂无匹配的题目记录</div>`;
+      return;
+    }
+
+    questionsListContainer.innerHTML = '';
+    filtered.forEach((q, index) => {
+      const qDiv = document.createElement('div');
+      qDiv.style.border = '1px solid var(--border-color)';
+      qDiv.style.borderRadius = '12px';
+      qDiv.style.padding = '1rem';
+      qDiv.style.background = 'var(--bg-secondary)';
+      qDiv.style.display = 'flex';
+      qDiv.style.flexDirection = 'column';
+      qDiv.style.gap = '0.5rem';
+
+      const qId = `${q.category}_${q.original_num}`;
+      
+      qDiv.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom:1px dashed var(--border-color); padding-bottom:0.5rem; margin-bottom:0.25rem;">
+          <div style="display:flex; gap:0.4rem; align-items:center; font-size:0.72rem; font-weight:700;">
+            <span style="background-color:var(--primary-light); color:var(--primary); padding:0.15rem 0.4rem; border-radius:4px;">${q.category.toUpperCase()}</span>
+            <span style="background-color:rgba(16,185,129,0.1); color:#10B981; padding:0.15rem 0.4rem; border-radius:4px;">${q.topic}</span>
+            <span style="color:var(--text-muted);">序号: #${q.original_num}</span>
+          </div>
+          <div style="display:flex; gap:0.35rem;">
+            <button class="btn btn-outline edit-q-btn" style="padding:0.3rem 0.6rem; font-size:0.7rem; font-weight:700; cursor:pointer;">✏️ 编辑</button>
+            <button class="btn btn-outline delete-q-btn" style="padding:0.3rem 0.6rem; font-size:0.7rem; font-weight:700; color:var(--error); border-color:rgba(239,68,68,0.2); cursor:pointer;">🗑️ 删除</button>
+          </div>
+        </div>
+        <div class="latex-q-content" style="font-size:0.85rem; line-height:1.5; color:var(--text-primary); word-break:break-all;"></div>
+        <div style="font-size:0.75rem; color:var(--success); font-weight:700;">答案：${q.answer || "无"}</div>
+        <div class="latex-a-content" style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4; border-top:1px dashed var(--border-color); padding-top:0.4rem; word-break:break-all;"></div>
+      `;
+
+      // Render math formula content safely
+      qDiv.querySelector('.latex-q-content').innerHTML = marked.parse(q.question);
+      qDiv.querySelector('.latex-a-content').innerHTML = `解析：` + marked.parse(q.analysis || "暂无参考解析。");
+      renderMath(qDiv);
+
+      // Edit action
+      qDiv.querySelector('.edit-q-btn').onclick = () => {
+        openEditor(q, false);
+      };
+
+      // Delete action
+      qDiv.querySelector('.delete-q-btn').onclick = async () => {
+        if (!confirm(`⚠️ 二次警告：您确定要在全站动态题库中永久删除这道序号为 #${q.original_num} 的 [${q.category}] 题目吗？`)) {
+          return;
+        }
+        
+        // Mutate array
+        const qIdx = QUESTIONS.findIndex(qi => `${qi.category}_${qi.original_num}` === qId);
+        if (qIdx !== -1) {
+          QUESTIONS.splice(qIdx, 1);
+          await saveQuestionsToCloud();
+        }
+      };
+
+      questionsListContainer.appendChild(qDiv);
+    });
+  };
+
+  const openEditor = (q, isNew = false) => {
+    editorContainer.style.display = 'block';
+    editorContainer.scrollIntoView({ behavior: 'smooth' });
+
+    editorContainer.innerHTML = `
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; border:2.5px solid var(--primary); background:var(--bg-card); width:100%; box-sizing:border-box;">
+        <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);" id="editor-title">${isNew ? "➕ 新增离散数学题目" : "✏️ 编辑离散题目资料"}</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">题型类别 (Category)</label>
+            <select id="edit-q-category" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+              <option value="judgment" ${q.category === 'judgment' ? 'selected' : ''}>判断题 (judgment)</option>
+              <option value="single_choice" ${q.category === 'single_choice' ? 'selected' : ''}>单选题 (single_choice)</option>
+              <option value="fill_blank" ${q.category === 'fill_blank' ? 'selected' : ''}>填空题 (fill_blank)</option>
+              <option value="calculation" ${q.category === 'calculation' ? 'selected' : ''}>计算题 (calculation)</option>
+              <option value="proof" ${q.category === 'proof' ? 'selected' : ''}>证明题 (proof)</option>
+              <option value="application" ${q.category === 'application' ? 'selected' : ''}>应用题 (application)</option>
+            </select>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">学科专题 (Topic)</label>
+            <select id="edit-q-topic" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+              <option value="propositional_logic" ${q.topic === 'propositional_logic' ? 'selected' : ''}>命题逻辑 (propositional_logic)</option>
+              <option value="predicate_logic" ${q.topic === 'predicate_logic' ? 'selected' : ''}>谓词逻辑 (predicate_logic)</option>
+              <option value="set_theory" ${q.topic === 'set_theory' ? 'selected' : ''}>集合论 (set_theory)</option>
+              <option value="binary_relations" ${q.topic === 'binary_relations' ? 'selected' : ''}>二元关系 (binary_relations)</option>
+              <option value="graph_theory" ${q.topic === 'graph_theory' ? 'selected' : ''}>图论 (graph_theory)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.25rem;" class="admin-editor-main-grid">
+          <!-- Input fields -->
+          <div style="display:flex; flex-direction:column; gap:0.85rem;">
+            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+              <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">题干内容 (支持 LaTeX $公式$ 包裹)</label>
+              <textarea id="edit-q-text" rows="5" placeholder="例如：$p \\wedge q$ 的真值为对。（ ）" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.question || ""}</textarea>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+              <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">标准答案 (Answer)</label>
+              <input type="text" id="edit-q-answer" value="${q.answer || ""}" placeholder="例如：对 / A / $p \\vee q$" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; box-sizing:border-box; width:100%;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0.35rem;">
+              <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">详细解析 (Analysis)</label>
+              <textarea id="edit-q-analysis" rows="5" placeholder="请在此输入这道题目的详尽公式推算和逻辑推导过程..." style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.analysis || ""}</textarea>
+            </div>
+          </div>
+
+          <!-- Preview box -->
+          <div style="display:flex; flex-direction:column; gap:0.85rem; border-left:1px dashed var(--border-color); padding-left:1.25rem; min-height:100%;">
+            <label style="font-size:0.75rem; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:0.25rem;">✨ 实时公式渲染预览 (LaTeX Preview)</label>
+            <div style="flex:1; border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.015); overflow-y:auto; font-size:0.85rem; min-height:280px; box-sizing:border-box;" id="edit-q-preview-box">
+              <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">题干预览：</div>
+              <div id="preview-question" style="line-height:1.6; margin-bottom:1.5rem; min-height:2rem; word-break:break-all;"></div>
+              <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">解析预览：</div>
+              <div id="preview-analysis" style="line-height:1.6; color:var(--text-secondary); min-height:2rem; word-break:break-all;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options Configuration (Only for choice) -->
+        <div id="edit-q-options-wrapper" style="display:${q.category === 'single_choice' ? 'flex' : 'none'}; flex-direction:column; gap:0.65rem;">
+          <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">单选题选项配置 (每行一个选项，会自动生成 A, B, C, D 前缀)</label>
+          <div id="edit-q-options-list" style="display:flex; flex-direction:column; gap:0.5rem;"></div>
+          <button class="btn btn-outline" id="edit-q-add-opt" style="padding:0.4rem 0.8rem; font-size:0.75rem; font-weight:700; margin-top:0.25rem; align-self:flex-start; cursor:pointer;">
+            ➕ 添加选项
+          </button>
+        </div>
+
+        <!-- Confirm controls -->
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem;">
+          <button class="btn btn-outline" id="edit-q-cancel" style="padding:0.65rem 1.25rem; font-size:0.85rem; font-weight:700; cursor:pointer;">
+            取消
+          </button>
+          <button class="btn btn-primary" id="edit-q-save" style="padding:0.65rem 1.5rem; font-size:0.85rem; font-weight:700; cursor:pointer;">
+            💾 保存题目并同步云端
+          </button>
+        </div>
+      </div>
+    `;
+
+    const catSelect = editorContainer.querySelector('#edit-q-category');
+    const optionsWrapper = editorContainer.querySelector('#edit-q-options-wrapper');
+    const optionsList = editorContainer.querySelector('#edit-q-options-list');
+    
+    catSelect.addEventListener('change', () => {
+      optionsWrapper.style.display = (catSelect.value === 'single_choice') ? 'flex' : 'none';
+    });
+
+    const renderOptionsRows = (opts) => {
+      optionsList.innerHTML = '';
+      opts.forEach((opt, idx) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.gap = '0.5rem';
+        row.style.alignItems = 'center';
+        row.innerHTML = `
+          <span style="font-weight:800; font-size:0.85rem; width:1.5rem;">${String.fromCharCode(65 + idx)}.</span>
+          <input type="text" class="edit-q-opt-input" value="${opt}" placeholder="输入选项内容..." style="flex:1; padding:0.65rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; box-sizing:border-box;">
+          <button class="btn btn-outline remove-opt-btn" style="color:var(--error); border-color:rgba(239,68,68,0.25); padding:0.5rem; cursor:pointer;">🗑️</button>
+        `;
+        row.querySelector('.remove-opt-btn').onclick = () => {
+          row.remove();
+          // Recalculate prefixes A, B, C...
+          const rows = optionsList.querySelectorAll('div');
+          rows.forEach((r, i) => {
+            r.querySelector('span').innerText = `${String.fromCharCode(65 + i)}.`;
+          });
+        };
+        optionsList.appendChild(row);
+      });
+    };
+
+    renderOptionsRows(q.options || []);
+
+    editorContainer.querySelector('#edit-q-add-opt').onclick = () => {
+      const currentOpts = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map(i => i.value);
+      currentOpts.push("");
+      renderOptionsRows(currentOpts);
+    };
+
+    // Live preview update
+    const updatePreview = () => {
+      const qText = editorContainer.querySelector('#edit-q-text').value;
+      const aText = editorContainer.querySelector('#edit-q-analysis').value;
+      editorContainer.querySelector('#preview-question').innerHTML = marked.parse(qText || "_输入题干可查看预览_");
+      editorContainer.querySelector('#preview-analysis').innerHTML = marked.parse(aText || "_输入解析可查看预览_");
+      renderMath(editorContainer.querySelector('#edit-q-preview-box'));
+    };
+
+    editorContainer.querySelector('#edit-q-text').addEventListener('input', updatePreview);
+    editorContainer.querySelector('#edit-q-analysis').addEventListener('input', updatePreview);
+    updatePreview();
+
+    // Cancel
+    editorContainer.querySelector('#edit-q-cancel').onclick = () => {
+      editorContainer.style.display = 'none';
+    };
+
+    // Save Question Click
+    editorContainer.querySelector('#edit-q-save').onclick = async () => {
+      const category = catSelect.value;
+      const topic = editorContainer.querySelector('#edit-q-topic').value;
+      const questionText = editorContainer.querySelector('#edit-q-text').value.trim();
+      const answer = editorContainer.querySelector('#edit-q-answer').value.trim();
+      const analysis = editorContainer.querySelector('#edit-q-analysis').value.trim();
+      
+      let options = [];
+      if (category === 'single_choice') {
+        options = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map(i => i.value.trim());
+      }
+
+      if (!questionText || !answer) {
+        showToast('题干和标准答案均不能为空！', 'error');
+        return;
+      }
+
+      if (isNew) {
+        // Calculate max original_num in this category
+        const inCat = QUESTIONS.filter(qi => qi.category === category);
+        const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
+        
+        const newQObj = {
+          category,
+          original_num: nextNum,
+          question: questionText,
+          options,
+          answer,
+          analysis,
+          topic
+        };
+        
+        QUESTIONS.push(newQObj);
+      } else {
+        // Find existing index
+        const qIdx = QUESTIONS.findIndex(qi => qi.category === q.category && qi.original_num === q.original_num);
+        if (qIdx !== -1) {
+          QUESTIONS[qIdx].category = category;
+          QUESTIONS[qIdx].question = questionText;
+          QUESTIONS[qIdx].options = options;
+          QUESTIONS[qIdx].answer = answer;
+          QUESTIONS[qIdx].analysis = analysis;
+          QUESTIONS[qIdx].topic = topic;
+        }
+      }
+
+      await saveQuestionsToCloud();
+      editorContainer.style.display = 'none';
+    };
+  };
+
+  const saveQuestionsToCloud = async () => {
+    try {
+      const res = await fetch('/api/admin/questions', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action: 'saveAll', questions: QUESTIONS })
+      });
+      if (res.ok) {
+        showToast('全站题库已成功同步并写入云端！', 'success');
+        // Reload list UI
+        renderQuestionsList();
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || '保存失败', 'error');
+      }
+    } catch (err) {
+      showToast('同步题库网络错误！', 'error');
+    }
+  };
+
+  // Bind new question button
+  container.querySelector('#admin-q-add-btn').onclick = () => {
+    openEditor({ category: 'judgment', options: [], question: "", answer: "", analysis: "", topic: "propositional_logic" }, true);
+  };
+
+  // Bind filter events
+  filterCat.onchange = renderQuestionsList;
+  filterTopic.onchange = renderQuestionsList;
+  searchInput.oninput = renderQuestionsList;
+
+  // Load initially
+  renderQuestionsList();
+}
+
+// ---------------- SYSTEM AND AI CONFIG TAB ----------------
+async function renderAdminSystemTab(container) {
+  container.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:1.5rem; flex-wrap:wrap;" class="admin-system-grid">
+      <!-- Left: Configuration Form -->
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; height:fit-content; background:var(--bg-card);">
+        <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">⚙️ 全局系统参数设置</h3>
+        
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认 AI 助教语言模型 (Workers AI)</label>
+            <select id="sys-default-model" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+              <option value="@cf/meta/llama-3.3-70b-instruct-fp8-fast">Llama 3.3 70B Instruct (高速度、高准确)</option>
+              <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">DeepSeek R1 Distill Qwen 32B (极致推理思考链)</option>
+              <option value="@cf/meta/llama-3-8b-instruct">Llama 3 8B Instruct (中轻量级)</option>
+              <option value="@cf/qwen/qwen1.5-14b-chat">Qwen 1.5 14B Chat (中文流畅)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认思考链强度 (Thinking Intensity)</label>
+            <select id="sys-default-intensity" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+              <option value="low">低强度 (直接简短回复)</option>
+              <option value="medium">中等强度 (分析详细思路)</option>
+              <option value="high">高强度 (极严谨逻辑证论)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
+            <input type="checkbox" id="sys-force-thinking" style="cursor:pointer; width:16px; height:16px;">
+            <label for="sys-force-thinking" style="font-size:0.8rem; font-weight:700; color:var(--text-primary); cursor:pointer;">强制在首位展开展示思考过程</label>
+          </div>
+          
+          <button class="btn btn-primary" id="sys-save-btn" style="padding:0.75rem; font-size:0.85rem; font-weight:700; width:100%; margin-top:0.5rem; cursor:pointer;">
+            💾 保存配置至云端
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: AI Tutor Deep Testing Console -->
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; background:var(--bg-card);">
+        <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">🧪 AI 助教接口深度联调沙箱</h3>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.45;">
+          管理员可在此任选一道现有离散题目，向配置的 AI 模型发送对话提问，直接观察其推理链条和 LaTeX 公式排版输出，调试 Socratic 启发式回复质量。
+        </p>
+        
+        <div style="display:flex; flex-direction:column; gap:0.85rem;">
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">选择联调绑定题目</label>
+            <select id="ai-test-q-select" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%; max-width:100%;">
+              <!-- Load dynamically -->
+            </select>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">输入调试学生提问 (Query)</label>
+            <input type="text" id="ai-test-query" value="请问这道题目的参考解析是什么意思？我不太明白是怎么推理出来的。" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; width:100%; box-sizing:border-box;">
+          </div>
+
+          <button class="btn btn-outline" id="ai-test-btn" style="padding:0.7rem; font-size:0.85rem; font-weight:700; color:var(--primary); border-color:var(--primary); cursor:pointer;">
+            ⚡ 启动 AI 实时推演测试
+          </button>
+
+          <!-- Test Response Output -->
+          <div style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.25rem;" id="ai-test-result-wrapper">
+            <label style="font-size:0.75rem; font-weight:800; color:var(--success);">📟 AI 实时调试响应输出</label>
+            <div style="border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.02); min-height:6rem; max-height:22rem; overflow-y:auto; font-size:0.85rem; line-height:1.6;" id="ai-test-result-box"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const token = localStorage.getItem('dm_jwt_token');
+
+  // Load config initially
+  const loadSystemConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/system', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const config = await res.json();
+        container.querySelector('#sys-default-model').value = config.defaultModel;
+        container.querySelector('#sys-default-intensity').value = config.defaultIntensity;
+        container.querySelector('#sys-force-thinking').checked = config.forceShowThinking;
+      }
+    } catch (err) {
+      console.error("System config loading error:", err);
+    }
+  };
+
+  // Save config
+  container.querySelector('#sys-save-btn').onclick = async () => {
+    const defaultModel = container.querySelector('#sys-default-model').value;
+    const defaultIntensity = container.querySelector('#sys-default-intensity').value;
+    const forceShowThinking = container.querySelector('#sys-force-thinking').checked;
+
+    try {
+      const res = await fetch('/api/admin/system', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ defaultModel, defaultIntensity, forceShowThinking })
+      });
+      if (res.ok) {
+        showToast('全局系统与AI配置更新成功并写入云端！', 'success');
+      } else {
+        const errData = await res.json();
+        showToast(errData.error || '保存失败', 'error');
+      }
+    } catch (err) {
+      showToast('更新网络异常！', 'error');
+    }
+  };
+
+  // Load test questions list
+  const qSelect = container.querySelector('#ai-test-q-select');
+  qSelect.innerHTML = '';
+  QUESTIONS.forEach((q) => {
+    const opt = document.createElement('option');
+    opt.value = `${q.category}_${q.original_num}`;
+    // Truncate text for select
+    const text = q.question.replace(/\$/g, '').substring(0, 50) + "...";
+    opt.innerText = `[${q.category.toUpperCase()}] #${q.original_num} - ${text}`;
+    qSelect.appendChild(opt);
+  });
+
+  // AI Testing Action
+  const testBtn = container.querySelector('#ai-test-btn');
+  const resultWrapper = container.querySelector('#ai-test-result-wrapper');
+  const resultBox = container.querySelector('#ai-test-result-box');
+
+  testBtn.onclick = async () => {
+    const qKey = qSelect.value;
+    const query = container.querySelector('#ai-test-query').value.trim();
+    const chosenModel = container.querySelector('#sys-default-model').value;
+    const intensity = container.querySelector('#sys-default-intensity').value;
+
+    const qObj = QUESTIONS.find(q => `${q.category}_${q.original_num}` === qKey);
+    if (!qObj) return;
+
+    if (!query) {
+      showToast('请输入提问测试Query！', 'error');
+      return;
+    }
+
+    resultWrapper.style.display = 'flex';
+    resultBox.innerHTML = `<span style="color:var(--text-muted);">📡 连接 AI 端点推演中 (非流式响应测试)...</span>`;
+    testBtn.disabled = true;
+
+    try {
+      const response = await fetch(`/api/ai`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: qObj.question,
+          analysis: qObj.analysis,
+          userQuery: query,
+          model: chosenModel,
+          thinkingIntensity: intensity,
+          stream: false
+        })
+      });
+      const result = await response.json();
+      testBtn.disabled = false;
+
+      if (response.ok) {
+        let rawText = result.response;
+        let thinkingText = "";
+        
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+        const match = rawText.match(thinkRegex);
+        if (match) {
+          thinkingText = match[1].trim();
+          rawText = rawText.replace(thinkRegex, "").trim();
+        }
+
+        let thinkingHtml = "";
+        if (thinkingText) {
+          thinkingHtml = `
+            <div style="padding:0.6rem; border:1px solid var(--border-color); border-radius:8px; background:rgba(0,0,0,0.015); margin-bottom:0.75rem; font-size:0.78rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap;">
+              💡 思考过程：\n${thinkingText}
+            </div>
+          `;
+        }
+
+        resultBox.innerHTML = thinkingHtml + marked.parse(rawText);
+        renderMath(resultBox);
+      } else {
+        resultBox.innerHTML = `<span style="color:var(--error);">✕ 联调测试失败: ${result.error || '未响应'}</span>`;
+      }
+    } catch (err) {
+      testBtn.disabled = false;
+      resultBox.innerHTML = `<span style="color:var(--error);">✕ 无法连接 AI 接口！</span>`;
+    }
+  };
+
+  // Initial load
+  loadSystemConfig();
 }

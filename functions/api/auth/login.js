@@ -96,16 +96,19 @@ export async function onRequestPost(context) {
     const payload = {
       userId,
       username: profile.username,
+      role: account.role || (normUsername === "admin" ? "admin" : "user"),
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
     };
     
     const token = await generateJwt(payload, secret);
+    const role = payload.role;
     
     return new Response(JSON.stringify({
       message: "登录成功！",
       token,
       profile,
-      data
+      data,
+      role
     }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
