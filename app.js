@@ -4750,21 +4750,56 @@ function formatRelativeTime(timestamp) {
 }
 
 async function renderLobbyComments(container) {
+  currentCommentsPage = 1;
+  const itemsPerPage = 5;
+
   container.innerHTML = `
     <div class="flex flex-col h-[calc(100vh-140px)]" style="animation: fadeIn 0.4s ease;">
+      <!-- Pagination controls at the top -->
+      <div class="flex justify-between items-center py-2 px-1 border-b border-slate-200/10" id="comments-pagination-bar" style="display:none;">
+        <button id="comments-prev-page" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">上一页</button>
+        <span id="comments-page-indicator" style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">第 1 / 1 页</span>
+        <button id="comments-next-page" class="btn btn-outline" style="padding:0.35rem 0.75rem; font-size:0.75rem; border-radius:8px; cursor:pointer;">下一页</button>
+      </div>
+
       <!-- Message List Area -->
-      <div class="flex-1 overflow-y-auto space-y-4 pr-1" id="mobile-lobby-comments-list" style="padding-bottom: 2rem;">
+      <div class="flex-1 overflow-y-auto space-y-4 pr-1" id="mobile-lobby-comments-list" style="padding-bottom: 2rem; padding-top:0.5rem;">
         <div class="text-center py-8 text-slate-400">
           <span class="inline-block animate-spin mr-2">⏳</span>正在加载讨论留言...
         </div>
       </div>
       
       <!-- Bottom Input Row -->
-      <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 pt-3 px-1 flex gap-2 items-center">
-        <input type="text" id="mobile-lobby-comment-input" placeholder="说点什么..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
-        <button id="mobile-lobby-comment-send" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer">
-          <span class="material-symbols-outlined text-sm">send</span>
-        </button>
+      <div class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 pt-3 px-1 flex flex-col gap-2">
+        <!-- Emoji Drawer Container -->
+        <div id="lobby-comments-emoji-drawer" style="display:none; flex-wrap:wrap; gap:0.4rem; padding:0.4rem; background:var(--bg-secondary); border-radius:10px; border:1px solid var(--border-color); animation: fadeIn 0.2s ease;">
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="😊">😊</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="😂">😂</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🤔">🤔</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="👍">👍</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🔥">🔥</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🎉">🎉</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💯">💯</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🧠">🧠</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="📚">📚</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✍️">✍️</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💻">💻</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="💡">💡</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🚀">🚀</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🎓">🎓</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="👏">👏</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="🙌">🙌</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✨">✨</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="✔️">✔️</button>
+          <button class="emoji-drawer-btn" style="background:transparent; border:none; font-size:1.15rem; cursor:pointer; padding:0.25rem;" data-emoji="❌">❌</button>
+        </div>
+        <div class="flex gap-2 items-center">
+          <button id="lobby-comments-emoji-toggle" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-300 flex items-center justify-center hover:bg-slate-200 border-none cursor-pointer text-sm" style="transition: transform 0.1s;" title="添加表情">😊</button>
+          <input type="text" id="mobile-lobby-comment-input" placeholder="说点什么..." class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-sm focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
+          <button id="mobile-lobby-comment-send" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer">
+            <span class="material-symbols-outlined text-sm">send</span>
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -4772,96 +4807,202 @@ async function renderLobbyComments(container) {
   const listContainer = container.querySelector('#mobile-lobby-comments-list');
   const inputField = container.querySelector('#mobile-lobby-comment-input');
   const sendBtn = container.querySelector('#mobile-lobby-comment-send');
+  const paginationBar = container.querySelector('#comments-pagination-bar');
+  const prevPageBtn = container.querySelector('#comments-prev-page');
+  const nextPageBtn = container.querySelector('#comments-next-page');
+  const pageIndicator = container.querySelector('#comments-page-indicator');
+  const emojiToggle = container.querySelector('#lobby-comments-emoji-toggle');
+  const emojiDrawer = container.querySelector('#lobby-comments-emoji-drawer');
 
-  await loadLobbyCommentsList(listContainer);
-
-  sendBtn.addEventListener('click', () => postLobbyComment(listContainer, inputField));
-  inputField.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') postLobbyComment(listContainer, inputField);
+  // Toggle emoji drawer
+  emojiToggle.onclick = () => {
+    emojiDrawer.style.display = emojiDrawer.style.display === 'none' ? 'flex' : 'none';
+  };
+  
+  emojiDrawer.querySelectorAll('.emoji-drawer-btn').forEach(btn => {
+    btn.onclick = () => {
+      const emoji = btn.getAttribute('data-emoji');
+      inputField.value += emoji;
+      inputField.focus();
+    };
   });
-}
 
-async function loadLobbyCommentsList(listContainer) {
-  try {
-    const response = await fetch(`${API_BASE}/comments?q=lobby`);
-    if (!response.ok) throw new Error("Failed to fetch comments");
-    
-    const comments = await response.json();
-    listContainer.innerHTML = '';
-    
-    if (comments.length === 0) {
+  const loadLobbyCommentsList = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/comments?q=lobby`);
+      if (!response.ok) throw new Error("Failed to fetch comments");
+      
+      const comments = await response.json();
+      listContainer.innerHTML = '';
+      
+      if (comments.length === 0) {
+        paginationBar.style.display = 'none';
+        listContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-400 text-sm">
+            💬 暂时没有学术讨论，说点什么发布第一条留言吧！
+          </div>
+        `;
+        return;
+      }
+
+      // Pagination calculation
+      const totalPages = Math.ceil(comments.length / itemsPerPage) || 1;
+      if (currentCommentsPage > totalPages) currentCommentsPage = totalPages;
+      if (currentCommentsPage < 1) currentCommentsPage = 1;
+
+      // Update Pagination Bar
+      paginationBar.style.display = 'flex';
+      pageIndicator.innerText = `第 ${currentCommentsPage} / ${totalPages} 页`;
+      prevPageBtn.disabled = currentCommentsPage === 1;
+      nextPageBtn.disabled = currentCommentsPage === totalPages;
+      prevPageBtn.style.opacity = currentCommentsPage === 1 ? '0.4' : '1';
+      nextPageBtn.style.opacity = currentCommentsPage === totalPages ? '0.4' : '1';
+
+      // Slice for current page
+      const sliced = comments.slice((currentCommentsPage - 1) * itemsPerPage, currentCommentsPage * itemsPerPage);
+
+      const loggedInProfile = JSON.parse(localStorage.getItem('dm_user_profile') || '{}');
+      const currentUsername = loggedInProfile.username || '';
+
+      sliced.forEach(c => {
+        const card = document.createElement('article');
+        card.className = 'bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col gap-2 shadow-sm';
+        const isMine = currentUsername && (c.username === currentUsername);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
+              ${c.username[0].toUpperCase()}
+            </div>
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-white">${c.username}</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[9px] text-slate-400">${formatRelativeTime(c.timestamp)}</span>
+                  ${isMine ? `<button class="lobby-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">撤回</button>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${escapeHtml(c.content)}</p>
+        `;
+        listContainer.appendChild(card);
+      });
+
+      // Bind delete button click
+      listContainer.querySelectorAll('.lobby-delete-comment-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const timestamp = parseInt(btn.getAttribute('data-timestamp'));
+          if (!confirm('确定要撤回这条消息吗？')) return;
+          const token = localStorage.getItem('dm_jwt_token');
+          if (!token) return;
+
+          try {
+            const deleteRes = await fetch(`${API_BASE}/comments`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ qId: 'lobby', timestamp })
+            });
+
+            if (deleteRes.ok) {
+              showToast('消息已撤回！', 'success');
+              // If current page is empty after deletion and it's not the first page, go back 1 page
+              const responseNew = await fetch(`${API_BASE}/comments?q=lobby`);
+              if (responseNew.ok) {
+                const commentsNew = await responseNew.json();
+                const totalPagesNew = Math.ceil(commentsNew.length / itemsPerPage) || 1;
+                if (currentCommentsPage > totalPagesNew) {
+                  currentCommentsPage = totalPagesNew;
+                }
+              }
+              await loadLobbyCommentsList();
+            } else {
+              const errData = await deleteRes.json();
+              showToast(errData.error || '撤回失败', 'error');
+            }
+          } catch (e) {
+            showToast('撤回失败，请检查网络连接', 'error');
+          }
+        };
+      });
+
+    } catch (err) {
       listContainer.innerHTML = `
-        <div class="text-center py-12 text-slate-400 text-sm">
-          💬 暂时没有学术讨论，说点什么发布第一条留言吧！
+        <div class="text-center py-12 text-red-500 text-sm">
+          ⚠️ 无法加载留言板数据，请检查网络或稍后重试
         </div>
       `;
+    }
+  };
+
+  prevPageBtn.onclick = () => {
+    if (currentCommentsPage > 1) {
+      currentCommentsPage--;
+      loadLobbyCommentsList();
+    }
+  };
+
+  nextPageBtn.onclick = () => {
+    currentCommentsPage++;
+    loadLobbyCommentsList();
+  };
+
+  const postLobbyComment = async () => {
+    const content = inputField.value.trim();
+    if (!content) {
+      showToast('留言内容不能为空！', 'error');
       return;
     }
     
-    comments.forEach(c => {
-      const card = document.createElement('article');
-      card.className = 'bg-white/50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 flex flex-col gap-2 shadow-sm';
-      card.innerHTML = `
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-xs">
-            ${c.username[0].toUpperCase()}
-          </div>
-          <div class="flex flex-col">
-            <span class="text-xs font-bold text-slate-800 dark:text-white">${c.username}</span>
-            <span class="text-[9px] text-slate-400">${formatRelativeTime(c.timestamp)}</span>
-          </div>
-        </div>
-        <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">${escapeHtml(c.content)}</p>
-      `;
-      listContainer.appendChild(card);
-    });
+    const token = localStorage.getItem('dm_jwt_token');
+    if (!token) {
+      showToast('请先登录账号以参与讨论！', 'error');
+      document.getElementById('login-trigger-btn').click();
+      return;
+    }
     
-    listContainer.scrollTop = listContainer.scrollHeight;
-  } catch (err) {
-    listContainer.innerHTML = `
-      <div class="text-center py-12 text-red-500 text-sm">
-        ⚠️ 无法加载留言板数据，请检查网络或稍后重试
-      </div>
-    `;
-  }
+    try {
+      const response = await fetch(`${API_BASE}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ qId: 'lobby', content })
+      });
+      
+      const result = await response.json();
+      if (response.ok) {
+        inputField.value = '';
+        emojiDrawer.style.display = 'none'; // hide emoji drawer after send
+        showToast('发布留言成功！', 'success');
+        
+        // Go to the last page to see the newly added comment
+        const responseNew = await fetch(`${API_BASE}/comments?q=lobby`);
+        if (responseNew.ok) {
+          const commentsNew = await responseNew.json();
+          currentCommentsPage = Math.ceil(commentsNew.length / itemsPerPage) || 1;
+        }
+        await loadLobbyCommentsList();
+      } else {
+        showToast(result.error || '发布失败，请重试！', 'error');
+      }
+    } catch (err) {
+      showToast('连接服务器失败！', 'error');
+    }
+  };
+
+  await loadLobbyCommentsList();
+
+  sendBtn.addEventListener('click', postLobbyComment);
+  inputField.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') postLobbyComment();
+  });
 }
 
-async function postLobbyComment(listContainer, inputField) {
-  const content = inputField.value.trim();
-  if (!content) {
-    showToast('留言内容不能为空！', 'error');
-    return;
-  }
-  
-  const token = localStorage.getItem('dm_jwt_token');
-  if (!token) {
-    showToast('请先登录账号以参与讨论！', 'error');
-    document.getElementById('login-trigger-btn').click();
-    return;
-  }
-  
-  try {
-    const response = await fetch(`${API_BASE}/comments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ qId: 'lobby', content })
-    });
-    
-    const result = await response.json();
-    if (response.ok) {
-      inputField.value = '';
-      showToast('发布留言成功！', 'success');
-      loadLobbyCommentsList(listContainer);
-    } else {
-      showToast(result.error || '发布失败，请重试！', 'error');
-    }
-  } catch (err) {
-    showToast('服务器连接失败，请稍后重试！', 'error');
-  }
-}
 
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -5251,11 +5392,36 @@ function renderMobilePractice(container) {
           <div class="space-y-3 max-h-[220px] overflow-y-auto pr-1" id="mobile-question-comments-list">
             <!-- Dynamic comments list -->
           </div>
-          <div class="flex gap-2 items-center mt-2">
-            <input type="text" id="mobile-q-comment-input" placeholder="对这道题有什么看法？" class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1.5 text-xs focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
-            <button id="mobile-q-comment-send" class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-colors border-none cursor-pointer">
-              <span class="material-symbols-outlined text-xs">send</span>
-            </button>
+          <div class="flex flex-col gap-2 mt-2">
+            <!-- Emoji Drawer Container -->
+            <div id="q-comments-emoji-drawer" style="display:none; flex-wrap:wrap; gap:0.3rem; padding:0.3rem; background:var(--bg-secondary); border-radius:8px; border:1px solid var(--border-color); animation: fadeIn 0.2s ease;">
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="😊">😊</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="😂">😂</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🤔">🤔</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="👍">👍</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🔥">🔥</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🎉">🎉</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="💯">💯</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🧠">🧠</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="📚">📚</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="✍️">✍️</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="💻">💻</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="💡">💡</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🚀">🚀</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🎓">🎓</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="👏">👏</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="🙌">🙌</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="✨">✨</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="✔️">✔️</button>
+              <button class="q-emoji-drawer-btn" style="background:transparent; border:none; font-size:1.05rem; cursor:pointer; padding:0.2rem;" data-emoji="❌">❌</button>
+            </div>
+            <div class="flex gap-2 items-center">
+              <button id="q-comments-emoji-toggle" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-355 flex items-center justify-center hover:bg-slate-200 border-none cursor-pointer text-xs">😊</button>
+              <input type="text" id="mobile-q-comment-input" placeholder="对这道题有什么看法？" class="flex-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-3 py-1.5 text-xs focus:border-indigo-600 focus:outline-none placeholder:text-slate-400 text-slate-900 dark:text-white" autocomplete="off">
+              <button id="mobile-q-comment-send" class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/95 transition-colors border-none cursor-pointer">
+                <span class="material-symbols-outlined text-xs">send</span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -5743,6 +5909,22 @@ async function loadMobileQuestionComments(qId, container) {
 
   if (!list || !countBadge) return;
 
+  // Bind Emoji Drawer inside detail view comments
+  const emojiToggle = container.querySelector('#q-comments-emoji-toggle');
+  const emojiDrawer = container.querySelector('#q-comments-emoji-drawer');
+  if (emojiToggle && emojiDrawer) {
+    emojiToggle.onclick = () => {
+      emojiDrawer.style.display = emojiDrawer.style.display === 'none' ? 'flex' : 'none';
+    };
+    emojiDrawer.querySelectorAll('.q-emoji-drawer-btn').forEach(btn => {
+      btn.onclick = () => {
+        const emoji = btn.getAttribute('data-emoji');
+        input.value += emoji;
+        input.focus();
+      };
+    });
+  }
+
   async function loadList() {
     try {
       const res = await fetch(`${API_BASE}/comments?q=${qId}`);
@@ -5756,7 +5938,8 @@ async function loadMobileQuestionComments(qId, container) {
         return;
       }
 
-      const loggedInProfile = JSON.parse(localStorage.getItem('dm_profile') || '{}');
+      // Fix local storage profile key typo from dm_profile to dm_user_profile
+      const loggedInProfile = JSON.parse(localStorage.getItem('dm_user_profile') || '{}');
       const currentUsername = loggedInProfile.username || '';
 
       comments.forEach(c => {
@@ -5767,7 +5950,7 @@ async function loadMobileQuestionComments(qId, container) {
           <div class="flex items-center gap-1.5">
             <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300">${c.username}</span>
             <span class="text-[8px] text-slate-400 ml-auto">${formatRelativeTime(c.timestamp)}</span>
-            ${isMine ? `<button class="mob-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">删除</button>` : ''}
+            ${isMine ? `<button class="mob-delete-comment-btn text-[9px] text-rose-500 hover:text-rose-700 ml-1.5 border-none bg-transparent cursor-pointer" data-timestamp="${c.timestamp}">撤回</button>` : ''}
           </div>
           <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-normal">${escapeHtml(c.content)}</p>
         `;
@@ -5777,7 +5960,7 @@ async function loadMobileQuestionComments(qId, container) {
       list.querySelectorAll('.mob-delete-comment-btn').forEach(btn => {
         btn.onclick = async () => {
           const timestamp = parseInt(btn.getAttribute('data-timestamp'));
-          if (!confirm('确定要删除这条评论吗？')) return;
+          if (!confirm('确定要撤回这条消息吗？')) return;
           const token = localStorage.getItem('dm_jwt_token');
           if (!token) return;
 
@@ -5792,14 +5975,14 @@ async function loadMobileQuestionComments(qId, container) {
             });
 
             if (deleteRes.ok) {
-              showToast('评论已删除！', 'success');
+              showToast('消息已撤回！', 'success');
               await loadList();
             } else {
               const errData = await deleteRes.json();
-              showToast(errData.error || '删除失败', 'error');
+              showToast(errData.error || '撤回失败', 'error');
             }
           } catch (e) {
-            showToast('删除失败，请检查网络连接', 'error');
+            showToast('撤回失败，请检查网络连接', 'error');
           }
         };
       });
@@ -5830,6 +6013,7 @@ async function loadMobileQuestionComments(qId, container) {
       });
       if (res.ok) {
         input.value = '';
+        if (emojiDrawer) emojiDrawer.style.display = 'none'; // hide drawer after sending
         await loadList();
         showToast('发布留言成功！', 'success');
       } else {
@@ -5841,6 +6025,7 @@ async function loadMobileQuestionComments(qId, container) {
     }
   };
 }
+
 
 async function renderMobileLeaderboard(container) {
   container.innerHTML = `
