@@ -5661,7 +5661,156 @@ function renderMobileProfile(container) {
     container.innerHTML = `
       <div class="glass-panel rounded-2xl p-8 text-center space-y-4 my-8 max-w-sm mx-auto bg-white/40 dark:bg-slate-900/40">
         <div class="text-4xl text-primary font-bold">🔒</div>
-        <h2 class="text-lg font-bold text-on-surface">个人中心未激// Mobile stepper helper functions
+        <h2 class="text-lg font-bold text-on-surface">个人中心未激活</h2>
+        <p class="text-sm text-outline">登录后可解锁个人专属详细页面，查看学习时长、高分榜记录并开启云端实时备份！</p>
+        <button class="btn btn-primary" onclick="document.getElementById('login-trigger-btn').click()" style="padding: 0.65rem 1.5rem; margin-top: 0.5rem; align-self: center;">
+          立即登录 / 注册
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const answeredKeys = Object.keys(userData.answered);
+  const mistakesCount = userData.wrongQuestions.length;
+  const bookmarksCount = userData.bookmarks.length;
+  
+  const savedProfile = localStorage.getItem('dm_user_profile');
+  const profile = savedProfile ? JSON.parse(savedProfile) : {};
+  const username = profile.username || '同学';
+
+  container.innerHTML = `
+    <div class="space-y-6" style="animation: fadeIn 0.4s ease; padding-bottom: 100px;">
+      <!-- Profile Card (Bento Style) -->
+      <section class="glass-panel p-6 flex items-center gap-4 relative overflow-hidden bg-white/40 dark:bg-slate-900/40">
+        <div class="absolute -top-10 -right-10 w-24 h-24 bg-primary/10 rounded-full blur-2xl z-0"></div>
+        <div class="relative z-10 w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center font-bold text-2xl shadow-md border-2 border-white shrink-0">
+          ${username[0].toUpperCase()}
+        </div>
+        <div class="relative z-10 flex flex-col">
+          <h2 class="text-lg font-bold text-on-surface">${username}</h2>
+          <div class="flex items-center gap-1.5 text-xs text-outline mt-1.5 font-semibold">
+            <span class="material-symbols-outlined text-xs">calendar_today</span>
+            <span>注册时间：2026-06</span>
+          </div>
+          <div class="flex items-center gap-1 text-xs text-primary mt-1 font-bold">
+            <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+            <span>云端同步状态：已同步</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Archive Library Grid -->
+      <section class="grid grid-cols-2 gap-4">
+        <!-- Mistakes Book -->
+        <button class="glass-panel glass-panel-interactive p-4 flex flex-col justify-between text-left hover:border-red-500/30 transition-all cursor-pointer border-none bg-white/40 dark:bg-slate-900/40" id="mob-profile-mistakes">
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center text-red-600 mb-4 shrink-0">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">error</span>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-xs font-bold text-on-surface">我的错题本 🔴</h3>
+            <p class="text-[10px] text-outline">复习易错概念</p>
+          </div>
+          <div class="flex justify-between items-center w-full mt-4">
+            <span class="text-base font-bold text-red-600">${mistakesCount}</span>
+            <span class="material-symbols-outlined text-sm text-outline">chevron_right</span>
+          </div>
+        </button>
+
+        <!-- Favorites -->
+        <button class="glass-panel glass-panel-interactive p-4 flex flex-col justify-between text-left hover:border-yellow-500/30 transition-all cursor-pointer border-none bg-white/40 dark:bg-slate-900/40" id="mob-profile-favorites">
+          <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-950/30 flex items-center justify-center text-yellow-600 mb-4 shrink-0">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">star</span>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-xs font-bold text-on-surface">我的收藏夹 ⭐️</h3>
+            <p class="text-[10px] text-outline">精选经典题型</p>
+          </div>
+          <div class="flex justify-between items-center w-full mt-4">
+            <span class="text-base font-bold text-yellow-600">${bookmarksCount}</span>
+            <span class="material-symbols-outlined text-sm text-outline">chevron_right</span>
+          </div>
+        </button>
+      </section>
+
+      <!-- Advanced Settings List -->
+      <section class="glass-panel overflow-hidden bg-white/40 dark:bg-slate-900/40">
+        <div class="px-5 py-3 border-b border-slate-200/50 dark:border-slate-800/50">
+          <h3 class="text-xs font-bold text-outline tracking-wider">高级设置</h3>
+        </div>
+        <div class="flex flex-col">
+          <!-- Sync -->
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-sync">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">sync</span>
+              <span>云端进度手动强制同步</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+          <!-- Cloudflare -->
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-cf">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">api</span>
+              <span>管理 Cloudflare 开发者凭证</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+          <!-- Logout -->
+          <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-logout">
+            <div class="flex items-center gap-3 text-on-surface text-sm">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-lg">logout</span>
+              <span>退出登录</span>
+            </div>
+            <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+          </button>
+          <!-- Danger Zone -->
+          <button class="flex items-center justify-between p-4 hover:bg-red-50/20 dark:hover:bg-red-950/20 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-wipe">
+            <div class="flex items-center gap-3 text-red-600 text-sm">
+              <span class="material-symbols-outlined text-red-500 text-lg">delete_forever</span>
+              <span class="font-medium">注销并永久抹除账户</span>
+            </div>
+            <span class="material-symbols-outlined text-red-500/70 text-sm">chevron_right</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+
+  // Bind Actions
+  container.querySelector('#mob-profile-mistakes').onclick = () => {
+    currentCategory = 'wrong_questions';
+    currentMobileTab = 'category';
+    currentQuestionIndex = 0;
+    renderViewport();
+  };
+  container.querySelector('#mob-profile-favorites').onclick = () => {
+    currentCategory = 'bookmarks';
+    currentMobileTab = 'category';
+    currentQuestionIndex = 0;
+    renderViewport();
+  };
+
+  container.querySelector('#mob-btn-sync').onclick = () => {
+    const desktopSyncBtn = document.getElementById('sync-trigger-btn');
+    if (desktopSyncBtn) desktopSyncBtn.click();
+  };
+
+  container.querySelector('#mob-btn-cf').onclick = () => {
+    currentMobileTab = 'quota_details';
+    renderViewport();
+  };
+
+  container.querySelector('#mob-btn-logout').onclick = () => {
+    logout();
+  };
+
+  container.querySelector('#mob-btn-wipe').onclick = () => {
+    const wipeBtn = document.getElementById('reset-progress-btn');
+    if (wipeBtn) wipeBtn.click();
+  };
+}
+
+// Mobile stepper helper functions
 window.decrementVal = function(id, min = 0) {
   const el = document.getElementById(id);
   if (el) {
@@ -5748,6 +5897,7 @@ window.updateMobileExamMaxLimits = function() {
   
   if (window.updateMobileExamTotalCount) window.updateMobileExamTotalCount();
 };
+
 
 function renderMobileExam(container) {
   const isLoggedIn = !!localStorage.getItem('dm_jwt_token');
