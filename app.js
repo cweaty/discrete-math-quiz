@@ -5136,6 +5136,8 @@ function renderQuotaDetails(container) {
 }
 
 function renderMobileLobby(container) {
+  const loggedInProfile = JSON.parse(localStorage.getItem('dm_user_profile') || '{}');
+  const displayName = loggedInProfile.username ? `${loggedInProfile.username} ` : '';
   const answeredKeys = Object.keys(userData.answered);
   const totalAnswered = answeredKeys.length;
   let correctCount = 0;
@@ -5200,7 +5202,7 @@ function renderMobileLobby(container) {
     <div class="space-y-6" style="animation: fadeIn 0.4s ease; padding-bottom: 100px;">
       <!-- Greeting -->
       <div class="flex flex-col gap-1 py-1">
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">您好，同学</h1>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">您好，${displayName}同学</h1>
         <p class="text-xs text-outline">准备好开始今天的离散数学练习了吗？</p>
       </div>
 
