@@ -7906,6 +7906,14 @@ D. 违法占用应急车道行驶
   const exampleModal = panelEl.querySelector('#panel-example-modal');
   const modalCloseBtn = panelEl.querySelector('#panel-modal-close');
 
+  const TOPIC_OPTIONS = [
+    { value: 'propositional_logic', label: '命题逻辑' },
+    { value: 'predicate_logic', label: '谓词逻辑' },
+    { value: 'set_theory', label: '集合论' },
+    { value: 'binary_relations', label: '二元关系' },
+    { value: 'graph_theory', label: '图论' },
+  ];
+
   const CAT_LABELS = {
     judgment: '判断题',
     single_choice: '单选题',
@@ -7916,18 +7924,23 @@ D. 违法占用应急车道行驶
   };
 
   let currentlyParsed = [];
+  let editingIndices = new Set();
 
   // Live parsing implementation
   const runLiveParse = () => {
     const text = textarea.value;
     const parsed = parseMarkdownQuestions(text);
     currentlyParsed = parsed;
+    editingIndices.clear(); // Reset editing state on new import text input
+    updateCountsAndPreview();
+  };
 
+  const updateCountsAndPreview = () => {
     // 1. Calculate categories and errors
     const counts = { judgment: 0, single_choice: 0, fill_blank: 0, calculation: 0, proof: 0, application: 0 };
     let errors = 0;
 
-    parsed.forEach(q => {
+    currentlyParsed.forEach(q => {
       if (counts[q.category] !== undefined) {
         counts[q.category]++;
       }
@@ -7945,7 +7958,7 @@ D. 违法占用应急车道行驶
       errorCountBadge.style.background = '#fef2f2';
       errorCountBadge.style.color = '#ef4444';
     }
-    totalCountBadge.textContent = parsed.length;
+    totalCountBadge.textContent = currentlyParsed.length;
 
     // 3. Render stats bar
     const statsHtml = Object.entries(counts)
@@ -7955,8 +7968,12 @@ D. 违法占用应急车道行驶
     statsBar.innerHTML = statsHtml || '暂无解析题目数据';
 
     // 4. Render Preview list
+    renderPreviewList();
+  };
+
+  const renderPreviewList = () => {
     previewList.innerHTML = '';
-    if (parsed.length === 0) {
+    if (currentlyParsed.length === 0) {
       previewList.innerHTML = `
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--text-muted); font-size:0.85rem; height:100%; gap:0.5rem; min-height:300px;">
           <span>📝 左侧输入框输入题目，右侧将实时渲染预览。</span>
@@ -7965,151 +7982,205 @@ D. 违法占用应急车道行驶
       return;
     }
 
-    parsed.forEach((q, idx) => {
+    currentlyParsed.forEach((q, idx) => {
       const card = document.createElement('div');
       card.className = 'import-preview-q-card';
+      card.dataset.idx = idx;
 
-      const optHtml = q.options && q.options.length > 0
-        ? `<div class="import-preview-q-opts">
-            ${q.options.map((o, i) => `<div class="import-preview-q-opt">${String.fromCharCode(65 + i)}、${o}</div>`).join('')}
-           </div>`
-        : '';
+      if (editingIndices.has(idx)) {
+        // Edit mode HTML
+        const topicOptsHtml = TOPIC_OPTIONS.map(t => 
+          `<option value="${t.value}" ${t.value === (q.topic || 'propositional_logic') ? 'selected' : ''}>${t.label}</option>`
+        ).join('');
+        
+        const catOptsHtml = Object.entries(CAT_LABELS).map(([v, l]) =>
+          `<option value="${v}" ${v === q.category ? 'selected' : ''}>${l}</option>`
+        ).join('');
 
-      card.innerHTML = `
-        <div class="import-preview-q-header">
-          <span class="import-preview-q-index">${idx + 1}、</span>
-          <span class="import-preview-q-cat">${CAT_LABELS[q.category] || q.category}</span>
-        </div>
-        <div class="import-preview-q-stem"></div>
-        ${optHtml}
-        <div class="import-preview-q-ans-box">答案：${q.answer}</div>
-        ${q.analysis ? `<div class="import-preview-q-analysis-box">解析：${q.analysis}</div>` : ''}
-      `;
+        const optionsText = (q.options || []).map((o, i) => {
+          if (typeof o === 'object' && o !== null && o.text) return o.text;
+          return typeof o === 'object' ? (o.text || '') : o;
+        }).join('\n');
 
-      // Safely parse Markdown and LaTeX formulas
-      const stemEl = card.querySelector('.import-preview-q-stem');
-      if (stemEl) {
-        stemEl.innerHTML = marked.parse(q.question || '');
-        renderMath(stemEl);
-      }
+        card.innerHTML = `
+          <div class="import-preview-q-header" style="justify-content:space-between; align-items:center; width:100%;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span class="import-preview-q-index" style="color:var(--primary); font-weight:800;">${idx + 1}、</span>
+              <span class="import-preview-q-cat" style="background:var(--primary); color:white;">编辑中</span>
+            </div>
+            <div style="display:flex; gap:0.35rem;">
+              <button class="btn btn-outline card-ai-btn" style="padding:0.25rem 0.5rem; font-size:0.7rem; border-radius:6px; cursor:pointer;">✨ AI 优化</button>
+              <button class="btn btn-primary card-save-btn" style="padding:0.25rem 0.5rem; font-size:0.7rem; border-radius:6px; cursor:pointer;">保存</button>
+            </div>
+          </div>
 
-      const analysisEl = card.querySelector('.import-preview-q-analysis-box');
-      if (analysisEl) {
-        analysisEl.innerHTML = marked.parse('解析：' + q.analysis);
-        renderMath(analysisEl);
+          <div style="display:flex; gap:0.5rem; margin-top:0.4rem; width:100%;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+              <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">专题科目</label>
+              <select class="card-edit-topic" style="padding:0.3rem; font-size:0.75rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none;">${topicOptsHtml}</select>
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+              <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">题目类型</label>
+              <select class="card-edit-cat" style="padding:0.3rem; font-size:0.75rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none;">${catOptsHtml}</select>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.2rem; margin-top:0.4rem; width:100%;">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">题干（支持 Markdown & LaTeX）</label>
+            <textarea class="card-edit-question" rows="3" style="padding:0.4rem; font-size:0.8rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); resize:vertical; outline:none; font-family:monospace; box-sizing:border-box; width:100%;">${q.question || ''}</textarea>
+          </div>
+
+          <div class="card-edit-options-wrapper" style="display:${q.category === 'single_choice' ? 'flex' : 'none'}; flex-direction:column; gap:0.2rem; margin-top:0.4rem; width:100%;">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">选项（每行一个选项，不带A. B.前缀）</label>
+            <textarea class="card-edit-options" rows="3" style="padding:0.4rem; font-size:0.8rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); resize:vertical; outline:none; font-family:monospace; box-sizing:border-box; width:100%;" placeholder="选项A\n选项B\n选项C\n选项D">${optionsText}</textarea>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.2rem; margin-top:0.4rem; width:100%;">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">标准答案</label>
+            <input type="text" class="card-edit-answer" value="${q.answer || ''}" style="padding:0.4rem; font-size:0.8rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none; box-sizing:border-box; width:100%;">
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.2rem; margin-top:0.4rem; width:100%;">
+            <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">解析（支持 Markdown & LaTeX）</label>
+            <textarea class="card-edit-analysis" rows="2" style="padding:0.4rem; font-size:0.8rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); resize:vertical; outline:none; font-family:monospace; box-sizing:border-box; width:100%;">${q.analysis || ''}</textarea>
+          </div>
+        `;
+
+        // Switch options visibility dynamically if category changes
+        const catSelect = card.querySelector('.card-edit-cat');
+        const optsWrapper = card.querySelector('.card-edit-options-wrapper');
+        catSelect.onchange = () => {
+          if (catSelect.value === 'single_choice') {
+            optsWrapper.style.display = 'flex';
+          } else {
+            optsWrapper.style.display = 'none';
+          }
+        };
+
+        // Save action
+        card.querySelector('.card-save-btn').onclick = () => {
+          const topic = card.querySelector('.card-edit-topic').value;
+          const category = card.querySelector('.card-edit-cat').value;
+          const question = card.querySelector('.card-edit-question').value;
+          const answer = card.querySelector('.card-edit-answer').value;
+          const analysis = card.querySelector('.card-edit-analysis').value;
+
+          q.topic = topic;
+          q.category = category;
+          q.question = question;
+          q.answer = answer;
+          q.analysis = analysis;
+
+          if (category === 'single_choice') {
+            const optsText = card.querySelector('.card-edit-options').value;
+            q.options = optsText.split('\n').map(o => o.trim()).filter(o => o !== '');
+          } else {
+            q.options = [];
+          }
+
+          editingIndices.delete(idx);
+          updateCountsAndPreview();
+        };
+
+        // AI single optimize inside card
+        card.querySelector('.card-ai-btn').onclick = async () => {
+          const btn = card.querySelector('.card-ai-btn');
+          btn.disabled = true;
+          btn.textContent = '⏳ 优化中...';
+
+          const topic = card.querySelector('.card-edit-topic').value;
+          const category = card.querySelector('.card-edit-cat').value;
+          const question = card.querySelector('.card-edit-question').value;
+          const answer = card.querySelector('.card-edit-answer').value;
+          const analysis = card.querySelector('.card-edit-analysis').value;
+          
+          let options = [];
+          if (category === 'single_choice') {
+            const optsText = card.querySelector('.card-edit-options').value;
+            options = optsText.split('\n').map(o => o.trim()).filter(o => o !== '');
+          }
+
+          try {
+            const res = await fetch('/api/ai', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: 'enhance_question',
+                question,
+                answer,
+                analysis,
+                category,
+                topic,
+                options
+              })
+            });
+            const result = await res.json();
+            if (res.ok && result.question) {
+              card.querySelector('.card-edit-question').value = result.question;
+              card.querySelector('.card-edit-answer').value = result.answer || answer;
+              card.querySelector('.card-edit-analysis').value = result.analysis || analysis;
+
+              if (category === 'single_choice' && result.options) {
+                card.querySelector('.card-edit-options').value = result.options.join('\n');
+              }
+              showToast('🤖 AI 优化成功！已回填至表单。', 'success');
+            } else {
+              showToast('AI 优化失败：' + (result.error || '未知错误'), 'error');
+            }
+          } catch (err) {
+            showToast('无法连接 AI 接口！', 'error');
+          }
+          btn.disabled = false;
+          btn.textContent = '✨ AI 优化';
+        };
+
+      } else {
+        // Preview mode HTML
+        const optHtml = q.options && q.options.length > 0
+          ? `<div class="import-preview-q-opts">
+              ${q.options.map((o, i) => {
+                const text = typeof o === 'object' ? (o.text || '') : o;
+                return `<div class="import-preview-q-opt">${String.fromCharCode(65 + i)}、${text}</div>`;
+              }).join('')}
+             </div>`
+          : '';
+
+        card.innerHTML = `
+          <div class="import-preview-q-header" style="justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span class="import-preview-q-index">${idx + 1}、</span>
+              <span class="import-preview-q-cat">${CAT_LABELS[q.category] || q.category}</span>
+            </div>
+            <button class="btn btn-outline card-edit-btn" style="padding:0.25rem 0.5rem; font-size:0.7rem; border-radius:6px; cursor:pointer; color:var(--primary); border-color:var(--primary);">✍️ 编辑</button>
+          </div>
+          <div class="import-preview-q-stem"></div>
+          ${optHtml}
+          <div class="import-preview-q-ans-box">答案：${q.answer}</div>
+          ${q.analysis ? `<div class="import-preview-q-analysis-box">解析：${q.analysis}</div>` : ''}
+        `;
+
+        // Safely parse Markdown and LaTeX formulas
+        const stemEl = card.querySelector('.import-preview-q-stem');
+        if (stemEl) {
+          stemEl.innerHTML = marked.parse(q.question || '');
+          renderMath(stemEl);
+        }
+
+        const analysisEl = card.querySelector('.import-preview-q-analysis-box');
+        if (analysisEl) {
+          analysisEl.innerHTML = marked.parse('解析：' + q.analysis);
+          renderMath(analysisEl);
+        }
+
+        // Toggle edit mode click
+        card.querySelector('.card-edit-btn').onclick = () => {
+          editingIndices.add(idx);
+          renderPreviewList();
+        };
       }
 
       previewList.appendChild(card);
     });
-  };
-
-  // Set initial text and run parse
-  textarea.value = initialText || "";
-  runLiveParse();
-
-  // Wire textarea input event
-  textarea.oninput = () => runLiveParse();
-
-  // File loading bindings
-  importFileBtn.onclick = () => fileInput.click();
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      textarea.value = ev.target.result;
-      runLiveParse();
-      showToast(`📁 成功读取文件: ${file.name}`, 'success');
-    };
-    reader.readAsText(file, 'utf-8');
-    fileInput.value = ''; // Reset
-  };
-
-  // Example modal bindings
-  showExampleBtn.onclick = () => exampleModal.style.display = 'flex';
-  modalCloseBtn.onclick = () => exampleModal.style.display = 'none';
-  exampleModal.onclick = (e) => { if (e.target === exampleModal) exampleModal.style.display = 'none'; };
-
-  // Submit button
-  submitBtn.onclick = async () => {
-    if (currentlyParsed.length === 0) {
-      showToast('没有识别出有效的题目，请先在左侧输入！', 'error');
-      return;
-    }
-
-    let errors = 0;
-    currentlyParsed.forEach(q => {
-      if (!q.question.trim() || !q.answer.trim()) errors++;
-    });
-
-    if (errors > 0) {
-      if (!confirm(`当前有 ${errors} 道题目信息不完整（缺少题干或答案），确定要忽略并导入其它 ${currentlyParsed.length - errors} 道正确的题目吗？`)) {
-        return;
-      }
-    }
-
-    let importedCount = 0;
-    for (const q of currentlyParsed) {
-      if (!q.question.trim() || !q.answer.trim()) continue;
-
-      const category = q.category;
-      const topic = q.topic || 'propositional_logic';
-      const question = q.question.trim();
-      const answer = q.answer.trim();
-      const analysis = q.analysis.trim();
-
-      // Format options to match database structure { key, text }
-      const formattedOptions = (q.options || []).map((opt, i) => {
-        if (typeof opt === 'object' && opt !== null && opt.key && opt.text) {
-          return opt;
-        }
-        const key = String.fromCharCode(65 + i);
-        const text = typeof opt === 'object' ? (opt.text || '') : opt;
-        return { key, text };
-      });
-
-      const inCat = QUESTIONS.filter(qi => qi.category === category);
-      const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
-
-      QUESTIONS.push({
-        category,
-        original_num: nextNum,
-        question,
-        options: formattedOptions,
-        answer,
-        analysis: analysis || '',
-        topic
-      });
-      importedCount++;
-    }
-
-    if (importedCount === 0) {
-      showToast('没有有效题目可导入！', 'error');
-      return;
-    }
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = '⏳ 导入中...';
-    try {
-      await saveQuestionsToCloud();
-      panelEl.style.display = 'none';
-      panelEl.innerHTML = '';
-      showToast(`🎉 成功导入 ${importedCount} 道题目并同步至云端！`, 'success');
-      renderQuestionsList();
-    } catch (err) {
-      showToast('导入同步失败！', 'error');
-    }
-    submitBtn.disabled = false;
-    submitBtn.textContent = '提交';
-  };
-
-  // Close button
-  closeBtn.onclick = () => {
-    if (textarea.value.trim() && !confirm('确定要关闭吗？输入的内容将不会被保存。')) {
-      return;
-    }
-    panelEl.style.display = 'none';
-    panelEl.innerHTML = '';
   };
 }
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
