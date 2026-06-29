@@ -5810,6 +5810,42 @@ function renderMobileProfile(container) {
   };
 }
 
+// Mobile stepper helper functions
+window.decrementVal = function(id, min = 0) {
+  const el = document.getElementById(id);
+  if (el) {
+    let val = parseInt(el.value) || 0;
+    if (val > min) {
+      el.value = val - 1;
+      el.dispatchEvent(new Event('change'));
+      if (window.updateMobileExamTotalCount) window.updateMobileExamTotalCount();
+    }
+  }
+};
+window.incrementVal = function(id, max = 10) {
+  const el = document.getElementById(id);
+  if (el) {
+    let val = parseInt(el.value) || 0;
+    if (val < max) {
+      el.value = val + 1;
+      el.dispatchEvent(new Event('change'));
+      if (window.updateMobileExamTotalCount) window.updateMobileExamTotalCount();
+    }
+  }
+};
+window.updateMobileExamTotalCount = function() {
+  const cntJudg = parseInt(document.getElementById('mob-cnt-judgment').value) || 0;
+  const cntChoi = parseInt(document.getElementById('mob-cnt-choice').value) || 0;
+  const cntBlan = parseInt(document.getElementById('mob-cnt-blank').value) || 0;
+  const cntSubj = parseInt(document.getElementById('mob-cnt-subjective').value) || 0;
+  const total = cntJudg + cntChoi + cntBlan + cntSubj;
+  
+  const badge = document.getElementById('mob-exam-total-badge');
+  if (badge) {
+    badge.innerText = `已选 ${total} 题 (共 ${total * 10} 分)`;
+  }
+};
+
 function renderMobileExam(container) {
   const isLoggedIn = !!localStorage.getItem('dm_jwt_token');
   if (!isLoggedIn) {
@@ -5915,23 +5951,50 @@ function renderMobileExamLobby(container) {
         </div>
 
         <div class="space-y-2 pt-2 border-t border-slate-200/20">
-          <h4 class="text-[10px] font-bold text-outline uppercase">题型数量配置 (每题 10 分)</h4>
-          <div class="grid grid-cols-4 gap-2">
-            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2">
-              <span class="text-[9px] text-outline font-bold">判断题</span>
-              <input type="number" id="mob-cnt-judgment" value="5" min="0" max="10" class="w-full text-center text-xs font-bold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100">
+          <div class="flex justify-between items-center mb-1">
+            <h4 class="text-[10px] font-bold text-outline uppercase m-0">题型数量配置 (每题 10 分)</h4>
+            <span class="text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-sans" id="mob-exam-total-badge">已选 10 题 (共 100 分)</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Stepper 1 -->
+            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-200/30">
+              <span class="text-xs text-outline font-bold">判断题</span>
+              <div class="flex items-center justify-between w-full mt-2 bg-white/30 dark:bg-slate-900/30 rounded-xl p-1 border border-slate-200/10">
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="decrementVal('mob-cnt-judgment', 0)">−</button>
+                <input type="number" id="mob-cnt-judgment" value="5" min="0" max="15" class="w-12 text-center text-sm font-extrabold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100" readonly>
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="incrementVal('mob-cnt-judgment', 15)">+</button>
+              </div>
             </div>
-            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2">
-              <span class="text-[9px] text-outline font-bold">单选题</span>
-              <input type="number" id="mob-cnt-choice" value="3" min="0" max="10" class="w-full text-center text-xs font-bold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100">
+
+            <!-- Stepper 2 -->
+            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-200/30">
+              <span class="text-xs text-outline font-bold">单选题</span>
+              <div class="flex items-center justify-between w-full mt-2 bg-white/30 dark:bg-slate-900/30 rounded-xl p-1 border border-slate-200/10">
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="decrementVal('mob-cnt-choice', 0)">−</button>
+                <input type="number" id="mob-cnt-choice" value="3" min="0" max="15" class="w-12 text-center text-sm font-extrabold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100" readonly>
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="incrementVal('mob-cnt-choice', 15)">+</button>
+              </div>
             </div>
-            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2">
-              <span class="text-[9px] text-outline font-bold">填空题</span>
-              <input type="number" id="mob-cnt-blank" value="2" min="0" max="10" class="w-full text-center text-xs font-bold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100">
+
+            <!-- Stepper 3 -->
+            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-200/30">
+              <span class="text-xs text-outline font-bold">填空题</span>
+              <div class="flex items-center justify-between w-full mt-2 bg-white/30 dark:bg-slate-900/30 rounded-xl p-1 border border-slate-200/10">
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="decrementVal('mob-cnt-blank', 0)">−</button>
+                <input type="number" id="mob-cnt-blank" value="2" min="0" max="15" class="w-12 text-center text-sm font-extrabold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100" readonly>
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="incrementVal('mob-cnt-blank', 15)">+</button>
+              </div>
             </div>
-            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-xl p-2">
-              <span class="text-[9px] text-outline font-bold">主观题</span>
-              <input type="number" id="mob-cnt-subjective" value="0" min="0" max="5" class="w-full text-center text-xs font-bold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100">
+
+            <!-- Stepper 4 -->
+            <div class="flex flex-col gap-1 items-center bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-200/30">
+              <span class="text-xs text-outline font-bold">主观题</span>
+              <div class="flex items-center justify-between w-full mt-2 bg-white/30 dark:bg-slate-900/30 rounded-xl p-1 border border-slate-200/10">
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="decrementVal('mob-cnt-subjective', 0)">−</button>
+                <input type="number" id="mob-cnt-subjective" value="0" min="0" max="10" class="w-12 text-center text-sm font-extrabold bg-transparent border-none focus:outline-none p-0 text-slate-850 dark:text-slate-100" readonly>
+                <button type="button" class="w-8 h-8 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 flex items-center justify-center border-none text-slate-800 dark:text-white font-bold cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-650 active:scale-95 transition-all select-none text-sm" onclick="incrementVal('mob-cnt-subjective', 10)">+</button>
+              </div>
             </div>
           </div>
         </div>
@@ -5966,6 +6029,9 @@ function renderMobileExamLobby(container) {
     // Call internal build exam
     buildCustomExam(topic, timeLimit, cntJudg, cntChoi, cntBlan, cntSubj);
   };
+  
+  // Initialize total count display
+  if (window.updateMobileExamTotalCount) window.updateMobileExamTotalCount();
 }
 
 function renderMobileExamRunner(container) {
