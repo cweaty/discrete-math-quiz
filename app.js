@@ -1761,18 +1761,20 @@ function renderExamRunner(container) {
   });
   
   // 交卷 logic
-  document.getElementById('submit-exam-btn').addEventListener('click', () => {
-    const unansweredCount = examState.questions.length - Object.keys(examState.answers).filter(k => examState.answers[k] !== '').length;
-    let confirmMsg = '是否确认交卷？';
-    if (unansweredCount > 0) {
-      confirmMsg = `你还有 ${unansweredCount} 道题目未作答，是否确认交卷？`;
-    }
-    if (confirm(confirmMsg)) {
-      submitExam(false);
-    }
-  });
+  document.getElementById('submit-exam-btn').addEventListener('click', triggerExamSubmission);
   
   renderMath(card);
+}
+
+function triggerExamSubmission() {
+  const unansweredCount = examState.questions.length - Object.keys(examState.answers).filter(k => examState.answers[k] !== '').length;
+  let confirmMsg = '是否确认交卷？';
+  if (unansweredCount > 0) {
+    confirmMsg = `你还有 ${unansweredCount} 道题目未作答，是否确认交卷？`;
+  }
+  if (confirm(confirmMsg)) {
+    submitExam(false);
+  }
 }
 
 function submitExam(isTimeout = false) {
@@ -4191,7 +4193,7 @@ function updateMobileNavAndHeader() {
     `;
   } else if (currentMobileTab === 'exam' && examState.isActive) {
     headerLeft.innerHTML = `
-      <button onclick="document.getElementById('submit-exam-btn').click();" class="flex items-center justify-center p-1 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border-none bg-transparent cursor-pointer mr-2">
+      <button onclick="triggerExamSubmission();" class="flex items-center justify-center p-1 rounded-full text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors border-none bg-transparent cursor-pointer mr-2">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
       <span class="font-bold text-slate-900 dark:text-white tracking-tight text-base">模拟考试</span>
@@ -6099,8 +6101,7 @@ function renderMobileExamRunner(container) {
   
   if (submitTrigger) {
     submitTrigger.onclick = () => {
-      const mainSubmitBtn = document.getElementById('submit-exam-btn');
-      if (mainSubmitBtn) mainSubmitBtn.click();
+      triggerExamSubmission();
     };
   }
 
