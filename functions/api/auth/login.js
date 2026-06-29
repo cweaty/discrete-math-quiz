@@ -62,7 +62,43 @@ export async function onRequestPost(context) {
     const normUsername = username.trim().toLowerCase();
     
     // Read Account Index (key by username now)
-    const accountStr = await getDb(env, `user:account:${normUsername}`);
+    let accountStr = await getDb(env, `user:account:${normUsername}`);
+    
+    // Auto-seed admin account on first login attempt if it doesn't exist
+    if (!accountStr && normUsername === "admin") {
+      const adminPassword = env.ADMIN_PASSWORD || "admin123";
+      const salt = "0123456789abcdef0123456789abcdef"; // Stable salt for admin auto-seed
+      const passwordHash = await hashPassword(adminPassword, salt);
+      const userId = "usr_admin_000000000";
+      
+      const accountData = {
+        userId,
+        passwordHash,
+        salt,
+        role: "admin"
+      };
+      await putDb(env, `user:account:admin`, JSON.stringify(accountData));
+      
+      const profileData = {
+        userId,
+        username: "admin",
+        answeredCount: 0,
+        correctRate: 0,
+        examHighScore: 0,
+        updatedAt: Math.floor(Date.now() / 1000)
+      };
+      await putDb(env, `user:profile:${userId}`, JSON.stringify(profileData));
+      
+      const progressData = {
+        bookmarks: [],
+        answered: {}
+      };
+      await putDb(env, `user:data:${userId}`, JSON.stringify(progressData));
+      
+      accountStr = JSON.stringify(accountData);
+      console.log("Successfully auto-seeded system admin account.");
+    }
+    
     if (!accountStr) {
       return new Response(JSON.stringify({ error: "用户名不存在或密码错误！" }), {
         status: 401,

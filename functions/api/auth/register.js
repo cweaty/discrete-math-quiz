@@ -40,6 +40,13 @@ export async function onRequestPost(context) {
     const normUsername = username.trim().toLowerCase();
     const cleanUsername = username.trim();
     
+    if (normUsername === "admin") {
+      return new Response(JSON.stringify({ error: "系统管理员账号禁止公开注册！" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
     // Check if account already exists (key by username now)
     const existingAccount = await getDb(env, `user:account:${normUsername}`);
     if (existingAccount) {
