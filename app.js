@@ -6695,7 +6695,10 @@ async function renderAdminUsersTab(container) {
       });
       if (res.ok) {
         allUsers = await res.json();
-        container.querySelector('#admin-user-count').innerText = `共 ${allUsers.length} 位注册用户`;
+        const userCountEl = container.querySelector('#admin-user-count');
+        if (userCountEl) {
+          userCountEl.innerText = `共 ${allUsers.length} 位注册用户`;
+        }
         renderUsersTable(allUsers);
       } else {
         const errData = await res.json();
@@ -6709,6 +6712,7 @@ async function renderAdminUsersTab(container) {
 
   const renderUsersTable = (users) => {
     const tbody = container.querySelector('#admin-users-table-body');
+    if (!tbody) return;
     if (users.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" style="padding:3rem; text-align:center; color:var(--text-muted);">暂无匹配的用户记录</td></tr>`;
       return;
@@ -7356,9 +7360,12 @@ async function renderAdminSystemTab(container) {
       });
       if (res.ok) {
         const config = await res.json();
-        container.querySelector('#sys-default-model').value = config.defaultModel;
-        container.querySelector('#sys-default-intensity').value = config.defaultIntensity;
-        container.querySelector('#sys-force-thinking').checked = config.forceShowThinking;
+        const modelEl = container.querySelector('#sys-default-model');
+        if (modelEl) modelEl.value = config.defaultModel;
+        const intensityEl = container.querySelector('#sys-default-intensity');
+        if (intensityEl) intensityEl.value = config.defaultIntensity;
+        const forceEl = container.querySelector('#sys-force-thinking');
+        if (forceEl) forceEl.checked = config.forceShowThinking;
       }
     } catch (err) {
       console.error("System config loading error:", err);
