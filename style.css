@@ -2943,3 +2943,17 @@ tr:nth-child(even) {
   padding-top: 0.5rem;
   margin-top: 0.25rem;
 }
+
+/* Custom semantic text color helper classes */
+.text-on-surface {
+  color: var(--text-primary) !important;
+}
+.text-on-surface-variant {
+  color: var(--text-secondary) !important;
+}
+.text-outline {
+  color: var(--text-muted) !important;
+}
+.text-on-primary {
+  color: #ffffff !important;
+}
