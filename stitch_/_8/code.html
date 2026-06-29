@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>练习题库 - 离散数学刷题系统</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                "surface-container-low": "#f0f3ff",
+                "surface-container-high": "#dee8ff",
+                "secondary-fixed": "#e0e0ff",
+                "background": "#f9f9ff",
+                "on-background": "#111c2d",
+                "primary-fixed-dim": "#c3c0ff",
+                "outline-variant": "#c7c4d8",
+                "on-surface": "#111c2d",
+                "surface-variant": "#d8e3fb",
+                "on-tertiary-fixed": "#181c21",
+                "on-surface-variant": "#464555",
+                "inverse-on-surface": "#ecf1ff",
+                "surface-container-highest": "#d8e3fb",
+                "primary-fixed": "#e2dfff",
+                "on-tertiary-fixed-variant": "#43474d",
+                "on-secondary-fixed": "#000767",
+                "on-secondary": "#ffffff",
+                "tertiary-container": "#5d6067",
+                "surface-dim": "#cfdaf2",
+                "tertiary-fixed": "#e0e2ea",
+                "surface-container-lowest": "#ffffff",
+                "on-secondary-container": "#17228f",
+                "on-primary-container": "#dad7ff",
+                "tertiary": "#45484f",
+                "tertiary-fixed-dim": "#c4c6ce",
+                "on-tertiary-container": "#d9dbe3",
+                "inverse-primary": "#c3c0ff",
+                "surface": "#f9f9ff",
+                "on-primary-fixed": "#0f0069",
+                "surface-tint": "#4d44e3",
+                "secondary": "#4953bc",
+                "on-primary-fixed-variant": "#3323cc",
+                "on-tertiary": "#ffffff",
+                "on-error-container": "#93000a",
+                "outline": "#777587",
+                "on-error": "#ffffff",
+                "surface-container": "#e7eeff",
+                "secondary-fixed-dim": "#bdc2ff",
+                "primary": "#3525cd",
+                "inverse-surface": "#263143",
+                "primary-container": "#4f46e5",
+                "surface-bright": "#f9f9ff",
+                "on-primary": "#ffffff",
+                "error-container": "#ffdad6",
+                "secondary-container": "#8792fe",
+                "on-secondary-fixed-variant": "#2f3aa3",
+                "error": "#ba1a1a"
+              },
+              "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px",
+                "2xl": "1.5rem"
+              },
+              "spacing": {
+                "stack-gap": "16px",
+                "section-margin": "32px",
+                "inline-gap": "12px",
+                "container-padding": "20px",
+                "glass-padding": "16px"
+              },
+              "fontFamily": {
+                "body-lg": ["Inter"],
+                "headline-md": ["Inter"],
+                "math-display": ["Inter"],
+                "label-md": ["Inter"],
+                "display-lg": ["Inter"],
+                "headline-sm": ["Inter"],
+                "body-md": ["Inter"]
+              },
+              "fontSize": {
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "math-display": ["18px", {"lineHeight": "28px", "fontWeight": "500"}],
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        .glass-effect {
+            background-color: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-effect {
+            background-color: rgba(38, 49, 67, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .toggle-switch:checked {
+            background-color: #4f46e5;
+        }
+        .toggle-switch:checked + label:after {
+            transform: translateX(100%);
+        }
+        .custom-toggle {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .custom-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #c7c4d8;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input:checked + .slider {
+            background-color: #3525cd;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        body {
+            min-height: 100dvh;
+            background-image: radial-gradient(circle at top right, #e0e0ff 0%, transparent 40%),
+                              radial-gradient(circle at bottom left, #f0f3ff 0%, transparent 40%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md pb-[100px] md:pb-0">
+<!-- Top Bar -->
+<header class="fixed top-0 w-full z-50 h-16 glass-effect flex items-center justify-between px-container-padding shadow-sm">
+<div class="flex items-center gap-inline-gap">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">functions</span>
+</div>
+<span class="font-headline-md text-primary tracking-tight">离散数学刷题系统</span>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">light_mode</span>
+</button>
+</header>
+<main class="pt-24 px-container-padding max-w-7xl mx-auto md:flex md:gap-8">
+<!-- Desktop Sidebar (Hidden on mobile) -->
+<aside class="hidden md:flex flex-col w-64 glass-effect rounded-2xl p-4 h-fit sticky top-24">
+<nav class="space-y-1">
+<a class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-body-lg">大厅</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-xl bg-primary-container text-white font-semibold shadow-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="font-body-lg">题库</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-body-lg">模考</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-body-lg">排行榜</span>
+</a>
+<a class="flex items-center gap-3 p-3 rounded-xl hover:bg-surface-container-high text-on-surface-variant transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-body-lg">我的</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content -->
+<div class="flex-1 space-y-section-margin">
+<!-- Header & Search -->
+<section class="space-y-stack-gap">
+<h1 class="font-display-lg text-display-lg text-on-background">练习题库</h1>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full h-14 pl-12 pr-4 rounded-2xl glass-effect border-outline-variant focus:border-primary focus:ring-0 transition-all placeholder:text-outline font-body-lg" placeholder="搜索题目或知识点..." type="text"/>
+</div>
+</section>
+<!-- Settings Toggles -->
+<section class="glass-effect rounded-2xl p-4 overflow-x-auto">
+<div class="flex items-center gap-8 min-w-max">
+<div class="flex items-center gap-3">
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+<span class="text-on-surface font-medium">自动下一题</span>
+</div>
+<div class="flex items-center gap-3">
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="slider"></span>
+</label>
+<span class="text-on-surface font-medium">随机乱序</span>
+</div>
+<div class="flex items-center gap-3">
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="slider"></span>
+</label>
+<span class="text-on-surface font-medium">隐藏已做对题</span>
+</div>
+</div>
+</section>
+<!-- Category Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-stack-gap">
+<!-- Card: 图论 -->
+<div class="glass-effect rounded-2xl p-glass-padding shadow-sm hover:shadow-md transition-all group cursor-pointer border border-white/40">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">share</span>
+</div>
+<span class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-label-md font-bold">共 120 题</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-2">图论</h3>
+<p class="text-outline text-body-md mb-6">路径、连通性、树、图的着色与匹配。</p>
+<div class="space-y-2">
+<div class="flex justify-between text-label-md font-bold text-on-surface-variant">
+<span>完成进度</span>
+<span>45%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+<!-- Card: 集合论 -->
+<div class="glass-effect rounded-2xl p-glass-padding shadow-sm hover:shadow-md transition-all group cursor-pointer border border-white/40">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">category</span>
+</div>
+<span class="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-label-md font-bold">共 85 题</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-2">集合论</h3>
+<p class="text-outline text-body-md mb-6">集合运算、关系、函数与等势。</p>
+<div class="space-y-2">
+<div class="flex justify-between text-label-md font-bold text-on-surface-variant">
+<span>完成进度</span>
+<span>20%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 20%"></div>
+</div>
+</div>
+</div>
+<!-- Card: 逻辑学 -->
+<div class="glass-effect rounded-2xl p-glass-padding shadow-sm hover:shadow-md transition-all group cursor-pointer border border-white/40">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">account_tree</span>
+</div>
+<span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-label-md font-bold">共 150 题</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-2">逻辑学</h3>
+<p class="text-outline text-body-md mb-6">命题逻辑、谓词逻辑、推理与证明。</p>
+<div class="space-y-2">
+<div class="flex justify-between text-label-md font-bold text-on-surface-variant">
+<span>完成进度</span>
+<span>75%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%"></div>
+</div>
+</div>
+</div>
+<!-- Card: 代数结构 -->
+<div class="glass-effect rounded-2xl p-glass-padding shadow-sm hover:shadow-md transition-all group cursor-pointer border border-white/40">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">join_inner</span>
+</div>
+<span class="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-label-md font-bold">共 90 题</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-2">代数结构</h3>
+<p class="text-outline text-body-md mb-6">群、环、域、格与布尔代数。</p>
+<div class="space-y-2">
+<div class="flex justify-between text-label-md font-bold text-on-surface-variant">
+<span>完成进度</span>
+<span>10%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 10%"></div>
+</div>
+</div>
+</div>
+<!-- Card: 组合数学 -->
+<div class="glass-effect rounded-2xl p-glass-padding shadow-sm hover:shadow-md transition-all group cursor-pointer border border-white/40">
+<div class="flex justify-between items-start mb-6">
+<div class="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">functions</span>
+</div>
+<span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-label-md font-bold">共 110 题</span>
+</div>
+<h3 class="font-headline-sm text-on-surface mb-2">组合数学</h3>
+<p class="text-outline text-body-md mb-6">排列组合、容斥原理、递推关系。</p>
+<div class="space-y-2">
+<div class="flex justify-between text-label-md font-bold text-on-surface-variant">
+<span>完成进度</span>
+<span>60%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full h-20 glass-effect border-t border-white/20 px-4 flex items-center justify-around z-50">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold">大厅</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<div class="relative flex items-center justify-center">
+<div class="absolute -inset-2 bg-primary/10 rounded-full blur-sm"></div>
+<span class="material-symbols-outlined relative" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<span class="text-[10px] font-bold">题库</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span class="text-[10px] font-bold">模考</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="text-[10px] font-bold">排行榜</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">我的</span>
+</a>
+</nav>
+</body></html>

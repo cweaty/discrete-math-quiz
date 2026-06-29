@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>考试交卷确认</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-dim": "#cfdaf2",
+                      "secondary-container": "#8792fe",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed": "#181c21",
+                      "on-error": "#ffffff",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "secondary-fixed": "#e0e0ff",
+                      "primary": "#3525cd",
+                      "on-background": "#111c2d",
+                      "on-primary-container": "#dad7ff",
+                      "inverse-on-surface": "#ecf1ff",
+                      "primary-container": "#4f46e5",
+                      "surface-tint": "#4d44e3",
+                      "surface-container-high": "#dee8ff",
+                      "on-surface": "#111c2d",
+                      "outline": "#777587",
+                      "secondary-fixed-dim": "#bdc2ff",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-container": "#d9dbe3",
+                      "surface-container-low": "#f0f3ff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-bright": "#f9f9ff",
+                      "primary-fixed": "#e2dfff",
+                      "inverse-surface": "#263143",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "on-primary-fixed": "#0f0069",
+                      "on-primary": "#ffffff",
+                      "surface-container": "#e7eeff",
+                      "on-surface-variant": "#464555",
+                      "on-secondary-fixed": "#000767",
+                      "inverse-primary": "#c3c0ff",
+                      "surface-variant": "#d8e3fb",
+                      "surface": "#f9f9ff",
+                      "on-error-container": "#93000a",
+                      "tertiary-container": "#5d6067",
+                      "secondary": "#4953bc",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-fixed": "#e0e2ea",
+                      "outline-variant": "#c7c4d8",
+                      "on-secondary-container": "#17228f",
+                      "background": "#f9f9ff",
+                      "tertiary-fixed-dim": "#c4c6ce",
+                      "tertiary": "#45484f",
+                      "on-tertiary-fixed-variant": "#43474d",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#d8e3fb",
+                      "on-secondary-fixed-variant": "#2f3aa3"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-margin": "32px",
+                      "glass-padding": "16px",
+                      "stack-gap": "16px",
+                      "inline-gap": "12px",
+                      "container-padding": "20px"
+              },
+              "fontFamily": {
+                      "math-display": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "math-display": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .bg-overlay {
+            background-color: rgba(17, 28, 45, 0.4); /* on-background with opacity */
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .btn-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn-hover:active { transform: scale(0.96); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen relative overflow-hidden flex flex-col">
+<!-- Mock Background Content (Exam Session) -->
+<header class="bg-surface/80 backdrop-blur-xl border-b border-white/40 fixed top-0 w-full z-10 flex justify-between items-center px-container-padding h-16">
+<div class="flex items-center gap-inline-gap">
+<span class="material-symbols-outlined text-primary text-2xl cursor-pointer">arrow_back</span>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">离散数学期中模考</h1>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-high px-3 py-1 rounded-full border border-white/50">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">schedule</span>
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">45:12</span>
+</div>
+</header>
+<main class="pt-[80px] pb-safe px-container-padding flex-1 flex flex-col gap-section-margin">
+<div class="glass-panel p-glass-padding rounded-xl shadow-sm flex flex-col gap-stack-gap">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md bg-secondary-fixed text-on-secondary-fixed px-3 py-1 rounded-full">单选题 15/20</span>
+<span class="font-label-md text-label-md text-outline">图论基础</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                设图 $G$ 是一个具有 $n$ 个顶点和 $m$ 条边的连通无向图。如果 $G$ 中存在一条欧拉回路，那么以下哪个条件是必须满足的？
+            </p>
+<div class="flex flex-col gap-3 mt-2">
+<button class="w-full text-left p-4 rounded-lg border border-outline-variant bg-surface-lowest hover:bg-surface-container-lowest transition-colors flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border border-outline flex items-center justify-center shrink-0"><span class="font-label-md text-label-md">A</span></div>
+<span class="font-body-md text-body-md">$G$ 中的所有顶点度数都必须是偶数。</span>
+</button>
+<button class="w-full text-left p-4 rounded-lg border-2 border-primary bg-primary-fixed/30 flex items-center gap-3">
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0"><span class="font-label-md text-label-md">B</span></div>
+<span class="font-body-md text-body-md">$G$ 中的所有顶点度数都必须是奇数。</span>
+</button>
+<button class="w-full text-left p-4 rounded-lg border border-outline-variant bg-surface-lowest hover:bg-surface-container-lowest transition-colors flex items-center gap-3">
+<div class="w-6 h-6 rounded-full border border-outline flex items-center justify-center shrink-0"><span class="font-label-md text-label-md">C</span></div>
+<span class="font-body-md text-body-md">$G$ 的边数 $m$ 必须是偶数。</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Overlay & Dialog -->
+<div aria-modal="true" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay" role="dialog">
+<!-- Dialog Container -->
+<div class="glass-panel w-full max-w-sm rounded-[24px] p-6 flex flex-col items-center text-center shadow-lg transform transition-all duration-300 scale-100 opacity-100">
+<!-- Warning Icon -->
+<div class="w-16 h-16 rounded-full bg-error-container/50 flex items-center justify-center mb-4 border border-white/30">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1; font-size: 32px;">error</span>
+</div>
+<!-- Title -->
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">确认交卷</h2>
+<!-- Message -->
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 px-2">
+                您还有 <span class="font-bold text-error">2</span> 道题目未作答。<br/>确定要现在提交试卷吗？
+            </p>
+<!-- Actions -->
+<div class="flex w-full gap-4">
+<button class="flex-1 btn-hover h-[48px] rounded-full border-2 border-primary/20 bg-surface/50 text-primary font-body-lg text-body-lg font-medium shadow-sm flex items-center justify-center transition-colors hover:bg-surface-container-high">
+                    返回答题
+                </button>
+<button class="flex-1 btn-hover h-[48px] rounded-full bg-error text-on-error font-body-lg text-body-lg font-medium shadow-[0_8px_30px_rgba(186,26,26,0.2)] flex items-center justify-center transition-colors hover:opacity-90">
+                    确定交卷
+                </button>
+</div>
+</div>
+</div>
+</body></html>

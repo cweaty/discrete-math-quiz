@@ -7093,16 +7093,16 @@ async function renderAdminQuestionsTab(container) {
   container.innerHTML = `
     <div style="display:flex; flex-direction:column; gap:1.25rem;">
       <!-- Editor Container (Hidden by default) -->
-      <div id="admin-q-editor-container" style="display:none; transition:all 0.3s ease;"></div>
+      <div id="admin-q-editor-container" style="display:none;"></div>
 
       <!-- Markdown Import Panel (Hidden by default) -->
       <div id="admin-q-import-panel" style="display:none;"></div>
 
       <!-- Controls Bar -->
-      <div style="display:flex; flex-direction:column; gap:0.75rem;">
-        <!-- Filter row -->
-        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
-          <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; flex:1; min-width:100px;">
+      <div class="admin-q-controls">
+        <!-- Filter row: 3 columns, collapses on mobile -->
+        <div class="admin-q-filter-row">
+          <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; width:100%;">
             <option value="all">所有题型</option>
             <option value="judgment">判断题</option>
             <option value="single_choice">单选题</option>
@@ -7111,7 +7111,7 @@ async function renderAdminQuestionsTab(container) {
             <option value="proof">证明题</option>
             <option value="application">应用题</option>
           </select>
-          <select id="admin-q-topic-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; flex:1; min-width:100px;">
+          <select id="admin-q-topic-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; width:100%;">
             <option value="all">所有专题科目</option>
             <option value="propositional_logic">命题逻辑</option>
             <option value="predicate_logic">谓词逻辑</option>
@@ -7119,14 +7119,14 @@ async function renderAdminQuestionsTab(container) {
             <option value="binary_relations">二元关系</option>
             <option value="graph_theory">图论</option>
           </select>
-          <input type="text" id="admin-q-search" placeholder="搜索题干关键字..." style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; flex:2; min-width:150px; outline:none; box-sizing:border-box;">
+          <input type="text" id="admin-q-search" class="admin-q-search" placeholder="🔍 搜索题干关键字..." style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; outline:none; box-sizing:border-box; width:100%;">
         </div>
         <!-- Action buttons row -->
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-          <button class="btn btn-primary" id="admin-q-add-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:130px; display:flex; align-items:center; justify-content:center; gap:0.35rem;">
+        <div class="admin-q-action-row">
+          <button class="btn btn-primary" id="admin-q-add-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:140px; display:flex; align-items:center; justify-content:center; gap:0.35rem;">
             ➕ 手动新增题目
           </button>
-          <button class="btn btn-outline" id="admin-q-import-md-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:130px; display:flex; align-items:center; justify-content:center; gap:0.35rem; color:var(--primary); border-color:var(--primary);">
+          <button class="btn btn-outline" id="admin-q-import-md-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:160px; display:flex; align-items:center; justify-content:center; gap:0.35rem; color:var(--primary); border-color:var(--primary);">
             📄 批量导入 Markdown
           </button>
           <input type="file" id="admin-q-md-file-input" accept=".md,.txt" style="display:none;">
@@ -7136,7 +7136,7 @@ async function renderAdminQuestionsTab(container) {
       <!-- Question Pool List -->
       <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1rem;">
         <h3 style="margin:0; font-size:0.95rem; font-weight:800; color:var(--text-primary);" id="admin-q-count">动态题库：加载中...</h3>
-        <div style="display:flex; flex-direction:column; gap:0.85rem;" id="admin-questions-list-container"></div>
+        <div style="display:flex; flex-direction:column; gap:0.75rem;" id="admin-questions-list-container"></div>
       </div>
     </div>
   `;
@@ -7194,36 +7194,42 @@ async function renderAdminQuestionsTab(container) {
     // Render only the items for the current page
     pageItems.forEach((q) => {
       const qDiv = document.createElement('div');
-      qDiv.style.border = '1px solid var(--border-color)';
-      qDiv.style.borderRadius = '12px';
-      qDiv.style.padding = '1rem';
-      qDiv.style.background = 'var(--bg-secondary)';
-      qDiv.style.display = 'flex';
-      qDiv.style.flexDirection = 'column';
-      qDiv.style.gap = '0.5rem';
+      qDiv.className = 'admin-q-card';
 
-      const qId = `${q.category}_${q.original_num}`;
+      const qId = getQuestionId(q);
+      const TOPIC_LABELS = {
+        propositional_logic: '命题逻辑', predicate_logic: '谓词逻辑',
+        set_theory: '集合论', binary_relations: '二元关系', graph_theory: '图论'
+      };
+      const CAT_COLORS = {
+        judgment: 'background:rgba(99,102,241,0.1);color:var(--primary)',
+        single_choice: 'background:rgba(245,158,11,0.1);color:#D97706',
+        fill_blank: 'background:rgba(239,68,68,0.1);color:#DC2626',
+        calculation: 'background:rgba(16,185,129,0.1);color:#059669',
+        proof: 'background:rgba(139,92,246,0.1);color:#7C3AED',
+        application: 'background:rgba(20,184,166,0.1);color:#0D9488',
+      };
       
       qDiv.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; border-bottom:1px dashed var(--border-color); padding-bottom:0.5rem; margin-bottom:0.25rem;">
-          <div style="display:flex; gap:0.4rem; align-items:center; font-size:0.72rem; font-weight:700;">
-            <span style="background-color:var(--primary-light); color:var(--primary); padding:0.15rem 0.4rem; border-radius:4px;">${q.category.toUpperCase()}</span>
-            <span style="background-color:rgba(16,185,129,0.1); color:#10B981; padding:0.15rem 0.4rem; border-radius:4px;">${q.topic}</span>
-            <span style="color:var(--text-muted);">序号: #${q.original_num}</span>
+        <div class="admin-q-card-header">
+          <div class="admin-q-badges">
+            <span style="${CAT_COLORS[q.category] || 'background:var(--bg-secondary);color:var(--text-secondary)'}; padding:0.15rem 0.45rem; border-radius:6px;">${q.category}</span>
+            <span style="background:rgba(16,185,129,0.1);color:#10B981; padding:0.15rem 0.45rem; border-radius:6px;">${TOPIC_LABELS[q.topic] || q.topic}</span>
+            <span style="color:var(--text-muted); font-weight:400;">#${q.original_num}</span>
           </div>
-          <div style="display:flex; gap:0.35rem;">
-            <button class="btn btn-outline edit-q-btn" style="padding:0.3rem 0.6rem; font-size:0.7rem; font-weight:700; cursor:pointer;">✏️ 编辑</button>
-            <button class="btn btn-outline delete-q-btn" style="padding:0.3rem 0.6rem; font-size:0.7rem; font-weight:700; color:var(--error); border-color:rgba(239,68,68,0.2); cursor:pointer;">🗑️ 删除</button>
+          <div class="admin-q-actions">
+            <button class="btn btn-outline edit-q-btn" style="padding:0.3rem 0.65rem; font-size:0.72rem; font-weight:700; cursor:pointer; border-radius:8px;">✏️ 编辑</button>
+            <button class="btn btn-outline delete-q-btn" style="padding:0.3rem 0.65rem; font-size:0.72rem; font-weight:700; color:var(--error); border-color:rgba(239,68,68,0.25); cursor:pointer; border-radius:8px;">🗑️ 删除</button>
           </div>
         </div>
-        <div class="latex-q-content" style="font-size:0.85rem; line-height:1.5; color:var(--text-primary); word-break:break-all;"></div>
-        <div style="font-size:0.75rem; color:var(--success); font-weight:700;">答案：${q.answer || "无"}</div>
-        <div class="latex-a-content" style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4; border-top:1px dashed var(--border-color); padding-top:0.4rem; word-break:break-all;"></div>
+        <div class="latex-q-content" style="font-size:0.85rem; line-height:1.55; color:var(--text-primary);"></div>
+        <div style="font-size:0.75rem; color:var(--success); font-weight:700;">答案：${q.answer || '无'}</div>
+        <div class="latex-a-content" style="font-size:0.75rem; color:var(--text-secondary); line-height:1.4; border-top:1px dashed var(--border-color); padding-top:0.4rem;"></div>
       `;
 
       // Render math formula content safely
       qDiv.querySelector('.latex-q-content').innerHTML = marked.parse(q.question);
-      qDiv.querySelector('.latex-a-content').innerHTML = `解析：` + marked.parse(q.analysis || "暂无参考解析。");
+      qDiv.querySelector('.latex-a-content').innerHTML = `解析：` + marked.parse(q.analysis || '暂无参考解析。');
       renderMath(qDiv);
 
       // Edit action
@@ -7233,12 +7239,8 @@ async function renderAdminQuestionsTab(container) {
 
       // Delete action
       qDiv.querySelector('.delete-q-btn').onclick = async () => {
-        if (!confirm(`⚠️ 二次警告：您确定要在全站动态题库中永久删除这道序号为 #${q.original_num} 的 [${q.category}] 题目吗？`)) {
-          return;
-        }
-        
-        // Mutate array
-        const qIdx = QUESTIONS.findIndex(qi => `${qi.category}_${qi.original_num}` === qId);
+        if (!confirm(`⚠️ 二次警告：您确定要在全站动态题库中永久删除这道序号为 #${q.original_num} 的 [${q.category}] 题目吗？`)) return;
+        const qIdx = QUESTIONS.findIndex(qi => getQuestionId(qi) === qId);
         if (qIdx !== -1) {
           QUESTIONS.splice(qIdx, 1);
           await saveQuestionsToCloud();
@@ -7310,13 +7312,13 @@ async function renderAdminQuestionsTab(container) {
           </div>
         </div>
 
-        <!-- Main content: responsive flex, stacks on mobile -->
-        <div style="display:flex; gap:1.25rem; flex-wrap:wrap;" class="admin-editor-main-grid">
-          <!-- Input fields: flex grow to fill available space, min-width for mobile -->
-          <div style="display:flex; flex-direction:column; gap:0.85rem; flex:1; min-width:280px;">
+        <!-- Main content: CSS Grid two-columns, stacks on narrow screens -->
+        <div class="admin-editor-grid">
+          <!-- Left: Input fields -->
+          <div style="display:flex; flex-direction:column; gap:0.85rem; min-width:0;">
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">题干内容 (支持 LaTeX $公式$ 包裹)</label>
-              <textarea id="edit-q-text" rows="5" placeholder="例如：$p \\wedge q$ 的真值为对。（ ）" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.question || ""}</textarea>
+              <textarea id="edit-q-text" rows="6" placeholder="例如：$p \\wedge q$ 的真值为对。（ ）" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.question || ""}</textarea>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">标准答案 (Answer)</label>
@@ -7326,18 +7328,18 @@ async function renderAdminQuestionsTab(container) {
             </div>
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">详细解析 (Analysis)</label>
-              <textarea id="edit-q-analysis" rows="5" placeholder="请在此输入这道题目的详尽公式推算和逻辑推导过程..." style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.analysis || ""}</textarea>
+              <textarea id="edit-q-analysis" rows="6" placeholder="请在此输入这道题目的详尽公式推算和逻辑推导过程..." style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; font-family:monospace; outline:none; resize:vertical; box-sizing:border-box; width:100%;">${q.analysis || ""}</textarea>
             </div>
           </div>
 
-          <!-- Preview box: flex grow, min-width for wrapping on mobile -->
-          <div style="display:flex; flex-direction:column; gap:0.85rem; border-left:1px dashed var(--border-color); padding-left:1.25rem; flex:1; min-width:260px;">
+          <!-- Right: Sticky Preview Column -->
+          <div class="admin-editor-preview-col">
             <label style="font-size:0.75rem; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:0.25rem;">✨ 实时公式渲染预览 (LaTeX Preview)</label>
-            <div style="flex:1; border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.015); overflow-y:auto; font-size:0.85rem; min-height:280px; box-sizing:border-box;" id="edit-q-preview-box">
-              <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">题干预览：</div>
-              <div id="preview-question" style="line-height:1.6; margin-bottom:1.5rem; min-height:2rem; word-break:break-all;"></div>
-              <div style="font-weight:700; margin-bottom:0.5rem; color:var(--text-primary);">解析预览：</div>
-              <div id="preview-analysis" style="line-height:1.6; color:var(--text-secondary); min-height:2rem; word-break:break-all;"></div>
+            <div style="border:1.5px solid rgba(99,102,241,0.25); border-radius:12px; padding:1rem 1.1rem; background:rgba(99,102,241,0.03); overflow-y:auto; font-size:0.85rem; min-height:300px; box-sizing:border-box;" id="edit-q-preview-box">
+              <div style="font-size:0.72rem; font-weight:700; color:var(--primary); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em;">题干预览</div>
+              <div id="preview-question" style="line-height:1.65; margin-bottom:1.5rem; min-height:2rem;"></div>
+              <div style="font-size:0.72rem; font-weight:700; color:var(--primary); margin-bottom:0.5rem; text-transform:uppercase; letter-spacing:0.05em; border-top:1px dashed var(--border-color); padding-top:0.6rem;">解析预览</div>
+              <div id="preview-analysis" style="line-height:1.65; color:var(--text-secondary); min-height:2rem;"></div>
             </div>
           </div>
         </div>
@@ -7609,61 +7611,104 @@ async function renderAdminQuestionsTab(container) {
   renderQuestionsList();
 }
 
-// =================== MARKDOWN QUESTION PARSER ===================
+
+// =================== MARKDOWN QUESTION PARSER V2 ===================
 /**
- * Parse a markdown/plain-text string into an array of question objects
- * compatible with the QUESTIONS array schema.
- * Supported types: 单选题, 多选题, 判断题, 填空题, 简答题/计算题
+ * Robust parser supporting multiple question formats:
+ * - Question numbers: 1. 1、 1） （1） Q1:
+ * - Section headings: # 判断题, **单选题**, etc.
+ * - Options: A. A、 (A) A）
+ * - Answer lines: 答案：, 【答案】, Answer:
+ * - Analysis lines: 解析：, 【解析】, 分析：
  */
 function parseMarkdownQuestions(text) {
   const results = [];
 
-  // Detect current section type from heading lines
-  let currentType = 'calculation'; // default fallback
-
   const JUDGMENT_ANSWERS = new Set(['正确', '对', '错', '错误', '√', '×', 'true', 'false', 'yes', 'no']);
+
+  const typeMap = {
+    '单选题': 'single_choice', '多选题': 'single_choice',
+    '判断题': 'judgment', '判断': 'judgment',
+    '填空题': 'fill_blank', '单空填空题': 'fill_blank',
+    '简答题': 'calculation', '计算题': 'calculation', '简答/计算题': 'calculation',
+    '证明题': 'proof', '应用题': 'application', '综合题': 'application',
+  };
 
   // Normalize line endings
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
-  // Build blocks: each block = contiguous lines for one question
-  // We split on lines that look like a question number start: /^\d+[\.\.、]\s*/
-  const qStartRegex = /^(\d+)[.．、]\s*(.*)/;
-  const headingRegex = /^[#*\s]*(单选题|多选题|判断题|填空题|单空填空题|简答题|计算题|证明题|应用题)[#*\s]*$/i;
-  const optionRegex = /^([A-Za-z])[.．、]\s*(.*)/;
-  const answerRegex = /^答案[：:]\s*(.*)/;
-  const analysisRegex = /^解析[：:]\s*(.*)/;
+  // Flexible question-start patterns
+  const qStartPatterns = [
+    /^（(\d+)）\s*(.*)/,          // （1）题目
+    /^\((\d+)\)\s*(.*)/,           // (1) 题目
+    /^Q(\d+)[:.：]\s*(.*)/i,       // Q1: 题目
+    /^(\d+)[.．、)）]\s*(.*)/,     // 1. 1、 1) 题目
+  ];
 
-  // Map heading string to internal category
-  const typeMap = {
-    '单选题': 'single_choice',
-    '多选题': 'single_choice', // map to single_choice, answer will be multi-char
-    '判断题': 'judgment',
-    '填空题': 'fill_blank',
-    '单空填空题': 'fill_blank',
-    '简答题': 'calculation',
-    '计算题': 'calculation',
-    '证明题': 'proof',
-    '应用题': 'application',
+  // Flexible option patterns
+  const optionPatterns = [
+    /^（([A-Ea-e])）\s*(.*)/,       // （A）选项
+    /^\(([A-Ea-e])\)\s*(.*)/,       // (A) 选项
+    /^([A-Ea-e])[.．、)）]\s*(.*)/,  // A. A、 A) 选项
+  ];
+
+  // Answer & analysis patterns (multi-format)
+  const answerPatterns = [
+    /^(?:答案|【答案】|answer)[：:]\s*(.*)/i,
+    /^【答案】\s*(.*)/,
+    /^\[答案\]\s*(.*)/,
+  ];
+  const analysisPatterns = [
+    /^(?:解析|【解析】|分析|解题过程)[：:]\s*(.*)/i,
+    /^【解析】\s*(.*)/,
+    /^\[解析\]\s*(.*)/,
+  ];
+
+  // Section heading (marks type for following questions)
+  const headingRegex = /^[#*＃\s]*(?:\d+[.、）)]\s*)?(单选题|多选题|判断题|判断|填空题|单空填空题|简答题|计算题|简答\/计算题|证明题|应用题|综合题)[#*＃\s]*$/i;
+
+  const matchQStart = (line) => {
+    for (const p of qStartPatterns) {
+      const m = p.exec(line);
+      if (m) return { num: parseInt(m[1]), rest: m[2].trim() };
+    }
+    return null;
+  };
+  const matchOption = (line) => {
+    for (const p of optionPatterns) {
+      const m = p.exec(line);
+      if (m) return { letter: m[1].toUpperCase(), text: m[2].trim() };
+    }
+    return null;
+  };
+  const matchAnswer = (line) => {
+    for (const p of answerPatterns) {
+      const m = p.exec(line);
+      if (m) return m[1].trim();
+    }
+    return null;
+  };
+  const matchAnalysis = (line) => {
+    for (const p of analysisPatterns) {
+      const m = p.exec(line);
+      if (m) return m[1].trim();
+    }
+    return null;
   };
 
-  // Collect raw question blocks
-  let blocks = []; // Each block: { typeHint, lines[] }
+  // Collect question blocks
+  const blocks = [];
   let currentBlock = null;
   let pendingType = 'calculation';
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) {
-      // blank line — if inside a block, end it
-      if (currentBlock) {
-        blocks.push(currentBlock);
-        currentBlock = null;
-      }
+      if (currentBlock) { blocks.push(currentBlock); currentBlock = null; }
       continue;
     }
 
-    // Check for section heading
+    // Heading check
     const hm = headingRegex.exec(trimmed);
     if (hm) {
       if (currentBlock) { blocks.push(currentBlock); currentBlock = null; }
@@ -7671,118 +7716,105 @@ function parseMarkdownQuestions(text) {
       continue;
     }
 
-    // Check for question start
-    const qm = qStartRegex.exec(trimmed);
+    // Question start
+    const qm = matchQStart(trimmed);
     if (qm) {
       if (currentBlock) blocks.push(currentBlock);
       currentBlock = { typeHint: pendingType, lines: [trimmed] };
       continue;
     }
 
-    // Otherwise append to current block
-    if (currentBlock) {
-      currentBlock.lines.push(trimmed);
-    }
+    if (currentBlock) currentBlock.lines.push(trimmed);
   }
   if (currentBlock) blocks.push(currentBlock);
 
-  // Parse each block into a question object
+  // Parse blocks
   for (const block of blocks) {
     const { typeHint, lines: blines } = block;
     if (!blines.length) continue;
 
-    // Extract question number + first line of question text
-    const firstLine = blines[0];
-    const qStartMatch = qStartRegex.exec(firstLine);
-    if (!qStartMatch) continue;
+    const qm = matchQStart(blines[0]);
+    if (!qm) continue;
 
-    let questionText = qStartMatch[2].trim();
-
-    // Detect 【填空题】 marker for single-blank
+    let questionText = qm.rest;
     let forceCategory = typeHint;
-    if (questionText.includes('【填空题】')) {
-      questionText = questionText.replace('【填空题】', '').trim();
-      forceCategory = 'fill_blank';
-    }
+
+    // Inline category markers
+    if (/【填空题】/.test(questionText)) { questionText = questionText.replace(/【填空题】/, '').trim(); forceCategory = 'fill_blank'; }
+    if (/【判断题】/.test(questionText)) { questionText = questionText.replace(/【判断题】/, '').trim(); forceCategory = 'judgment'; }
+    if (/【单选题】/.test(questionText)) { questionText = questionText.replace(/【单选题】/, '').trim(); forceCategory = 'single_choice'; }
 
     const options = [];
     let answer = '';
     let analysis = '';
-    let questionContinuation = true; // lines before first option/answer still belong to question
+    let inQuestion = true;
+    let inAnalysis = false;
 
     for (let i = 1; i < blines.length; i++) {
       const bl = blines[i].trim();
 
-      // Answer line
-      const am = answerRegex.exec(bl);
-      if (am) {
-        answer = am[1].trim();
-        questionContinuation = false;
-        continue;
-      }
+      // Answer
+      const ans = matchAnswer(bl);
+      if (ans !== null) { answer = ans; inQuestion = false; inAnalysis = false; continue; }
 
-      // Analysis line
-      const anm = analysisRegex.exec(bl);
-      if (anm) {
-        const aval = anm[1].trim();
-        if (aval && aval !== '无') analysis = aval;
-        questionContinuation = false;
-        continue;
-      }
+      // Analysis
+      const ana = matchAnalysis(bl);
+      if (ana !== null) { analysis = ana; inQuestion = false; inAnalysis = true; continue; }
 
-      // Option line (A. B. C. D.)
-      const om = optionRegex.exec(bl);
-      if (om) {
-        options.push(om[2].trim());
-        questionContinuation = false;
-        continue;
-      }
+      // Option
+      const opt = matchOption(bl);
+      if (opt) { options.push(opt.text); inQuestion = false; inAnalysis = false; continue; }
 
-      // Continuation of question text (before options)
-      if (questionContinuation) {
+      // Continuation
+      if (inQuestion) {
         questionText += '\n' + bl;
-      } else {
-        // Could be multi-line analysis
-        if (analysis) analysis += '\n' + bl;
+      } else if (inAnalysis) {
+        analysis += '\n' + bl;
       }
     }
 
-    if (!questionText || !answer) continue; // skip malformed
+    if (!questionText.trim()) continue;
 
-    // Auto-detect category refinement based on answer content
+    // Fallback: try extracting answer from trailing parentheses in question
+    if (!answer) {
+      const bracketMatch = questionText.match(/（\s*([^（）\s]{1,10})\s*）\s*$/);
+      if (bracketMatch) {
+        answer = bracketMatch[1].trim();
+        questionText = questionText.replace(/（\s*[^（）\s]{1,10}\s*）\s*$/, '').trim();
+      }
+    }
+
+    if (!answer) continue; // skip if still no answer
+
+    // Auto-detect category
     let category = forceCategory;
-    const ansNorm = answer.replace(/\s/g, '');
-    if (category === 'judgment' || JUDGMENT_ANSWERS.has(answer)) {
+    if (JUDGMENT_ANSWERS.has(answer) && options.length === 0) {
       category = 'judgment';
-      // Normalize judgment answer
-      if (['正确', '对', '√', 'true', 'yes'].includes(answer)) answer = '对';
-      else if (['错误', '错', '×', 'false', 'no'].includes(answer)) answer = '错';
+      if (['正确', '对', '√', 'true', 'yes'].includes(answer.toLowerCase())) answer = '对';
+      else if (['错误', '错', '×', 'false', 'no'].includes(answer.toLowerCase())) answer = '错';
     } else if (options.length > 0) {
       category = 'single_choice';
-    } else if (category === 'fill_blank' || ansNorm.includes('|')) {
-      category = 'fill_blank';
     }
 
-    // Compute next original_num for this category
     const inCat = QUESTIONS.filter(qi => qi.category === category);
     const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
 
     results.push({
-      _parsed: true,           // marker to distinguish from saved
+      _parsed: true,
       category,
       original_num: nextNum,
       question: questionText.trim(),
       options,
       answer,
-      analysis: analysis || '',
-      topic: 'propositional_logic', // default; user can change per-question in preview
+      analysis: analysis.trim() || '',
+      topic: 'propositional_logic', // default; user can change per-question
     });
   }
 
   return results;
 }
 
-// =================== MARKDOWN IMPORT PREVIEW PANEL ===================
+// =================== MARKDOWN IMPORT PREVIEW PANEL V2 ===================
 function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud, renderQuestionsList) {
   panelEl.style.display = 'block';
   panelEl.scrollIntoView({ behavior: 'smooth' });
@@ -7794,73 +7826,227 @@ function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud,
     { value: 'binary_relations', label: '二元关系' },
     { value: 'graph_theory', label: '图论' },
   ];
-
   const CAT_LABEL = {
     judgment: '判断题', single_choice: '单选题', fill_blank: '填空题',
     calculation: '计算/简答题', proof: '证明题', application: '应用题'
   };
-
-  const topicOptsHtml = TOPIC_OPTIONS.map(t =>
-    `<option value="${t.value}">${t.label}</option>`
+  const topicOptsHtml = TOPIC_OPTIONS.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
+  const catOptsHtml = (cat) => Object.entries(CAT_LABEL).map(([v, l]) =>
+    `<option value="${v}" ${v === cat ? 'selected' : ''}>${l}</option>`
   ).join('');
 
-  const questionsHtml = parsedQuestions.map((q, idx) => {
-    const catLabel = CAT_LABEL[q.category] || q.category;
-    const optPreview = q.options.length > 0
-      ? `<div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.3rem;">${q.options.map((o, i) => `${String.fromCharCode(65+i)}. ${o}`).join(' / ')}</div>`
-      : '';
-    return `
-      <div class="import-q-row" data-idx="${idx}" style="display:flex; gap:0.75rem; align-items:flex-start; padding:0.85rem; border-radius:12px; border:1px solid var(--border-color); background:var(--bg-secondary); box-sizing:border-box;">
-        <input type="checkbox" class="import-q-check" data-idx="${idx}" checked
-          style="width:18px; height:18px; margin-top:0.2rem; cursor:pointer; flex-shrink:0; accent-color:var(--primary);">
-        <div style="flex:1; min-width:0;">
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.4rem; align-items:center;">
-            <span style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;">${catLabel}</span>
-            <select class="import-q-topic" data-idx="${idx}"
-              style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">
-              ${topicOptsHtml}
-            </select>
-            <select class="import-q-cat" data-idx="${idx}"
-              style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">
-              <option value="judgment" ${q.category==='judgment'?'selected':''}>判断题</option>
-              <option value="single_choice" ${q.category==='single_choice'?'selected':''}>单选题</option>
-              <option value="fill_blank" ${q.category==='fill_blank'?'selected':''}>填空题</option>
-              <option value="calculation" ${q.category==='calculation'?'selected':''}>计算/简答题</option>
-              <option value="proof" ${q.category==='proof'?'selected':''}>证明题</option>
-              <option value="application" ${q.category==='application'?'selected':''}>应用题</option>
-            </select>
-          </div>
-          <div style="font-size:0.82rem; color:var(--text-primary); line-height:1.5; word-break:break-all;">${q.question}</div>
-          ${optPreview}
-          <div style="margin-top:0.4rem; font-size:0.75rem; color:var(--success); font-weight:700;">答案：${q.answer}</div>
-          ${q.analysis ? `<div style="font-size:0.72rem; color:var(--text-secondary); margin-top:0.2rem;">解析：${q.analysis}</div>` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
-
+  // Build panel HTML
   panelEl.innerHTML = `
-    <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1rem; border:2.5px solid var(--primary); background:var(--bg-card);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+    <div class="admin-import-panel">
+      <!-- Header -->
+      <div class="admin-import-header">
         <div>
           <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);">📄 Markdown 批量导入预览</h3>
-          <p style="margin:0.3rem 0 0; font-size:0.78rem; color:var(--text-muted);">共识别出 <strong>${parsedQuestions.length}</strong> 道题目，勾选需要导入的题目，可修改题型和专题分类后再导入。</p>
+          <p style="margin:0.3rem 0 0; font-size:0.78rem; color:var(--text-muted);">共识别出 <strong>${parsedQuestions.length}</strong> 道题目，勾选需要导入的题目。点击任意题目行可展开编辑，AI 优化可自动补全解析。</p>
         </div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <div class="admin-import-actions">
           <button id="import-select-all" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">全选</button>
           <button id="import-select-none" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">取消全选</button>
+          <button id="import-batch-ai-btn" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer; color:var(--primary); border-color:var(--primary);">🤖 AI 批量优化全选</button>
           <button id="import-confirm-btn" class="btn btn-primary" style="padding:0.4rem 1.1rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">✅ 确认导入选中题目</button>
           <button id="import-cancel-btn" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer; color:var(--error); border-color:rgba(239,68,68,0.3);">✖ 取消</button>
         </div>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:0.65rem; max-height:60vh; overflow-y:auto; padding-right:0.25rem;" id="import-q-list">
-        ${questionsHtml}
+      <!-- Batch AI Progress Bar -->
+      <div class="admin-import-batch-progress" id="import-batch-progress">
+        <span id="import-batch-progress-text">正在 AI 优化题目...</span>
+        <div class="admin-import-batch-bar-wrap">
+          <div class="admin-import-batch-bar" id="import-batch-bar"></div>
+        </div>
+        <span id="import-batch-count" style="white-space:nowrap; font-size:0.75rem;">0 / ${parsedQuestions.length}</span>
       </div>
+
+      <!-- Format Guide Accordion -->
+      <div class="admin-import-guide">
+        <button class="admin-import-guide-toggle" id="import-guide-toggle">
+          📖 支持的 Markdown 格式说明（点击展开）
+          <span style="font-size:0.8rem;">▼</span>
+        </button>
+        <div class="admin-import-guide-content" id="import-guide-content">
+          <p>支持以下题目格式（可混用多种格式）：</p>
+          <pre>## 判断题
+1. 命题 $p \\wedge q$ 的真值表有 4 行。（ ）
+答案：对
+解析：两个变量各取真假，共 $2^2=4$ 行。
+
+## 单选题
+1. $p \\to q$ 的逆命题是：
+A. $q \\to p$
+B. $\\neg p \\to q$
+C. $\\neg q \\to \\neg p$
+D. $q \\to \\neg p$
+答案：A
+解析：逆命题交换前后件。
+
+## 填空题
+（1）$p \\vee q$ 当 $p=T, q=F$ 时真值为___。
+答案：T</pre>
+          <p>支持的题号格式：<code>1.</code> <code>1、</code> <code>1）</code> <code>（1）</code> <code>Q1:</code></p>
+          <p>支持的选项格式：<code>A.</code> <code>A、</code> <code>(A)</code> <code>（A）</code></p>
+          <p>支持的答案标记：<code>答案：</code> <code>【答案】</code> <code>Answer:</code></p>
+        </div>
+      </div>
+
+      <!-- Questions List -->
+      <div class="admin-import-list" id="import-q-list"></div>
     </div>
   `;
 
-  // Wire up controls
+  // Toggle format guide
+  panelEl.querySelector('#import-guide-toggle').onclick = () => {
+    const content = panelEl.querySelector('#import-guide-content');
+    content.classList.toggle('open');
+    panelEl.querySelector('#import-guide-toggle').querySelector('span').textContent =
+      content.classList.contains('open') ? '▲' : '▼';
+  };
+
+  // Build question rows
+  const listEl = panelEl.querySelector('#import-q-list');
+
+  const buildRow = (q, idx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'import-q-row-v2';
+    rowEl.dataset.idx = idx;
+
+    const optPreview = q.options.length > 0
+      ? q.options.map((o, i) => `<span style="font-size:0.72rem; color:var(--text-secondary);">${String.fromCharCode(65 + i)}. ${o}</span>`).join('  ')
+      : '';
+
+    rowEl.innerHTML = `
+      <div class="import-q-row-header">
+        <input type="checkbox" class="import-q-check" data-idx="${idx}" checked
+          style="width:18px; height:18px; margin-top:0.15rem; cursor:pointer; flex-shrink:0; accent-color:var(--primary);">
+        <div style="flex:1; min-width:0;">
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.35rem; align-items:center;">
+            <span class="import-q-cat-badge" style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;">${CAT_LABEL[q.category] || q.category}</span>
+            <select class="import-q-topic" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${topicOptsHtml}</select>
+            <select class="import-q-cat" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${catOptsHtml(q.category)}</select>
+            <button class="import-q-ai-btn" data-idx="${idx}">✨ AI 优化</button>
+            <button class="import-q-expand-btn" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.5rem; border-radius:6px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); cursor:pointer;">编辑 ▼</button>
+          </div>
+          <div class="import-q-summary" style="font-size:0.82rem; color:var(--text-primary); line-height:1.5; display:flex; gap:0.5rem; align-items:baseline; flex-wrap:wrap;">
+            <span class="import-q-summary-text" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${q.question.substring(0, 80)}${q.question.length > 80 ? '...' : ''}</span>
+            <span style="font-size:0.75rem; color:var(--success); font-weight:700; flex-shrink:0;">→ ${q.answer}</span>
+          </div>
+          ${optPreview ? `<div style="margin-top:0.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">${optPreview}</div>` : ''}
+          <div class="import-q-tips" data-idx="${idx}"></div>
+        </div>
+      </div>
+      <div class="import-q-row-body" data-idx="${idx}">
+        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">题干（支持 LaTeX $...$ 公式）</label>
+        <textarea class="import-q-text-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;">${q.question}</textarea>
+        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">答案</label>
+        <input type="text" class="import-q-ans-input" data-idx="${idx}" value="${q.answer}" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; box-sizing:border-box; width:100%; outline:none;">
+        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">解析（留空则由 AI 补全）</label>
+        <textarea class="import-q-ana-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;">${q.analysis || ''}</textarea>
+        <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">LaTeX 预览</label>
+        <div class="import-q-preview-box import-q-render-${idx}"></div>
+      </div>
+    `;
+
+    // Sync question data from inputs
+    const syncFromInputs = (idx) => {
+      const textEl = rowEl.querySelector(`.import-q-text-input[data-idx="${idx}"]`);
+      const ansEl = rowEl.querySelector(`.import-q-ans-input[data-idx="${idx}"]`);
+      const anaEl = rowEl.querySelector(`.import-q-ana-input[data-idx="${idx}"]`);
+      if (textEl) parsedQuestions[idx].question = textEl.value;
+      if (ansEl) parsedQuestions[idx].answer = ansEl.value;
+      if (anaEl) parsedQuestions[idx].analysis = anaEl.value;
+    };
+
+    const updatePreview = (idx) => {
+      syncFromInputs(idx);
+      const previewEl = rowEl.querySelector(`.import-q-render-${idx}`);
+      if (previewEl) {
+        previewEl.innerHTML = marked.parse(parsedQuestions[idx].question || '_无题干_');
+        renderMath(previewEl);
+      }
+      // update summary
+      const summaryText = rowEl.querySelector('.import-q-summary-text');
+      if (summaryText) {
+        const txt = parsedQuestions[idx].question;
+        summaryText.textContent = txt.substring(0, 80) + (txt.length > 80 ? '...' : '');
+      }
+    };
+
+    // Wire expand button
+    rowEl.querySelector('.import-q-expand-btn').onclick = () => {
+      const body = rowEl.querySelector(`.import-q-row-body[data-idx="${idx}"]`);
+      const isOpen = body.classList.toggle('open');
+      rowEl.querySelector('.import-q-expand-btn').textContent = isOpen ? '收起 ▲' : '编辑 ▼';
+      if (isOpen) updatePreview(idx);
+    };
+
+    // Live preview on input
+    rowEl.querySelector(`.import-q-text-input`).oninput = () => updatePreview(idx);
+    rowEl.querySelector(`.import-q-ans-input`).oninput = () => syncFromInputs(idx);
+    rowEl.querySelector(`.import-q-ana-input`).oninput = () => syncFromInputs(idx);
+
+    // AI optimize single question
+    rowEl.querySelector('.import-q-ai-btn').onclick = async (e) => {
+      syncFromInputs(idx);
+      const q = parsedQuestions[idx];
+      const catEl = rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
+      const topicEl = rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = '⏳ 优化中...';
+
+      try {
+        const res = await fetch(`${API_BASE}/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'enhance_question',
+            question: q.question,
+            answer: q.answer,
+            analysis: q.analysis,
+            category: catEl ? catEl.value : q.category,
+            topic: topicEl ? topicEl.value : q.topic,
+          })
+        });
+        const result = await res.json();
+        if (res.ok && result.question) {
+          parsedQuestions[idx].question = result.question;
+          parsedQuestions[idx].analysis = result.analysis || q.analysis;
+          // Update inputs if body is open
+          const textInput = rowEl.querySelector(`.import-q-text-input`);
+          const anaInput = rowEl.querySelector(`.import-q-ana-input`);
+          if (textInput) textInput.value = result.question;
+          if (anaInput) anaInput.value = result.analysis || '';
+          // Show tips
+          const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
+          if (tipsEl && result.tips) {
+            tipsEl.textContent = '✅ AI 优化完成：' + result.tips;
+            tipsEl.classList.add('visible');
+          }
+          updatePreview(idx);
+          btn.textContent = '✅ 已优化';
+        } else {
+          showToast('AI 优化失败：' + (result.error || '未知错误'), 'error');
+          btn.textContent = '✨ AI 优化';
+        }
+      } catch (err) {
+        showToast('AI 接口连接失败！', 'error');
+        btn.textContent = '✨ AI 优化';
+      }
+      btn.disabled = false;
+    };
+
+    return rowEl;
+  };
+
+  parsedQuestions.forEach((q, idx) => {
+    listEl.appendChild(buildRow(q, idx));
+  });
+
+  // Controls
   panelEl.querySelector('#import-cancel-btn').onclick = () => {
     panelEl.style.display = 'none';
     panelEl.innerHTML = '';
@@ -7874,38 +8060,109 @@ function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud,
     panelEl.querySelectorAll('.import-q-check').forEach(cb => cb.checked = false);
   };
 
-  panelEl.querySelector('#import-confirm-btn').onclick = async () => {
-    const selectedRows = panelEl.querySelectorAll('.import-q-check:checked');
-    if (selectedRows.length === 0) {
-      showToast('请至少勾选一道题目再导入！', 'error');
-      return;
-    }
+  // Batch AI optimize selected questions
+  panelEl.querySelector('#import-batch-ai-btn').onclick = async () => {
+    const checkedBoxes = [...panelEl.querySelectorAll('.import-q-check:checked')];
+    if (checkedBoxes.length === 0) { showToast('请先勾选需要优化的题目！', 'error'); return; }
 
-    let importedCount = 0;
-    selectedRows.forEach(cb => {
+    const progressEl = panelEl.querySelector('#import-batch-progress');
+    const barEl = panelEl.querySelector('#import-batch-bar');
+    const countEl = panelEl.querySelector('#import-batch-count');
+    progressEl.classList.add('active');
+    panelEl.querySelector('#import-batch-ai-btn').disabled = true;
+
+    let done = 0;
+    const total = checkedBoxes.length;
+
+    for (const cb of checkedBoxes) {
       const idx = parseInt(cb.dataset.idx);
       const q = parsedQuestions[idx];
-      // Read topic and category from the dropdowns in that row
-      const topicEl = panelEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
-      const catEl = panelEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
-      const topic = topicEl ? topicEl.value : (q.topic || 'propositional_logic');
-      const category = catEl ? catEl.value : q.category;
+      const rowEl = listEl.querySelector(`.import-q-row-v2[data-idx="${idx}"]`);
+      const catEl = rowEl && rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
+      const topicEl = rowEl && rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
+      const aiBtnEl = rowEl && rowEl.querySelector('.import-q-ai-btn');
+      if (aiBtnEl) { aiBtnEl.disabled = true; aiBtnEl.textContent = '⏳ 优化中...'; }
 
-      // Recompute original_num fresh (may have changed since parse time)
+      try {
+        const res = await fetch(`${API_BASE}/ai`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'enhance_question',
+            question: q.question,
+            answer: q.answer,
+            analysis: q.analysis,
+            category: catEl ? catEl.value : q.category,
+            topic: topicEl ? topicEl.value : q.topic,
+          })
+        });
+        const result = await res.json();
+        if (res.ok && result.question) {
+          parsedQuestions[idx].question = result.question;
+          parsedQuestions[idx].analysis = result.analysis || q.analysis;
+          if (rowEl) {
+            const textInput = rowEl.querySelector('.import-q-text-input');
+            const anaInput = rowEl.querySelector('.import-q-ana-input');
+            const summaryText = rowEl.querySelector('.import-q-summary-text');
+            if (textInput) textInput.value = result.question;
+            if (anaInput) anaInput.value = result.analysis || '';
+            if (summaryText) summaryText.textContent = result.question.substring(0, 80) + (result.question.length > 80 ? '...' : '');
+            const tipsEl = rowEl.querySelector(`.import-q-tips[data-idx="${idx}"]`);
+            if (tipsEl && result.tips) { tipsEl.textContent = '✅ ' + result.tips; tipsEl.classList.add('visible'); }
+          }
+          if (aiBtnEl) aiBtnEl.textContent = '✅ 已优化';
+        } else {
+          if (aiBtnEl) aiBtnEl.textContent = '⚠️ 失败';
+        }
+      } catch (err) {
+        if (aiBtnEl) aiBtnEl.textContent = '⚠️ 失败';
+      }
+      if (aiBtnEl) aiBtnEl.disabled = false;
+
+      done++;
+      const pct = Math.round((done / total) * 100);
+      barEl.style.width = pct + '%';
+      countEl.textContent = `${done} / ${total}`;
+    }
+
+    progressEl.classList.remove('active');
+    panelEl.querySelector('#import-batch-ai-btn').disabled = false;
+    showToast(`🎉 已完成 ${done} 道题目的 AI 优化！`, 'success');
+  };
+
+  // Confirm import
+  panelEl.querySelector('#import-confirm-btn').onclick = async () => {
+    const selectedBoxes = [...panelEl.querySelectorAll('.import-q-check:checked')];
+    if (selectedBoxes.length === 0) { showToast('请至少勾选一道题目再导入！', 'error'); return; }
+
+    let importedCount = 0;
+    for (const cb of selectedBoxes) {
+      const idx = parseInt(cb.dataset.idx);
+      const q = parsedQuestions[idx];
+      const rowEl = listEl.querySelector(`.import-q-row-v2[data-idx="${idx}"]`);
+      const catEl = rowEl && rowEl.querySelector(`.import-q-cat[data-idx="${idx}"]`);
+      const topicEl = rowEl && rowEl.querySelector(`.import-q-topic[data-idx="${idx}"]`);
+      const category = catEl ? catEl.value : q.category;
+      const topic = topicEl ? topicEl.value : (q.topic || 'propositional_logic');
+
+      // Re-read from live inputs in case user edited inline
+      const textInput = rowEl && rowEl.querySelector('.import-q-text-input');
+      const ansInput = rowEl && rowEl.querySelector('.import-q-ans-input');
+      const anaInput = rowEl && rowEl.querySelector('.import-q-ana-input');
+      const question = textInput ? textInput.value.trim() : q.question;
+      const answer = ansInput ? ansInput.value.trim() : q.answer;
+      const analysis = anaInput ? anaInput.value.trim() : q.analysis;
+
+      if (!question || !answer) continue;
+
       const inCat = QUESTIONS.filter(qi => qi.category === category);
       const nextNum = inCat.length > 0 ? Math.max(...inCat.map(qi => qi.original_num)) + 1 : 1;
 
-      QUESTIONS.push({
-        category,
-        original_num: nextNum,
-        question: q.question,
-        options: q.options || [],
-        answer: q.answer,
-        analysis: q.analysis || '',
-        topic,
-      });
+      QUESTIONS.push({ category, original_num: nextNum, question, options: q.options || [], answer, analysis: analysis || '', topic });
       importedCount++;
-    });
+    }
+
+    if (importedCount === 0) { showToast('没有有效题目可导入！', 'error'); return; }
 
     await saveQuestionsToCloud();
     panelEl.style.display = 'none';
@@ -7914,6 +8171,7 @@ function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud,
     renderQuestionsList();
   };
 }
+
 
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
 async function renderAdminSystemTab(container) {

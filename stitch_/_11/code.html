@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>学术讨论大厅 - 离散数学刷题系统</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#4953bc",
+                        "on-secondary-container": "#17228f",
+                        "secondary-container": "#8792fe",
+                        "surface-bright": "#f9f9ff",
+                        "surface-dim": "#cfdaf2",
+                        "surface-container-highest": "#d8e3fb",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#dee8ff",
+                        "on-error-container": "#93000a",
+                        "inverse-on-surface": "#ecf1ff",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "background": "#f9f9ff",
+                        "outline-variant": "#c7c4d8",
+                        "on-secondary-fixed": "#000767",
+                        "surface-variant": "#d8e3fb",
+                        "on-primary-fixed": "#0f0069",
+                        "secondary-fixed": "#e0e0ff",
+                        "surface": "#f9f9ff",
+                        "tertiary": "#45484f",
+                        "outline": "#777587",
+                        "on-secondary-fixed-variant": "#2f3aa3",
+                        "tertiary-container": "#5d6067",
+                        "surface-tint": "#4d44e3",
+                        "surface-container": "#e7eeff",
+                        "secondary-fixed-dim": "#bdc2ff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#e2dfff",
+                        "on-surface-variant": "#464555",
+                        "on-tertiary-fixed-variant": "#43474d",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#111c2d",
+                        "tertiary-fixed-dim": "#c4c6ce",
+                        "on-error": "#ffffff",
+                        "primary": "#3525cd",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "tertiary-fixed": "#e0e2ea",
+                        "on-tertiary-fixed": "#181c21",
+                        "on-tertiary-container": "#d9dbe3",
+                        "surface-container-low": "#f0f3ff",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#4f46e5",
+                        "on-primary-container": "#dad7ff",
+                        "inverse-surface": "#263143",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#c3c0ff",
+                        "on-surface": "#111c2d",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "20px",
+                        "inline-gap": "12px",
+                        "section-margin": "32px",
+                        "glass-padding": "16px",
+                        "stack-gap": "16px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-sm": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"],
+                        "math-display": ["Inter", "sans-serif"],
+                        "headline-md": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "math-display": ["18px", { "lineHeight": "28px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: theme('colors.background');
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="text-on-background bg-background flex flex-col min-h-screen">
+<!-- Top Navigation (Secondary Page - Focused Journey) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl border-b border-white/40 dark:border-white/10 flat no shadows">
+<button aria-label="Go back" class="flex items-center justify-center p-2 rounded-full hover:opacity-80 transition-opacity text-on-surface-variant dark:text-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back_ios_new</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary dark:text-inverse-primary truncate flex-1 text-center font-bold">学术讨论大厅</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pt-20 pb-32 px-container-padding flex flex-col gap-stack-gap">
+<!-- Message Card 1 -->
+<article class="glass-card rounded-[24px] p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container border border-outline-variant flex-shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A portrait illustration of an intellectual student in a modern, light-mode environment. The lighting is soft and high-key. The style is modern flat with subtle glassmorphism elements, maintaining an approachable yet academic feel. The overall palette uses gentle indigos and crisp whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF41DPivd-Nh-siP9lxOkQ4GtkwjcAtzX1Tf9sF2Xx2UDDdqcmSeZvJbUWMn-bR0sl2NVBe1QMSwEY_iPakxScxu4sfLjwYEF9kLEs3au1ZhTmkEM6BUDIiFxqyB5Q3fKjHmEUcBxjEH_QgkHAcxwM3vs6hVF8DZK_p2kSyl4QApyMMpEmqhO7Df5hiOhJM99hdoLZuq3_1-80jNcp7XXhVi0XTTtBGBJshe63MPB6kqrX8Bd2L4vz14JZUB2vYHJX2ZPe7DVxwgc"/>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">逻辑小王子</span>
+<span class="font-label-md text-label-md text-on-surface-variant">10分钟前</span>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                这道题关于哈密顿回路的题目感觉条件不足啊，有人指点下吗？题目说是无向图G有n个顶点(n&gt;=3)，每个顶点的度数都大于等于n/2，这能直接推出存在哈密顿回路吗？
+            </p>
+<div class="flex gap-2 mt-2">
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full">图论</span>
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full">哈密顿图</span>
+</div>
+</article>
+<!-- Message Card 2 -->
+<article class="glass-card rounded-[24px] p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container border border-outline-variant flex-shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A stylized minimalist avatar representing a university student focused on discrete mathematics. The environment is bright and organized, lit by even, soft studio lighting. The design uses a sophisticated blend of modern flat shapes and a calm color palette of deep blacks, crisp whites, and indigo accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl7DZQ2bCL9Vu6DEkVwKY-cZ6Y26IOqZbSde76Eh_jXwDPZhcLqnvopz5COqjwjpMAZeqRQe8moRhASD7dmGD7wLVXXM0nw0rNe0iGwmo1IQ5GWGVrASkJaOBDSBe5Ctou-iO-xUvqIUNpXgRC5cCy8MEu_FsaWew0lgKKBz7zcdzB2q3Bq374Q_e0nlTiBsQfeoe2VWBkUTfUPWUhU-AgbrH0vcWW5B_YPqfn6im_V4KL693dStH-OcmD2zE8O0YMzCmjnAqeByI"/>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">集合论大师</span>
+<span class="font-label-md text-label-md text-on-surface-variant">45分钟前</span>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                期末复习求助：关系矩阵的闭包运算（自反、对称、传递）在实际编程中用Warshall算法的时间复杂度怎么优化？感觉写出来的代码总是很慢。
+            </p>
+<div class="flex gap-2 mt-2">
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full">关系与函数</span>
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full">算法复杂度</span>
+</div>
+</article>
+<!-- Message Card 3 -->
+<article class="glass-card rounded-[24px] p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container border border-outline-variant flex-shrink-0">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="A modern digital avatar portrait of a student working in a bright digital workspace. The lighting is pristine and high-key white, creating a clean aesthetic. The visual style features subtle translucent layering and a premium digital feel, with a serene mood and precise structural organization." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWWUh9muzNLdjWEXQRgZ2jYr5WGUPITJpnMrBk-ddUORqWU05GOpXbnMVnp9Du-RvVAH0v-FlcnQ9DBMbf5Vbr_S8ma6qE61bN4TaYz0fy-yU7C6RKr-6KylEC013DUUeRWeSxPjd5Rxfmi_zUOaVoP2eHmcpfJ8Wz7ySmOL5FYJBH2GryHcco97qJED3OoWWMzYq1cwnEERgmkxMntW13cR-pZJJoW8nSGZ00Yl2mmcAzePjeECEVMaVkS4Am08OvA_3T_-oZmqc"/>
+</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface">代数结构萌新</span>
+<span class="font-label-md text-label-md text-on-surface-variant">2小时前</span>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed">
+                分享一个证明群的幺元唯一的思路：假设存在两个幺元e和e'，根据幺元的定义，e*e' = e' (因为e是幺元)，同时 e*e' = e (因为e'是幺元)，所以 e = e'。这样想对吗？
+            </p>
+<div class="flex gap-2 mt-2">
+<span class="bg-primary/10 text-primary font-label-md text-label-md px-3 py-1 rounded-full">代数系统</span>
+</div>
+</article>
+<div class="text-center font-label-md text-label-md text-outline py-4">
+            没有更多讨论了
+        </div>
+</main>
+<!-- Bottom Input Bar -->
+<div class="fixed bottom-0 w-full z-50 bg-surface/90 backdrop-blur-xl border-t border-white/40 pt-3 safe-bottom px-container-padding shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex items-center gap-3 pb-3">
+<div class="flex-1 bg-surface-container-low border border-outline-variant rounded-full flex items-center px-4 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+<input class="w-full bg-transparent border-none focus:ring-0 p-0 font-body-md text-body-md text-on-surface placeholder:text-outline" placeholder="说点什么..." type="text"/>
+</div>
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center flex-shrink-0 hover:bg-on-primary-fixed-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</body></html>

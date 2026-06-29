@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>云端配额详情页</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#4953bc",
+                      "on-secondary-container": "#17228f",
+                      "secondary-container": "#8792fe",
+                      "surface-bright": "#f9f9ff",
+                      "surface-dim": "#cfdaf2",
+                      "surface-container-highest": "#d8e3fb",
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#dee8ff",
+                      "on-error-container": "#93000a",
+                      "inverse-on-surface": "#ecf1ff",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "background": "#f9f9ff",
+                      "outline-variant": "#c7c4d8",
+                      "on-secondary-fixed": "#000767",
+                      "surface-variant": "#d8e3fb",
+                      "on-primary-fixed": "#0f0069",
+                      "secondary-fixed": "#e0e0ff",
+                      "surface": "#f9f9ff",
+                      "tertiary": "#45484f",
+                      "outline": "#777587",
+                      "on-secondary-fixed-variant": "#2f3aa3",
+                      "tertiary-container": "#5d6067",
+                      "surface-tint": "#4d44e3",
+                      "surface-container": "#e7eeff",
+                      "secondary-fixed-dim": "#bdc2ff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#e2dfff",
+                      "on-surface-variant": "#464555",
+                      "on-tertiary-fixed-variant": "#43474d",
+                      "on-secondary": "#ffffff",
+                      "on-background": "#111c2d",
+                      "tertiary-fixed-dim": "#c4c6ce",
+                      "on-error": "#ffffff",
+                      "primary": "#3525cd",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "tertiary-fixed": "#e0e2ea",
+                      "on-tertiary-fixed": "#181c21",
+                      "on-tertiary-container": "#d9dbe3",
+                      "surface-container-low": "#f0f3ff",
+                      "on-tertiary": "#ffffff",
+                      "primary-container": "#4f46e5",
+                      "on-primary-container": "#dad7ff",
+                      "inverse-surface": "#263143",
+                      "on-primary": "#ffffff",
+                      "inverse-primary": "#c3c0ff",
+                      "on-surface": "#111c2d",
+                      "error": "#ba1a1a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "container-padding": "20px",
+                      "inline-gap": "12px",
+                      "section-margin": "32px",
+                      "glass-padding": "16px",
+                      "stack-gap": "16px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "math-display": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "math-display": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        
+        .progress-bar-glow {
+            box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col">
+<!-- Top Navigation (Task-Focused, No Global Nav Shells) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-padding h-16 glass-panel border-b border-white/40">
+<button class="text-primary hover:opacity-80 transition-opacity p-2 -ml-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary font-bold">平台资源使用详情</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 px-container-padding pb-safe flex flex-col gap-stack-gap">
+<!-- Pages 请求细分 -->
+<section class="glass-panel rounded-xl p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">cloud_sync</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Pages 请求细分</h2>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-1 rounded-full">本月</span>
+</div>
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex justify-between items-end">
+<span class="font-display-lg text-display-lg text-primary">85,000</span>
+<span class="font-body-md text-body-md text-on-surface-variant mb-1">/ 100,000 次</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-3 overflow-hidden relative">
+<div class="bg-primary h-full rounded-full progress-bar-glow" style="width: 85%;"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-right">已使用 85% 配额</p>
+</div>
+</section>
+<!-- Workers 接口请求 (Placeholder for Chart) -->
+<section class="glass-panel rounded-xl p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">api</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Workers 接口请求</h2>
+</div>
+<div class="w-full h-48 bg-surface-container rounded-lg flex items-center justify-center border border-outline-variant/30 overflow-hidden relative">
+<!-- Abstract Representation of a Chart -->
+<svg class="absolute inset-0 w-full h-full opacity-60" preserveaspectratio="none" viewbox="0 0 400 150">
+<path d="M0,150 L0,120 C50,110 80,140 120,100 C160,60 180,90 220,50 C260,10 300,70 350,30 L400,20 L400,150 Z" fill="rgba(135, 146, 254, 0.2)"></path>
+<path d="M0,120 C50,110 80,140 120,100 C160,60 180,90 220,50 C260,10 300,70 350,30 L400,20" fill="none" stroke="#4953bc" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<div class="absolute bottom-2 left-4 right-4 flex justify-between text-[10px] text-outline font-label-md">
+<span>1日</span><span>5日</span><span>10日</span><span>15日</span><span>20日</span><span>25日</span><span>30日</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 text-center">日均调用频率趋势</p>
+</section>
+<!-- Workers AI 神经元 (Placeholder for Chart) -->
+<section class="glass-panel rounded-xl p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-surface-tint" style="font-variation-settings: 'FILL' 1;">memory</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Workers AI 神经元</h2>
+</div>
+<div class="w-full h-48 bg-surface-container rounded-lg flex items-center justify-center border border-outline-variant/30 overflow-hidden relative">
+<!-- Abstract Representation of an Area Chart -->
+<svg class="absolute inset-0 w-full h-full opacity-50" preserveaspectratio="none" viewbox="0 0 400 150">
+<path d="M0,150 L0,140 L50,135 L100,110 L150,120 L200,80 L250,90 L300,40 L350,50 L400,10 L400,150 Z" fill="url(#aiGradient)"></path>
+<defs>
+<lineargradient id="aiGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4f46e5" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#4f46e5" stop-opacity="0.05"></stop>
+</lineargradient>
+</defs>
+<path d="M0,140 L50,135 L100,110 L150,120 L200,80 L250,90 L300,40 L350,50 L400,10" fill="none" stroke="#4f46e5" stroke-width="2"></path>
+</svg>
+<div class="absolute bottom-2 left-4 right-4 flex justify-between text-[10px] text-outline font-label-md">
+<span>1日</span><span>5日</span><span>10日</span><span>15日</span><span>20日</span><span>25日</span><span>30日</span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 text-center">算力消耗走势 (Neurons)</p>
+</section>
+<!-- Configuration Entry -->
+<section class="mt-section-margin mb-8">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">高级配置</h3>
+<div class="glass-panel rounded-xl p-glass-padding">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2" for="cf-token">Cloudflare 凭证 (Token) 覆盖</label>
+<div class="flex gap-2">
+<div class="relative flex-grow">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline w-5 h-5 flex items-center justify-center">key</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" id="cf-token" placeholder="输入 API Token" type="password"/>
+</div>
+<button class="bg-primary text-on-primary px-4 py-3 rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1 min-h-[48px]">
+<span>保存</span>
+</button>
+</div>
+<p class="font-label-md text-label-md text-outline mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                    配置后将优先使用此凭证进行数据查询。
+                </p>
+</div>
+</section>
+</main>
+</body></html>

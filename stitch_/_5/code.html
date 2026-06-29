@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>我的错题本 - 离散数学刷题系统</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#4f46e5",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c7c4d8",
+                        "secondary": "#4953bc",
+                        "primary-fixed": "#e2dfff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#17228f",
+                        "surface-container": "#e7eeff",
+                        "on-primary-container": "#dad7ff",
+                        "surface": "#f9f9ff",
+                        "surface-container-high": "#dee8ff",
+                        "primary": "#3525cd",
+                        "on-surface": "#111c2d",
+                        "secondary-container": "#8792fe",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#5d6067",
+                        "inverse-primary": "#c3c0ff",
+                        "surface-container-highest": "#d8e3fb",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-tertiary-fixed-variant": "#43474d",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#263143",
+                        "tertiary": "#45484f",
+                        "inverse-on-surface": "#ecf1ff",
+                        "on-secondary-fixed-variant": "#2f3aa3",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#cfdaf2",
+                        "surface-tint": "#4d44e3",
+                        "surface-container-low": "#f0f3ff",
+                        "on-surface-variant": "#464555",
+                        "on-secondary-fixed": "#000767",
+                        "outline": "#777587",
+                        "tertiary-fixed": "#e0e2ea",
+                        "secondary-fixed": "#e0e0ff",
+                        "secondary-fixed-dim": "#bdc2ff",
+                        "on-primary-fixed": "#0f0069",
+                        "on-tertiary-container": "#d9dbe3",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#181c21",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#d8e3fb",
+                        "on-background": "#111c2d",
+                        "tertiary-fixed-dim": "#c4c6ce",
+                        "surface-bright": "#f9f9ff",
+                        "background": "#f9f9ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "24": "24px"
+                    },
+                    "spacing": {
+                        "glass-padding": "16px",
+                        "section-margin": "32px",
+                        "container-padding": "20px",
+                        "inline-gap": "12px",
+                        "stack-gap": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "math-display": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f3ff 0%, #e2dfff 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="text-on-surface">
+<!-- Top Bar -->
+<header class="fixed top-0 left-0 right-0 h-16 glass-card z-50 flex items-center px-container-padding justify-between">
+<button class="w-10 h-10 flex items-center justify-center rounded-full active:bg-surface-variant transition-colors text-primary">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="text-headline-sm font-semibold text-on-surface">我的错题本</h1>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<!-- Main Content -->
+<main class="pt-[88px] pb-section-margin px-container-padding flex flex-col gap-stack-gap max-w-md mx-auto">
+<!-- Filter / Stats (Optional, adds context) -->
+<div class="flex justify-between items-center px-2 text-body-md text-on-surface-variant">
+<span>共收录 12 道错题</span>
+<button class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+<span>筛选</span>
+</button>
+</div>
+<!-- Wrong Question Cards -->
+<!-- Card 1 -->
+<div class="glass-card rounded-24 p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="inline-block px-2 py-1 rounded-full bg-error-container text-on-error-container text-label-md font-medium w-fit">谓词逻辑</span>
+<h3 class="text-body-lg font-semibold text-on-surface">谓词逻辑综合大题 04</h3>
+</div>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-body-md text-error hover:bg-error-container transition-colors active:scale-95 flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">remove_circle_outline</span>
+                    移出
+                </button>
+</div>
+<div class="flex items-center gap-2 text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>添加日期: 2023-10-27</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass-card rounded-24 p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="inline-block px-2 py-1 rounded-full bg-primary-container text-on-primary text-label-md font-medium w-fit">集合论</span>
+<h3 class="text-body-lg font-semibold text-on-surface">集合的幂集计算练习</h3>
+</div>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-body-md text-error hover:bg-error-container transition-colors active:scale-95 flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">remove_circle_outline</span>
+                    移出
+                </button>
+</div>
+<div class="flex items-center gap-2 text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>添加日期: 2023-10-26</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="glass-card rounded-24 p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="inline-block px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container text-label-md font-medium w-fit">图论</span>
+<h3 class="text-body-lg font-semibold text-on-surface">欧拉图判定定理应用</h3>
+</div>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-body-md text-error hover:bg-error-container transition-colors active:scale-95 flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">remove_circle_outline</span>
+                    移出
+                </button>
+</div>
+<div class="flex items-center gap-2 text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>添加日期: 2023-10-25</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="glass-card rounded-24 p-glass-padding flex flex-col gap-inline-gap">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="inline-block px-2 py-1 rounded-full bg-tertiary-container text-on-tertiary text-label-md font-medium w-fit">代数系统</span>
+<h3 class="text-body-lg font-semibold text-on-surface">半群与群的性质辨析</h3>
+</div>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant text-body-md text-error hover:bg-error-container transition-colors active:scale-95 flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">remove_circle_outline</span>
+                    移出
+                </button>
+</div>
+<div class="flex items-center gap-2 text-label-md text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>添加日期: 2023-10-20</span>
+</div>
+</div>
+</main>
+</body></html>

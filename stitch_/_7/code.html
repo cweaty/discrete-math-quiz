@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>排行榜 - 离散数学刷题系统</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "on-primary-container": "#dad7ff",
+                            "error": "#ba1a1a",
+                            "inverse-primary": "#c3c0ff",
+                            "secondary-fixed-dim": "#bdc2ff",
+                            "tertiary-fixed": "#e0e2ea",
+                            "surface": "#f9f9ff",
+                            "on-secondary-fixed-variant": "#2f3aa3",
+                            "error-container": "#ffdad6",
+                            "surface-tint": "#4d44e3",
+                            "on-background": "#111c2d",
+                            "surface-container": "#e7eeff",
+                            "primary-fixed-dim": "#c3c0ff",
+                            "on-tertiary-fixed-variant": "#43474d",
+                            "surface-bright": "#f9f9ff",
+                            "on-primary": "#ffffff",
+                            "secondary-fixed": "#e0e0ff",
+                            "on-secondary": "#ffffff",
+                            "on-tertiary": "#ffffff",
+                            "surface-container-high": "#dee8ff",
+                            "inverse-surface": "#263143",
+                            "primary-container": "#4f46e5",
+                            "inverse-on-surface": "#ecf1ff",
+                            "secondary": "#4953bc",
+                            "on-secondary-fixed": "#000767",
+                            "surface-container-low": "#f0f3ff",
+                            "background": "#f9f9ff",
+                            "primary": "#3525cd",
+                            "on-tertiary-fixed": "#181c21",
+                            "secondary-container": "#8792fe",
+                            "on-error-container": "#93000a",
+                            "on-primary-fixed": "#0f0069",
+                            "on-primary-fixed-variant": "#3323cc",
+                            "on-tertiary-container": "#d9dbe3",
+                            "on-secondary-container": "#17228f",
+                            "primary-fixed": "#e2dfff",
+                            "surface-dim": "#cfdaf2",
+                            "on-surface": "#111c2d",
+                            "surface-variant": "#d8e3fb",
+                            "tertiary": "#45484f",
+                            "on-surface-variant": "#464555",
+                            "on-error": "#ffffff",
+                            "tertiary-fixed-dim": "#c4c6ce",
+                            "outline-variant": "#c7c4d8",
+                            "surface-container-lowest": "#ffffff",
+                            "tertiary-container": "#5d6067",
+                            "outline": "#777587",
+                            "surface-container-highest": "#d8e3fb"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                    },
+                    "spacing": {
+                            "section-margin": "32px",
+                            "glass-padding": "16px",
+                            "inline-gap": "12px",
+                            "container-padding": "20px",
+                            "stack-gap": "16px"
+                    },
+                    "fontFamily": {
+                            "math-display": ["Inter", "sans-serif"],
+                            "body-md": ["Inter", "sans-serif"],
+                            "headline-sm": ["Inter", "sans-serif"],
+                            "body-lg": ["Inter", "sans-serif"],
+                            "label-md": ["Inter", "sans-serif"],
+                            "display-lg": ["Inter", "sans-serif"],
+                            "headline-md": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                            "math-display": ["18px", {"lineHeight": "28px", "fontWeight": "500"}],
+                            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(249, 249, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass-panel {
+            background: rgba(231, 238, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen antialiased selection:bg-primary/20 selection:text-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-container-padding h-16 bg-surface/80 dark:bg-surface-container/80 backdrop-blur-xl border-b border-white/40 dark:border-white/10">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 0;">functions</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary text-center flex-1">
+            离散数学刷题系统
+        </h1>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-headline-sm" style="font-variation-settings: 'FILL' 0;">light_mode</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-[80px] pb-[160px] px-container-padding flex flex-col gap-stack-gap">
+<!-- Page Title & Tabs -->
+<section class="flex flex-col gap-inline-gap items-center mb-4">
+<h2 class="font-display-lg text-display-lg text-primary tracking-tight">全球荣耀榜</h2>
+<div class="flex bg-surface-container p-1 rounded-full w-full max-w-sm">
+<button class="flex-1 py-2 font-label-md text-label-md bg-primary text-on-primary rounded-full shadow-sm transition-all duration-200 ease-in-out active:scale-95">
+                    今日活跃榜
+                </button>
+<button class="flex-1 py-2 font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-all duration-200 ease-in-out active:scale-95">
+                    考试高分榜
+                </button>
+</div>
+</section>
+<!-- Leaderboard List -->
+<section class="flex flex-col gap-3">
+<!-- Rank 1 -->
+<div class="glass-panel p-glass-padding rounded-xl flex items-center gap-inline-gap transition-transform hover:scale-[0.99] active:scale-[0.98] duration-200 cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-[#FFD700]"></div>
+<div class="w-8 flex justify-center items-center font-headline-sm text-headline-sm text-[#FFD700] drop-shadow-sm">
+                    1
+                </div>
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover border-2 border-[#FFD700]" data-alt="A highly detailed close-up portrait avatar of a confident university student against a soft blue-grey geometric background. The lighting is soft and studio-like, fitting a modern flat UI aesthetic. The overall mood is academic and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByRd8zUi1wHLhX1ovZpwH54V1ddzQhoXUu5ydLxgpit862oa71dPRxZzYT2G-JYrRB6Zjb6L5Dy2YpOpIsqLPIDs47hdn96nhp7kqsA1FzgwOkmSJ4oIJ6vawfbenNPjex4UsqTDGqKEYv_uj0w_NYcAehARQwBAn-1LVe1VZwB9wIEAFDXyZglGxZPeIjP9XvcE8bxPqAX0LeQe5X3Auz7GuMxEyVnrIVnSmEZH2fNIV2m7PY0DhvgTFxkn2NEkucw7podgfXWNI"/>
+<span class="material-symbols-outlined absolute -bottom-1 -right-1 text-[#FFD700] bg-surface rounded-full text-[16px]" style="font-variation-settings: 'FILL' 1;">military_tech</span>
+</div>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg font-semibold">Euler Master</span>
+<span class="font-label-md text-label-md text-on-surface-variant">答题: 128 | 均准: 98%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-math-display text-math-display text-primary">1280</span>
+<span class="font-label-md text-label-md text-outline">活跃度</span>
+</div>
+</div>
+<!-- Rank 2 -->
+<div class="glass-panel p-glass-padding rounded-xl flex items-center gap-inline-gap transition-transform hover:scale-[0.99] active:scale-[0.98] duration-200 cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-[#C0C0C0]"></div>
+<div class="w-8 flex justify-center items-center font-headline-sm text-headline-sm text-[#C0C0C0] drop-shadow-sm">
+                    2
+                </div>
+<img class="w-12 h-12 rounded-full object-cover border-2 border-[#C0C0C0]" data-alt="A detailed portrait illustration of an intellectual student with glasses, set against a calm indigo gradient background. The style is modern vector art, clean and crisp, matching a premium educational app interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAleDDa8ZIw-ekyfmpU9uJ_nCMulBiBrQXtpnv_rVKQFF1uWWhJFhP0QQKNIa621VdqIUB8RvJeDzm7Iu-L1lx_7jF4L0qdAD1pW7eOx6NaAThZkpJ_GbWkaIVoqoqkR-QZPNQ4Aj4OhYHVWAxMU7rjjoTsSe7LsX96pHWKePS87QwjLBGw1qFiQ7-bXAqhByjBYuY51vavPIJI4JiZPyheHhr6hRjOUsRVUfvqCfLLne6PRcx5L96saRy02D1SPWQq1llm_obAvjA"/>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg font-semibold">Graph Theory Fan</span>
+<span class="font-label-md text-label-md text-on-surface-variant">答题: 115 | 均准: 95%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-math-display text-math-display text-primary">1150</span>
+<span class="font-label-md text-label-md text-outline">活跃度</span>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="glass-panel p-glass-padding rounded-xl flex items-center gap-inline-gap transition-transform hover:scale-[0.99] active:scale-[0.98] duration-200 cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-[#CD7F32]"></div>
+<div class="w-8 flex justify-center items-center font-headline-sm text-headline-sm text-[#CD7F32] drop-shadow-sm">
+                    3
+                </div>
+<img class="w-12 h-12 rounded-full object-cover border-2 border-[#CD7F32]" data-alt="A minimalist digital avatar of a young woman with a focused expression, rendered in a soft flat design style. The background is a pale violet, aligning with the app's discrete mathematics theme. Lighting is bright and even." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArl4F4mSwO0Qra4soQ6slc7VFx84qiqRlu1DeBMeV60cgG4OQBKR7yWIM9As6TlZ8cjmwIZcDiGWxrGODI3fQ_wTMxrl_HfSRcya7mXlTjGQEwkOZF2kw4r9Ob0rbgA4dqMuMw94DL5qxz6P9LDLc1Nj7kuCX8F2wC3atiUtK-Cd5CZ2yog3zdSkrAy8xfFoAD8jAIZYnMLHA_hhZzmsoZqy3kQr2jAfe5EeIkiaC9eZh7U8xYI-4hN3yoQVWCRZ1imIiSmmTNB88"/>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg font-semibold">Turing's Ghost</span>
+<span class="font-label-md text-label-md text-on-surface-variant">答题: 102 | 均准: 96%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-math-display text-math-display text-primary">1020</span>
+<span class="font-label-md text-label-md text-outline">活跃度</span>
+</div>
+</div>
+<!-- Normal Ranks (4-6 simulated) -->
+<div class="glass-panel p-glass-padding rounded-xl flex items-center gap-inline-gap hover:bg-surface-variant/30 transition-colors duration-200 cursor-pointer border-transparent">
+<div class="w-8 flex justify-center items-center font-body-lg text-body-lg text-on-surface-variant">4</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary font-headline-sm">L</div>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg">Logic Seeker</span>
+<span class="font-label-md text-label-md text-on-surface-variant">答题: 95 | 均准: 92%</span>
+</div>
+<span class="font-math-display text-math-display text-secondary">950</span>
+</div>
+<div class="glass-panel p-glass-padding rounded-xl flex items-center gap-inline-gap hover:bg-surface-variant/30 transition-colors duration-200 cursor-pointer border-transparent">
+<div class="w-8 flex justify-center items-center font-body-lg text-body-lg text-on-surface-variant">5</div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary font-headline-sm">S</div>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg">Set Builder</span>
+<span class="font-label-md text-label-md text-on-surface-variant">答题: 88 | 均准: 90%</span>
+</div>
+<span class="font-math-display text-math-display text-secondary">880</span>
+</div>
+<!-- View More indicator -->
+<div class="py-4 text-center">
+<span class="font-label-md text-label-md text-outline tracking-widest">. . .</span>
+</div>
+</section>
+</main>
+<!-- My Ranking Floating Bar -->
+<div class="fixed bottom-[96px] left-0 right-0 px-container-padding z-40">
+<div class="glass-panel p-glass-padding rounded-2xl shadow-[0_8px_30px_rgba(79,70,229,0.15)] flex items-center gap-inline-gap border border-primary/20 bg-surface/90">
+<div class="w-8 flex justify-center items-center flex-col">
+<span class="font-label-md text-label-md text-primary">我的</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">12</span>
+</div>
+<img class="w-10 h-10 rounded-full object-cover ring-2 ring-primary" data-alt="A clean, modern avatar of a user in a smart casual style, depicted with soft vector art. The background is a solid deep indigo. The image evokes a sense of personal achievement within an academic app context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwCxvzObhWpPUonrk8UfJKD3eGkdPdxSfsVYzD61u8bxnKzPjsdPvbUVcJmv2qJk_Ntd4Re8bAL5jZv0TosXP52Q0KbdQB-bcA2GUkMNydvbioQTtgDubQmBn5zdXSNNjPdpNBcMXPkmB4IqLjzqx1JBtlXr9ldY0LC8RwwKDCX3y4UtsVVfxXixemHS8g3c4jg12lnbkvCF4Io8KnToSuFZmtX0YaXv0CPR4DtZXn4BShnz6ndE5nT-yfvkujjkXgJWvzfseko-s"/>
+<div class="flex-1 flex flex-col">
+<span class="font-body-lg text-body-lg font-semibold text-primary">Student1024</span>
+<span class="font-label-md text-label-md text-on-surface-variant">距离前十还差 45 活跃度</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-math-display text-math-display text-primary">720</span>
+<span class="font-label-md text-label-md text-primary">活跃度</span>
+</div>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-[84px] flex justify-around items-center px-4 pb-safe bg-surface/70 dark:bg-surface-container-low/70 backdrop-blur-xl border-t border-white/40 dark:border-white/10 shadow-sm rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:bg-on-surface/5 dark:hover:bg-on-surface/10 rounded-full p-2 transition-all" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">home</span>
+<span class="font-label-md text-label-md mt-1">大厅</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:bg-on-surface/5 dark:hover:bg-on-surface/10 rounded-full p-2 transition-all" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">menu_book</span>
+<span class="font-label-md text-label-md mt-1">题库</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:bg-on-surface/5 dark:hover:bg-on-surface/10 rounded-full p-2 transition-all" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">quiz</span>
+<span class="font-label-md text-label-md mt-1">模考</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary dark:text-primary-fixed-dim font-bold bg-primary-container/20 dark:bg-primary-container/40 rounded-full px-4 py-1 hover:bg-on-surface/5 dark:hover:bg-on-surface/10 transition-all active:scale-90 duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">leaderboard</span>
+<span class="font-label-md text-label-md mt-1">排行榜</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-tertiary-container hover:bg-on-surface/5 dark:hover:bg-on-surface/10 rounded-full p-2 transition-all" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">person</span>
+<span class="font-label-md text-label-md mt-1">我的</span>
+</a>
+</nav>
+</body></html>

@@ -2489,3 +2489,286 @@ tr:nth-child(even) {
   }
 }
 
+/* =================== ADMIN QUESTION BANK REFACTOR STYLES =================== */
+
+/* ── Editor: two-column grid, breaks to single on narrow screens ── */
+.admin-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+@media (max-width: 860px) {
+  .admin-editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sticky preview panel so it stays visible while scrolling inputs */
+.admin-editor-preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+@media (min-width: 861px) {
+  .admin-editor-preview-col {
+    position: sticky;
+    top: 4rem;
+    align-self: start;
+  }
+}
+
+/* ── Question list cards ── */
+.admin-q-card {
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.admin-q-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.08);
+}
+.admin-q-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.admin-q-badges {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.admin-q-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* ── Controls bar (filter row + action row) ── */
+.admin-q-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.admin-q-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 0.5rem;
+}
+.admin-q-action-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .admin-q-filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .admin-q-filter-row .admin-q-search {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── Markdown Import Panel ── */
+.admin-import-panel {
+  border: 2.5px solid var(--primary);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.admin-import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.admin-import-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Format guide accordion */
+.admin-import-guide {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.admin-import-guide-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+  text-align: left;
+}
+.admin-import-guide-toggle:hover {
+  background: var(--bg-tertiary, var(--bg-secondary));
+}
+.admin-import-guide-content {
+  display: none;
+  padding: 1rem;
+  background: var(--bg-primary);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+.admin-import-guide-content.open {
+  display: block;
+}
+.admin-import-guide-content pre {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 0.75rem;
+  font-size: 0.74rem;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  margin: 0.5rem 0;
+}
+
+/* Import question rows */
+.import-q-row-v2 {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.import-q-row-v2:has(.import-q-check:checked) {
+  border-color: var(--primary);
+}
+.import-q-row-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+.import-q-row-body {
+  display: none;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+  border-top: 1px dashed var(--border-color);
+}
+.import-q-row-body.open {
+  display: flex;
+}
+.import-q-preview-box {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 2.5rem;
+}
+.import-q-ai-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.import-q-ai-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+.import-q-ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.import-q-tips {
+  font-size: 0.72rem;
+  color: var(--success, #10b981);
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  display: none;
+}
+.import-q-tips.visible {
+  display: block;
+}
+
+/* Import list scroll area */
+.admin-import-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+.admin-import-list::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-import-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Batch AI progress bar */
+.admin-import-batch-progress {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.07);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+.admin-import-batch-progress.active {
+  display: flex;
+}
+.admin-import-batch-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.admin-import-batch-bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  width: 0%;
+}

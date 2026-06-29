@@ -4,8 +4,102 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   
   try {
-    const { question, analysis, answer, userQuery, model, history, thinkingIntensity, stream, userRecord } = await request.json();
+    const body = await request.json();
+    const { question, analysis, answer, userQuery, model, history, thinkingIntensity, stream, userRecord, mode, category, topic } = body;
     
+    // ── MODE: enhance_question ──────────────────────────────────────────────────
+    // Used by Admin Question Import panel to auto-optimize questions via AI
+    if (mode === 'enhance_question') {
+      if (!question) {
+        return new Response(JSON.stringify({ error: "Missing parameter 'question'" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      const activeModel = model || "@cf/qwen/qwen3-30b-a3b-fp8";
+
+      const enhanceSystemPrompt = `你是一位专业的离散数学题库编辑与LaTeX数学排版专家。你的任务是对给定的题目进行质量优化，并以严格的JSON格式返回结果。
+
+优化规则：
+1. 检查并修正题干中所有LaTeX公式语法（行内公式使用 $...$，独立行公式使用 $$...$$）
+2. 如果题干表述不清，进行语义优化（保持题意不变）
+3. 为解析生成完整的逐步推导过程，包含所使用的定理依据
+4. 如果解析为空或过于简单，根据答案反推完整解析
+5. 保持题型(category)和专题(topic)不变
+6. 禁止改变题目的标准答案
+
+返回格式必须是合法JSON（不要包裹在Markdown代码块中）：
+{
+  "question": "优化后的题干（保留LaTeX格式）",
+  "analysis": "完整的逐步解析推导（使用LaTeX格式）",
+  "tips": "给管理员的简短优化说明（1-2句）"
+}`;
+
+      const enhanceMessages = [
+        { role: "system", content: enhanceSystemPrompt },
+        { role: "user", content: `请优化以下离散数学题目：
+
+题型：${category || '未知'}
+专题：${topic || '未知'}
+题干：${question}
+当前答案：${answer || '未提供'}
+当前解析：${analysis || '（无解析，请根据答案生成完整解析）'}
+
+请按规则优化并以JSON格式返回。` }
+      ];
+
+      if (!env.AI) {
+        // Local dev mock
+        const mockResult = {
+          question: question,
+          analysis: analysis || `根据题意分析：\n\n**解题步骤：**\n1. 分析题干条件\n2. 应用相关定理\n3. 得出结论：${answer || '（请填写答案）'}`,
+          tips: "【本地开发模式】此为模拟优化结果，部署至 Cloudflare 后将调用真实 AI 进行优化。"
+        };
+        return new Response(JSON.stringify(mockResult), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+      }
+
+      const enhanceResponse = await env.AI.run(activeModel, {
+        messages: enhanceMessages,
+        max_tokens: 2000
+      });
+
+      let rawText = enhanceResponse.response || enhanceResponse.text || "";
+      
+      // Strip markdown code fences if model wrapped JSON
+      rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (e) {
+        // Try to extract JSON object from text
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try { parsed = JSON.parse(jsonMatch[0]); } catch (_) {}
+        }
+      }
+
+      if (!parsed) {
+        return new Response(JSON.stringify({ 
+          error: "AI 返回格式解析失败",
+          raw: rawText.substring(0, 500) 
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      return new Response(JSON.stringify(parsed), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    // ── MODE: regular AI tutor ─────────────────────────────────────────────────
     if (!question) {
       return new Response(JSON.stringify({ error: "Missing parameter 'question'" }), {
         status: 400,
@@ -68,16 +162,15 @@ ${studentAnswerContext}
         const mockReply = `<think>
 1. [本地模拟思考] 载入题目背景与参考解析。
 2. 识别用户提问并开启流式输出："${userQuery}"。
-3. 正在检索知识库... 匹配到“命题逻辑等值演算”、“命题变元”等离散数学知识点。
+3. 正在检索知识库... 匹配到"命题逻辑等值演算"、"命题变元"等离散数学知识点。
 4. 依据模型 \`${activeModel}\` 拟定逻辑推导链条：德·摩根定律等。
 5. 准备以打字机流式输出最终解答。
 </think>
-【本地开发模式 - 模拟AI助教回复 - 流式打字机效果中】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \rightarrow B \Leftrightarrow \neg A \vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行流式智能推导解答！`;
+【本地开发模式 - 模拟AI助教回复 - 流式打字机效果中】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \\rightarrow B \\Leftrightarrow \\neg A \\vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行流式智能推导解答！`;
 
         const encoder = new TextEncoder();
         const readable = new ReadableStream({
           async start(controller) {
-            // Stream chunk size and delay
             const chunkSize = 20;
             for (let i = 0; i < mockReply.length; i += chunkSize) {
               const chunk = mockReply.substring(i, i + chunkSize);
@@ -122,16 +215,16 @@ ${studentAnswerContext}
       const mockReply = `<think>
 1. [本地模拟思考] 载入题目背景与参考解析。
 2. 识别用户提问："${userQuery}"。
-3. 正在检索知识库... 匹配到“命题逻辑等值演算”、“命题变元”等离散数学知识点。
+3. 正在检索知识库... 匹配到"命题逻辑等值演算"、"命题变元"等离散数学知识点。
 4. 依据模型 \`${activeModel}\` 拟定逻辑推导链条：德·摩根定律等。
 5. 生成 LaTeX 学术格式回复。
 </think>
-【本地开发模式 - 模拟AI助教回复】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \rightarrow B \Leftrightarrow \neg A \vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行智能推导解答！`;
+【本地开发模式 - 模拟AI助教回复】\n\n您使用的是模型：\`${activeModel}\`\n\n关于您提问的疑问：\n> **疑问**：${userQuery}\n\n**解答**：在离散数学中，这是一个经典逻辑命题问题。公式的展开需要严格遵循分配律与德·摩根定律。例如对条件联结词进行等价变换：$A \\rightarrow B \\Leftrightarrow \\neg A \\vee B$。若您在 Cloudflare 部署时绑定了 Workers AI 命名空间，我将通过此模型实时为您进行智能推导解答！`;
       
       const mockUsage = {
-        prompt_tokens: Math.round(userQuery.length * 0.4 + question.length * 0.2 + 100),
+        prompt_tokens: Math.round((userQuery || '').length * 0.4 + question.length * 0.2 + 100),
         completion_tokens: Math.round(mockReply.length * 0.4),
-        total_tokens: Math.round(userQuery.length * 0.4 + question.length * 0.2 + 100 + mockReply.length * 0.4)
+        total_tokens: Math.round((userQuery || '').length * 0.4 + question.length * 0.2 + 100 + mockReply.length * 0.4)
       };
       
       return new Response(JSON.stringify({ response: mockReply, usage: mockUsage }), {

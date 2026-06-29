@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI 离散数学助教</title>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Font configuration -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-variant": "#d8e3fb",
+                "secondary-fixed": "#e0e0ff",
+                "inverse-primary": "#c3c0ff",
+                "tertiary": "#45484f",
+                "outline-variant": "#c7c4d8",
+                "on-secondary": "#ffffff",
+                "on-error-container": "#93000a",
+                "outline": "#777587",
+                "on-primary": "#ffffff",
+                "secondary": "#4953bc",
+                "on-surface-variant": "#464555",
+                "on-error": "#ffffff",
+                "tertiary-container": "#5d6067",
+                "surface-dim": "#cfdaf2",
+                "secondary-container": "#8792fe",
+                "on-background": "#111c2d",
+                "primary": "#3525cd",
+                "surface-container-high": "#dee8ff",
+                "primary-fixed-dim": "#c3c0ff",
+                "error-container": "#ffdad6",
+                "on-tertiary-container": "#d9dbe3",
+                "surface-container-highest": "#d8e3fb",
+                "primary-container": "#4f46e5",
+                "on-tertiary-fixed-variant": "#43474d",
+                "surface-container-lowest": "#ffffff",
+                "on-primary-container": "#dad7ff",
+                "surface-bright": "#f9f9ff",
+                "surface-container": "#e7eeff",
+                "surface-tint": "#4d44e3",
+                "surface": "#f9f9ff",
+                "inverse-on-surface": "#ecf1ff",
+                "on-primary-fixed-variant": "#3323cc",
+                "tertiary-fixed-dim": "#c4c6ce",
+                "on-secondary-fixed": "#000767",
+                "surface-container-low": "#f0f3ff",
+                "tertiary-fixed": "#e0e2ea",
+                "primary-fixed": "#e2dfff",
+                "on-primary-fixed": "#0f0069",
+                "error": "#ba1a1a",
+                "on-tertiary": "#ffffff",
+                "on-secondary-fixed-variant": "#2f3aa3",
+                "background": "#f9f9ff",
+                "on-surface": "#111c2d",
+                "on-secondary-container": "#17228f",
+                "secondary-fixed-dim": "#bdc2ff",
+                "on-tertiary-fixed": "#181c21",
+                "inverse-surface": "#263143"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "inline-gap": "12px",
+                "section-margin": "32px",
+                "stack-gap": "16px",
+                "glass-padding": "16px",
+                "container-padding": "20px"
+        },
+        "fontFamily": {
+                "label-md": ["Inter"],
+                "display-lg": ["Inter"],
+                "math-display": ["Inter"],
+                "headline-md": ["Inter"],
+                "body-md": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-sm": ["Inter"]
+        }
+      },
+    },
+  }
+</script>
+<style data-purpose="typography">
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+  </style>
+<style data-purpose="custom-layout">
+    /* Custom scrollbar for chat area */
+    .chat-scroll-area::-webkit-scrollbar {
+      width: 6px;
+    }
+    .chat-scroll-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .chat-scroll-area::-webkit-scrollbar-thumb {
+      background: #c7c4d8; /* outline-variant */
+      border-radius: 10px;
+    }
+    
+    /* Frosted glass effect */
+    .glass-effect {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    
+    /* Gradient backgrounds */
+    .header-gradient {
+      background: linear-gradient(90deg, #3525cd 0%, #4f46e5 50%, #8792fe 100%);
+    }
+    .button-gradient {
+      background: #4f46e5;
+    }
+  </style>
+</head>
+<body class="bg-surface-container min-h-screen flex items-center justify-center p-4">
+<!-- BEGIN: MainContainer -->
+<main class="w-full max-w-[473px] h-[665px] bg-surface rounded-[24px] shadow-2xl flex flex-col overflow-hidden border border-surface-container-lowest/50" data-purpose="app-container">
+<!-- BEGIN: Header -->
+<header class="header-gradient px-4 py-3 flex items-center justify-between text-on-primary shrink-0">
+<div class="flex items-center gap-2">
+<span class="text-xl">🤖</span>
+<h1 class="font-bold text-lg tracking-tight">AI 离散数学助教</h1>
+</div>
+<button class="hover:bg-on-primary/20 p-1 rounded-full transition-colors">
+<svg class="h-6 w-6" fill="none" stroke="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+</button>
+</header>
+<!-- END: Header -->
+<!-- BEGIN: ConfigurationSection -->
+<section class="px-4 py-3 space-y-3 bg-surface-container-lowest/60 border-b border-primary-fixed/30" data-purpose="config-panel">
+<!-- Dropdown Row -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Model Selection -->
+<div class="space-y-1">
+<label class="text-xs text-on-surface-variant font-medium flex items-center gap-1">
+<span>🌍</span> 选择大模型:
+          </label>
+<div class="relative">
+<select class="w-full text-sm font-semibold text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg py-1.5 pl-3 pr-8 appearance-none focus:ring-2 focus:ring-primary-container/30 focus:border-primary-container transition-all">
+<option>Llama 3.3 70B (旗舰)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-outline">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+<!-- Intensity Selection -->
+<div class="space-y-1">
+<label class="text-xs text-on-surface-variant font-medium flex items-center gap-1">
+<span>🧠</span> 思考强度:
+          </label>
+<div class="relative">
+<select class="w-full text-sm font-semibold text-on-surface bg-surface-container-lowest border border-outline-variant rounded-lg py-1.5 pl-3 pr-8 appearance-none focus:ring-2 focus:ring-primary-container/30 focus:border-primary-container transition-all">
+<option>中 (标准思考)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-outline">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Toggle Row -->
+<div class="flex items-center gap-2">
+<input checked="" class="w-4 h-4 text-primary-container border-outline-variant rounded focus:ring-primary-container" type="checkbox"/>
+<div class="flex items-center gap-1 text-sm font-medium text-on-surface-variant">
+<span class="text-orange-400">⚡</span>
+<span>启用打字机流式输出 (更流畅)</span>
+</div>
+</div>
+</section>
+<!-- END: ConfigurationSection -->
+<!-- BEGIN: MetadataBar -->
+<section class="bg-surface-container-low px-4 py-2 flex items-center justify-between border-b border-outline-variant/30">
+<div class="flex items-center gap-2 text-sm text-on-surface-variant font-medium">
+<span>📌</span>
+<span>关联: 判断题 原卷第 2 题</span>
+</div>
+<div class="bg-primary-fixed text-on-primary-fixed-variant text-[11px] px-2 py-0.5 rounded-md font-semibold">
+        长: 862字 (~827 Token)
+      </div>
+</section>
+<!-- END: MetadataBar -->
+<!-- BEGIN: ChatArea -->
+<section class="flex-grow overflow-y-auto chat-scroll-area p-4 space-y-6" data-purpose="chat-messages">
+<!-- AI System Message -->
+<div class="max-w-[85%] text-sm">
+<p class="text-on-surface/80 leading-relaxed mb-2">号； 如果有解释，则它等价于一个命题。</p>
+<div class="flex items-start gap-2 bg-surface-container-high/30 p-2 rounded-lg border border-outline-variant/20">
+<span class="text-lg">🌍</span>
+<div class="text-[11px] text-on-surface-variant/80 uppercase tracking-wider font-bold">
+            Llama (流式) <span class="mx-1">Tokens: ~Prompt 150 | ~Reply 89 | ~Total 239</span>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex justify-end">
+<div class="bg-primary-container text-on-primary px-4 py-3 rounded-[20px] rounded-tr-none max-w-[80%] font-semibold shadow-sm">
+          所以是正确还是错误？
+        </div>
+</div>
+<!-- AI Response Container -->
+<div class="bg-surface-container-lowest border border-outline-variant/30 rounded-[16px] p-4 shadow-sm space-y-4" data-purpose="ai-response">
+<!-- Thinking Process Block -->
+<div class="bg-surface-dim/20 rounded-xl p-3 border border-outline-variant/10">
+<button class="w-full flex items-center justify-between text-on-surface-variant font-medium">
+<div class="flex items-center gap-2">
+<span class="text-orange-300">💡</span>
+<span class="text-sm">思考过程 (Llama)</span>
+</div>
+<svg class="w-4 h-4 fill-current rotate-90" viewbox="0 0 20 20"><path d="M6 10l5 5V5l-5 5z"></path></svg>
+</button>
+</div>
+<!-- Main Content -->
+<div class="text-on-surface/90 text-[15px] leading-relaxed space-y-2">
+<p>
+            因此，题目中的说法“0元谓词一定是命题”在一般情况下是不正确的，因为它取决于是否已经给出了一个解释。
+          </p>
+<p>
+            在没有解释的情况下，0元谓词只是一个符号，无法确定其真值。只有在给定解释后，0元谓词才具有确定的真值，等价于一个命题。所以，答案应该是错误的。
+          </p>
+</div>
+</div>
+</section>
+<!-- END: ChatArea -->
+<!-- BEGIN: InputArea -->
+<section class="p-4 bg-surface-container-lowest/80 backdrop-blur-sm border-t border-outline-variant/30 flex items-center gap-3">
+<div class="relative flex-grow">
+<input class="w-full bg-surface-container-low border-outline-variant/50 rounded-[12px] py-3 px-4 text-sm focus:ring-2 focus:ring-primary-container/30 focus:border-primary-container placeholder:text-outline/60" placeholder="对当前关联的题目有什么不懂？问问我吧..." type="text"/>
+</div>
+<button class="button-gradient text-white font-bold px-6 py-3 rounded-[12px] shadow-lg shadow-primary-container/20 transition-transform active:scale-95">
+        提问
+      </button>
+</section>
+<!-- END: InputArea -->
+</main>
+<!-- END: MainContainer -->
+</body></html>
