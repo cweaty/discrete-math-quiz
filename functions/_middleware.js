@@ -103,6 +103,7 @@ export async function onRequest(context) {
     url.pathname.includes("/api/auth/register") || 
     (url.pathname.includes("/api/leaderboard") && request.method === "GET") ||
     (url.pathname.includes("/api/comments") && request.method === "GET") ||
+    (url.pathname.endsWith("/api/questions") && request.method === "GET") ||
     url.pathname.includes("/api/ai") ||
     url.pathname.includes("/api/cf-usage");
   
