@@ -317,6 +317,41 @@
   <script src="app.js"></script>
   <script src="animations.js"></script>
 
+  <!-- Service Worker Registration for Auto-Update -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          console.log('Service Worker registered:', reg.scope);
+          // Check for updates on every page load
+          reg.update();
+          
+          reg.onupdatefound = () => {
+            const installingWorker = reg.installing;
+            installingWorker.onstatechange = () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New update available, notify SW to take control immediately
+                installingWorker.postMessage('SKIP_WAITING');
+                console.log('New version available, updating...');
+                // Optionally show a non-intrusive toast here instead of auto-reload
+                // But auto-reload ensures they get the new version right away
+              }
+            };
+          };
+        }).catch(err => console.error('Service Worker registration failed:', err));
+        
+        // When the new SW takes over, reload the page to use new assets
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
+        });
+      });
+    }
+  </script>
+
   <!-- Login/Register Modal -->
   <div class="modal-overlay" id="auth-modal">
     <div class="modal-card">

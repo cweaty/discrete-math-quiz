@@ -1,0 +1,31 @@
+# Cloudflare Pages _headers
+# HTML pages: always re-validate (no-cache means "check server before serving from cache")
+# This ensures a normal F5 refresh will fetch new HTML if changed.
+/
+  Cache-Control: no-cache, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+# Core JS/CSS: short max-age + must-revalidate
+# Browser will send conditional GET (ETag/If-None-Match) every time after 1s
+# If unchanged → fast 304 Not Modified; if changed → gets new file immediately
+/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/style.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/questions.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/animations.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Service worker must never be cached (so updates propagate immediately)
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Static libs can be cached long-term (they never change)
+/libs/*
+  Cache-Control: public, max-age=31536000, immutable
