@@ -6876,10 +6876,14 @@ async function renderAdminQuestionsTab(container) {
       <!-- Editor Container (Hidden by default) -->
       <div id="admin-q-editor-container" style="display:none; transition:all 0.3s ease;"></div>
 
+      <!-- Markdown Import Panel (Hidden by default) -->
+      <div id="admin-q-import-panel" style="display:none;"></div>
+
       <!-- Controls Bar -->
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
-        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; flex:1;">
-          <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer;">
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <!-- Filter row -->
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <select id="admin-q-category-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; flex:1; min-width:100px;">
             <option value="all">所有题型</option>
             <option value="judgment">判断题</option>
             <option value="single_choice">单选题</option>
@@ -6888,7 +6892,7 @@ async function renderAdminQuestionsTab(container) {
             <option value="proof">证明题</option>
             <option value="application">应用题</option>
           </select>
-          <select id="admin-q-topic-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer;">
+          <select id="admin-q-topic-filter" style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; cursor:pointer; flex:1; min-width:100px;">
             <option value="all">所有专题科目</option>
             <option value="propositional_logic">命题逻辑</option>
             <option value="predicate_logic">谓词逻辑</option>
@@ -6896,11 +6900,18 @@ async function renderAdminQuestionsTab(container) {
             <option value="binary_relations">二元关系</option>
             <option value="graph_theory">图论</option>
           </select>
-          <input type="text" id="admin-q-search" placeholder="搜索题干内容关键字..." style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; flex:1; min-width:180px; outline:none; box-sizing:border-box;">
+          <input type="text" id="admin-q-search" placeholder="搜索题干关键字..." style="padding:0.6rem 0.8rem; border-radius:12px; border:1.5px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.8rem; flex:2; min-width:150px; outline:none; box-sizing:border-box;">
         </div>
-        <button class="btn btn-primary" id="admin-q-add-btn" style="padding:0.6rem 1.2rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex-shrink:0;">
-          ➕ 新增题目
-        </button>
+        <!-- Action buttons row -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="btn btn-primary" id="admin-q-add-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:130px; display:flex; align-items:center; justify-content:center; gap:0.35rem;">
+            ➕ 手动新增题目
+          </button>
+          <button class="btn btn-outline" id="admin-q-import-md-btn" style="padding:0.6rem 1.1rem; font-size:0.8rem; font-weight:700; border-radius:12px; cursor:pointer; flex:1; min-width:130px; display:flex; align-items:center; justify-content:center; gap:0.35rem; color:var(--primary); border-color:var(--primary);">
+            📄 批量导入 Markdown
+          </button>
+          <input type="file" id="admin-q-md-file-input" accept=".md,.txt" style="display:none;">
+        </div>
       </div>
 
       <!-- Question Pool List -->
