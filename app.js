@@ -7699,9 +7699,9 @@ function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud,
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
 async function renderAdminSystemTab(container) {
   container.innerHTML = `
-    <div style="display:grid; grid-template-columns:1fr 1.2fr; gap:1.5rem; flex-wrap:wrap;" class="admin-system-grid">
+    <div style="display:flex; flex-flow:row wrap; gap:1.5rem;" class="admin-system-grid">
       <!-- Left: Configuration Form -->
-      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; height:fit-content; background:var(--bg-card);">
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; height:fit-content; background:var(--bg-card); flex:1 1 320px; box-sizing:border-box;">
         <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">⚙️ 全局系统参数设置</h3>
         
         <div style="display:flex; flex-direction:column; gap:1rem;">
@@ -7717,7 +7717,7 @@ async function renderAdminSystemTab(container) {
               <option value="@cf/zhipuai/glm-4.7-flash">🚀 GLM-4.7-Flash — 中文极速响应 (131k ctx)</option>
             </select>
           </div>
-
+ 
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认思考链强度 (Thinking Intensity)</label>
             <select id="sys-default-intensity" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
@@ -7726,7 +7726,7 @@ async function renderAdminSystemTab(container) {
               <option value="high">高强度 (极严谨逻辑证论)</option>
             </select>
           </div>
-
+ 
           <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.25rem;">
             <input type="checkbox" id="sys-force-thinking" style="cursor:pointer; width:16px; height:16px;">
             <label for="sys-force-thinking" style="font-size:0.8rem; font-weight:700; color:var(--text-primary); cursor:pointer;">强制在首位展开展示思考过程</label>
@@ -7737,9 +7737,9 @@ async function renderAdminSystemTab(container) {
           </button>
         </div>
       </div>
-
+ 
       <!-- Right: AI Tutor Deep Testing Console -->
-      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; background:var(--bg-card);">
+      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; background:var(--bg-card); flex:1.2 1 320px; box-sizing:border-box;">
         <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">🧪 AI 助教接口深度联调沙箱</h3>
         <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.45;">
           管理员可在此任选一道现有离散题目，向配置的 AI 模型发送对话提问，直接观察其推理链条和 LaTeX 公式排版输出，调试 Socratic 启发式回复质量。
