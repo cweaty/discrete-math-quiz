@@ -3413,7 +3413,112 @@ async function askFloatingAiTutor() {
           userQuery: query,
           model: chosenModel,
           history: aiConversationHistory,
-      if (!cfAccountId || !cfApiToken) {
+          thinkingIntensity: chosenIntensity,
+          stream: false,
+          userRecord: userRecord ? { userAns: userRecord.userAns, isCorrect: userRecord.isCorrect } : null
+        })
+      });
+      
+      const result = await response.json();
+      aiLoadingDiv.remove();
+      
+      if (response.ok) {
+        // Extract <think>...</think> block if present (robust regex parsing)
+        let rawText = result.response;
+        let thinkingText = "";
+        
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
+        const match = rawText.match(thinkRegex);
+        if (match) {
+          thinkingText = match[1].trim();
+          rawText = rawText.replace(thinkRegex, "").trim();
+        } else {
+          // Fallback for missing closing tag
+          const openIndex = rawText.toLowerCase().indexOf("<think>");
+          if (openIndex !== -1) {
+            thinkingText = rawText.substring(openIndex + 7).trim();
+            rawText = rawText.substring(0, openIndex).trim();
+          }
+        }
+        
+        // Render Collapsible Thinking Accordion
+        let thinkingHtml = "";
+        if (thinkingText) {
+          thinkingHtml = `
+            <div class="ai-thinking-accordion" style="margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
+              <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
+                <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
+                <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▶</span>
+              </button>
+              <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);">
+                ${thinkingText}
+              </div>
+            </div>
+          `;
+        }
+        
+        // Combine thinking block and markdown result
+        aiReplyDiv.innerHTML = thinkingHtml + marked.parse(rawText);
+        
+        // Render token usage metadata badge
+        const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+        const usageBadge = document.createElement('div');
+        usageBadge.style.fontSize = '0.65rem';
+        usageBadge.style.color = 'var(--text-muted)';
+        usageBadge.style.marginTop = '0.4rem';
+        usageBadge.style.borderTop = '1px dashed var(--border-color)';
+        usageBadge.style.paddingTop = '0.25rem';
+        usageBadge.style.display = 'flex';
+        usageBadge.style.justifyContent = 'space-between';
+        usageBadge.style.alignItems = 'center';
+        usageBadge.innerHTML = `
+          <span>🔮 ${selectedModelName}</span>
+          <span>Tokens: Prompt ${usage.prompt_tokens} | Reply ${usage.completion_tokens} | Total ${usage.total_tokens}</span>
+        `;
+        aiReplyDiv.appendChild(usageBadge);
+        chatArea.appendChild(aiReplyDiv);
+        renderMath(aiReplyDiv);
+        
+        // Push assistant response to history
+        aiConversationHistory.push({ role: 'assistant', content: result.response });
+        updateAiContextBar(currentAiQuestion);
+      } else {
+        aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
+        chatArea.appendChild(aiReplyDiv);
+        aiConversationHistory.pop();
+        updateAiContextBar(currentAiQuestion);
+      }
+    } catch (err) {
+      aiLoadingDiv.remove();
+      aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败，请检查网络！</span>`;
+      chatArea.appendChild(aiReplyDiv);
+      aiConversationHistory.pop();
+      updateAiContextBar(currentAiQuestion);
+    }
+  }
+  
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+
+// ============================================================================
+//            CLOUDFLARE WORKERS/PAGES USAGE METRICS HANDLERS
+// ============================================================================
+
+function renderCloudflareUsageCard(container) {
+  const usageContainer = container.querySelector('#cf-usage-container');
+  if (!usageContainer) return;
+  
+  const cfAccountId = localStorage.getItem('cf_account_id');
+  const cfApiToken = localStorage.getItem('cf_api_token');
+  
+  // Clean up any running timers
+  if (cfCountdownInterval) {
+    clearInterval(cfCountdownInterval);
+    cfCountdownInterval = null;
+  }
+  
+  if (!cfAccountId || !cfApiToken) {
     // Show configuration form
     usageContainer.innerHTML = `
       <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
