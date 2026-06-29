@@ -4,7 +4,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   
   try {
-    const { question, analysis, userQuery, model, history, thinkingIntensity, stream, userRecord } = await request.json();
+    const { question, analysis, answer, userQuery, model, history, thinkingIntensity, stream, userRecord } = await request.json();
     
     if (!question) {
       return new Response(JSON.stringify({ error: "Missing parameter 'question'" }), {
@@ -23,22 +23,35 @@ export async function onRequestPost(context) {
     } else if (thinkingIntensity === "high") {
       intensityPrompt = "\n【思考强度要求】：进行极致严谨、一步一推演的深度逻辑思维链推导，详尽列出每一步推理所依据的离散数学定理与命题条件。请务必将你这部分极其详尽的思考推导过程完整包裹在 <think> 和 </think> 标签中，放在回答的最前面。正文回答部分放在 </think> 之后。";
     } else {
-      intensityPrompt = "\n【思考强度要求】：请给出标准的中等推理步骤。请将你的分析与推导思路完整包裹在 <think> 和 </think> 标签中，放在回答的最前面。正文回答部分放在 </think> 之后。";
+      intensityPrompt = "\n【思考强度要求】：请将你的分析与推导思路完整包裹在 <think> 和 </think> 标签中，放在回答的最前面。正文回答部分放在 </think> 之后。";
     }
 
     let studentAnswerContext = "";
+    const cleanAnswer = answer || "未提供";
+    
     if (userRecord) {
-      studentAnswerContext = `\n【学生作答反馈】：该学生已作答此题，提交的答案为："${userRecord.userAns}"，系统判定结果为：${userRecord.isCorrect ? "回答正确" : "回答错误"}。在解答中，如果学生答错了，请先用温和鼓励的语气明确指出其错误原因并进行纠偏；如果答对了，请简要肯定学生的思路，并直接回答学生的疑问。`;
+      if (userRecord.isCorrect) {
+        studentAnswerContext = `\n【学生作答反馈】：该学生已完成作答，提交的答案为："${userRecord.userAns}"，系统判定为【回答正确】（本题的官方标准答案是："${cleanAnswer}"）。在解答中，请首先简单肯定学生的作答思路，并直接针对学生的提问做出解答或做一些知识点拓展。`;
+      } else {
+        studentAnswerContext = `\n【学生作答反馈】：该学生已完成作答，提交的答案为："${userRecord.userAns}"，系统判定为【回答错误】（本题的官方标准答案是："${cleanAnswer}"）。在解答中，请以温和鼓励的语气开始，对比并指出学生所填写的答案与官方标准答案之间的逻辑或概念偏差，引导其完成纠偏，随后具体回答其疑问。`;
+      }
     } else {
-      studentAnswerContext = `\n【学生作答反馈】：该学生尚未作答此题，当前正在思考。请不要直接告诉学生标准答案，而是给予启发式（Socratic method）的逻辑引导，引导学生自主得出答案。`;
+      studentAnswerContext = `\n// 特别要求：为了学生的学习效果，你【绝对不能】直接向学生剧透这道题目的标准答案。你必须在内心已知正确答案的前提下，设计一系列循序渐进的引导提问（即苏格拉底教学法），帮助学生分析题意，引导其自主计算得出结果。`;
     }
 
-    const systemPrompt = "你是一位资深的大学离散数学AI教授。请针对学生发出的题目、参考解析以及具体的疑问，给出严谨、学术、简洁且专业的中文解答。所有数学公式必须使用 LaTeX 格式（用单美元符号 $ 包裹，如 $p \\wedge q$）。" + intensityPrompt + studentAnswerContext;
+    const systemPrompt = `你是一位严谨的大学离散数学AI教授与高水平助教。请针对给出的题目、参考答案、参考解析以及学生的具体疑问，给出严谨、学术、简洁且专业的中文解答。
+【本题官方参考答案】：${cleanAnswer}
+【本题官方参考解析】：${analysis || "无"}
+
+${intensityPrompt}
+${studentAnswerContext}
+
+【公式排版规范】：所有的数学公式、符号（包括单个命题变元如 p、q，集合 A、B 等）必须严格使用 LaTeX 格式包裹（行内公式用单美元符号 $，如 $p \\wedge q$；独立行公式用双美元符号 $$），禁止直接输出无格式的普通文本字母公式。`;
     
     // Construct multi-turn messages
     const messages = [
       { role: "system", content: systemPrompt },
-      { role: "user", content: `题目背景：\n${question}\n\n参考解析：\n${analysis || "无"}` },
+      { role: "user", content: `题目背景：\n${question}` },
       { role: "assistant", content: "收到题目上下文。请问您对这道题有什么具体疑问吗？" }
     ];
     

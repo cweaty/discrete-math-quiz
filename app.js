@@ -3348,6 +3348,7 @@ async function askFloatingAiTutor() {
         body: JSON.stringify({
           question: currentAiQuestion.question,
           analysis: currentAiQuestion.analysis,
+          answer: currentAiQuestion.answer,
           userQuery: query,
           model: chosenModel,
           history: aiConversationHistory,
@@ -3506,6 +3507,7 @@ async function askFloatingAiTutor() {
         body: JSON.stringify({
           question: currentAiQuestion.question,
           analysis: currentAiQuestion.analysis,
+          answer: currentAiQuestion.answer,
           userQuery: query,
           model: chosenModel,
           history: aiConversationHistory,
@@ -7862,6 +7864,7 @@ async function renderAdminSystemTab(container) {
         body: JSON.stringify({
           question: qObj.question,
           analysis: qObj.analysis,
+          answer: qObj.answer,
           userQuery: query,
           model: chosenModel,
           thinkingIntensity: intensity,
