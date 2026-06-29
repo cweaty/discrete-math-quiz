@@ -4846,6 +4846,16 @@ function renderCategoryGrid(container) {
 }
 
 
+function formatRelativeTime(timestamp) {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return `${mins}分钟前`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}小时前`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
 function renderLobbyShortcutCard(container) {
   const card = document.createElement('div');
   card.className = 'w-full mt-4';
