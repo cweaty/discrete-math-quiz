@@ -11,9 +11,17 @@ async function hashPassword(password, salt) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function base64UrlEncode(str) {
-  const base64 = btoa(str);
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+function base64UrlEncodeBytes(bytes) {
+  let binStr = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binStr += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function base64UrlEncodeText(str) {
+  const bytes = new TextEncoder().encode(str);
+  return base64UrlEncodeBytes(bytes);
 }
 
 async function signHmacSha256(secret, data) {
@@ -25,15 +33,13 @@ async function signHmacSha256(secret, data) {
     ["sign"]
   );
   const sigBuffer = await crypto.subtle.sign("HMAC", key, textEncoder.encode(data));
-  const sigArray = Array.from(new Uint8Array(sigBuffer));
-  const sigStr = sigArray.map(b => String.fromCharCode(b)).join("");
-  return base64UrlEncode(sigStr);
+  return base64UrlEncodeBytes(new Uint8Array(sigBuffer));
 }
 
 async function generateJwt(payload, secret) {
   const header = { alg: "HS256", typ: "JWT" };
-  const encodedHeader = base64UrlEncode(JSON.stringify(header));
-  const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const encodedHeader = base64UrlEncodeText(JSON.stringify(header));
+  const encodedPayload = base64UrlEncodeText(JSON.stringify(payload));
   const data = `${encodedHeader}.${encodedPayload}`;
   const signature = await signHmacSha256(secret, data);
   return `${data}.${signature}`;
@@ -85,6 +91,7 @@ export async function onRequestPost(context) {
         answeredCount: 0,
         correctRate: 0,
         examHighScore: 0,
+        role: "admin",
         updatedAt: Math.floor(Date.now() / 1000)
       };
       await putDb(env, `user:profile:${userId}`, JSON.stringify(profileData));

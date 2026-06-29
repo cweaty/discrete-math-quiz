@@ -31,7 +31,7 @@ export async function onRequestGet(context) {
           const profile = JSON.parse(profileStr);
           
           // Retrieve role directly from profile
-          const normUsername = profile.username.trim().toLowerCase();
+          const normUsername = (profile.username || "").trim().toLowerCase();
           profile.role = profile.role || (normUsername === "admin" ? "admin" : "user");
           
           profiles.push(profile);

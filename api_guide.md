@@ -160,9 +160,9 @@
 ## 💬 四、 留言讨论接口 (Comments API)
 
 ### 1. 获取单题评论列表 (Get Comments)
-*   **接口路径**：`GET /api/comments?qId={questionId}`
+*   **接口路径**：`GET /api/comments?q={questionId}` 或 `GET /api/comments?qId={questionId}`
 *   **请求类型**：公开接口
-*   **URL 参数**：`qId` (例如 `q19`)
+*   **URL 参数**：`q` 或 `qId` (例如 `q19`)
 *   **返回参数 (200 OK)**：
     ```json
     [

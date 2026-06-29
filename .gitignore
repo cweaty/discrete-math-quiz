@@ -5,3 +5,5 @@ node_modules/
 .vscode/
 *.log
 .tempmediaStorage/
+.dev.vars
+Gamified-App.zip

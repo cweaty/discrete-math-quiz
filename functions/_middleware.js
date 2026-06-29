@@ -1,17 +1,21 @@
 // Cloudflare Pages Middleware for JWT Authentication and CORS
 
 // Base64URL encode/decode helpers
-function base64UrlDecode(str) {
+function base64UrlDecodeBytes(str) {
   str = str.replace(/-/g, '+').replace(/_/g, '/');
   while (str.length % 4) {
     str += '=';
   }
-  return atob(str);
+  const binStr = atob(str);
+  const bytes = new Uint8Array(binStr.length);
+  for (let i = 0; i < binStr.length; i++) {
+    bytes[i] = binStr.charCodeAt(i);
+  }
+  return bytes;
 }
 
-function base64UrlEncode(str) {
-  const base64 = btoa(str);
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+function base64UrlDecodeText(str) {
+  return new TextDecoder().decode(base64UrlDecodeBytes(str));
 }
 
 // Convert text to buffer
@@ -27,10 +31,7 @@ async function verifyHmacSha256(secret, data, signature) {
     ["verify"]
   );
   
-  // Signature in Base64URL is converted back to binary
-  const sigBuffer = new Uint8Array(
-    base64UrlDecode(signature).split("").map(c => c.charCodeAt(0))
-  );
+  const sigBuffer = base64UrlDecodeBytes(signature);
   
   return await crypto.subtle.verify(
     "HMAC",
@@ -63,7 +64,7 @@ async function authenticate(request, env) {
   }
   
   try {
-    const payload = JSON.parse(base64UrlDecode(payloadStr));
+    const payload = JSON.parse(base64UrlDecodeText(payloadStr));
     // Check expiration
     if (payload.exp && Date.now() / 1000 > payload.exp) {
       return null;

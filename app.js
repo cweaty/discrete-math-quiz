@@ -7701,15 +7701,15 @@ function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud,
 // ---------------- SYSTEM AND AI CONFIG TAB ----------------
 async function renderAdminSystemTab(container) {
   container.innerHTML = `
-    <div style="display:flex; flex-flow:row wrap; gap:1.5rem;" class="admin-system-grid">
+    <div class="admin-system-grid">
       <!-- Left: Configuration Form -->
-      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; height:fit-content; background:var(--bg-card); flex:1 1 320px; box-sizing:border-box;">
+      <div class="admin-card admin-card-left">
         <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">⚙️ 全局系统参数设置</h3>
         
         <div style="display:flex; flex-direction:column; gap:1rem;">
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认 AI 助教语言模型 (Workers AI)</label>
-            <select id="sys-default-model" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+            <select id="sys-default-model" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%; max-width:100%; box-sizing:border-box; text-overflow:ellipsis;">
               <option value="@cf/qwen/qwq-32b">🏆 QwQ-32B — 数学推理专项 (Reasoning, 32B)</option>
               <option value="@cf/deepseek-ai/deepseek-r1-distill-qwen-32b">🧠 DeepSeek R1-Distill-32B — 超强推理链 (Reasoning, 32B)</option>
               <option value="@cf/qwen/qwen3-30b-a3b-fp8">⚡ Qwen3-30B MoE — 推理+中文优化 (Reasoning, MoE)</option>
@@ -7722,7 +7722,7 @@ async function renderAdminSystemTab(container) {
  
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">默认思考链强度 (Thinking Intensity)</label>
-            <select id="sys-default-intensity" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer;">
+            <select id="sys-default-intensity" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%; max-width:100%; box-sizing:border-box;">
               <option value="low">低强度 (直接简短回复)</option>
               <option value="medium">中等强度 (分析详细思路)</option>
               <option value="high">高强度 (极严谨逻辑证论)</option>
@@ -7734,14 +7734,14 @@ async function renderAdminSystemTab(container) {
             <label for="sys-force-thinking" style="font-size:0.8rem; font-weight:700; color:var(--text-primary); cursor:pointer;">强制在首位展开展示思考过程</label>
           </div>
           
-          <button class="btn btn-primary" id="sys-save-btn" style="padding:0.75rem; font-size:0.85rem; font-weight:700; width:100%; margin-top:0.5rem; cursor:pointer;">
+          <button class="btn btn-primary" id="sys-save-btn" style="padding:0.75rem; font-size:0.85rem; font-weight:700; width:100%; margin-top:0.5rem; cursor:pointer; box-sizing:border-box;">
             💾 保存配置至云端
           </button>
         </div>
       </div>
  
       <!-- Right: AI Tutor Deep Testing Console -->
-      <div class="dashboard-card" style="padding:1.5rem; display:flex; flex-direction:column; gap:1.25rem; background:var(--bg-card); flex:1.2 1 320px; box-sizing:border-box;">
+      <div class="admin-card admin-card-right">
         <h3 style="margin:0; font-size:1rem; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:0.6rem; color:var(--text-primary);">🧪 AI 助教接口深度联调沙箱</h3>
         <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.45;">
           管理员可在此任选一道现有离散题目，向配置的 AI 模型发送对话提问，直接观察其推理链条和 LaTeX 公式排版输出，调试 Socratic 启发式回复质量。
@@ -7750,24 +7750,24 @@ async function renderAdminSystemTab(container) {
         <div style="display:flex; flex-direction:column; gap:0.85rem;">
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">选择联调绑定题目</label>
-            <select id="ai-test-q-select" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%; max-width:100%;">
+            <select id="ai-test-q-select" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%; max-width:100%; box-sizing:border-box; text-overflow:ellipsis;">
               <!-- Load dynamically -->
             </select>
           </div>
-
+ 
           <div style="display:flex; flex-direction:column; gap:0.35rem;">
             <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">输入调试学生提问 (Query)</label>
             <input type="text" id="ai-test-query" value="请问这道题目的参考解析是什么意思？我不太明白是怎么推理出来的。" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; width:100%; box-sizing:border-box;">
           </div>
-
-          <button class="btn btn-outline" id="ai-test-btn" style="padding:0.7rem; font-size:0.85rem; font-weight:700; color:var(--primary); border-color:var(--primary); cursor:pointer;">
+ 
+          <button class="btn btn-outline" id="ai-test-btn" style="padding:0.7rem; font-size:0.85rem; font-weight:700; color:var(--primary); border-color:var(--primary); cursor:pointer; width:100%; box-sizing:border-box;">
             ⚡ 启动 AI 实时推演测试
           </button>
-
+ 
           <!-- Test Response Output -->
           <div style="display:none; flex-direction:column; gap:0.5rem; margin-top:0.25rem;" id="ai-test-result-wrapper">
             <label style="font-size:0.75rem; font-weight:800; color:var(--success);">📟 AI 实时调试响应输出</label>
-            <div style="border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.02); min-height:6rem; max-height:22rem; overflow-y:auto; font-size:0.85rem; line-height:1.6;" id="ai-test-result-box"></div>
+            <div style="border:1px solid var(--border-color); border-radius:10px; padding:1rem; background:rgba(0,0,0,0.02); min-height:6rem; max-height:22rem; overflow-y:auto; font-size:0.85rem; line-height:1.6; box-sizing:border-box; width:100%;" id="ai-test-result-box"></div>
           </div>
         </div>
       </div>

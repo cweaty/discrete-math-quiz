@@ -67,27 +67,36 @@ export async function onRequestPost(context) {
     // Remove user if already exists in leaderboard (to avoid duplicates)
     leaderboard = leaderboard.filter(item => item.userId !== userId);
     
-    // Push new entry
-    leaderboard.push({
-      userId,
-      username: profile.username,
-      answeredCount: profile.answeredCount,
-      examHighScore: profile.examHighScore,
-      correctRate: profile.correctRate
-    });
+    // Push new entry if user is not system administrator
+    const isSystemAdmin = profile.role === "admin" || (profile.username || "").trim().toLowerCase() === "admin";
+    if (!isSystemAdmin) {
+      leaderboard.push({
+        userId,
+        username: profile.username,
+        answeredCount: profile.answeredCount,
+        examHighScore: profile.examHighScore,
+        correctRate: profile.correctRate
+      });
+    }
     
-    // Sort logic:
+    // Sort logic (handling undefined values safely):
     // 1. Higher exam high score first
     // 2. More questions answered first
     // 3. Better accuracy rate first
     leaderboard.sort((a, b) => {
-      if (b.examHighScore !== a.examHighScore) {
-        return b.examHighScore - a.examHighScore;
+      const scoreA = a.examHighScore || 0;
+      const scoreB = b.examHighScore || 0;
+      if (scoreB !== scoreA) {
+        return scoreB - scoreA;
       }
-      if (b.answeredCount !== a.answeredCount) {
-        return b.answeredCount - a.answeredCount;
+      const ansA = a.answeredCount || 0;
+      const ansB = b.answeredCount || 0;
+      if (ansB !== ansA) {
+        return ansB - ansA;
       }
-      return b.correctRate - a.correctRate;
+      const rateA = a.correctRate || 0;
+      const rateB = b.correctRate || 0;
+      return rateB - rateA;
     });
     
     // Slice to top 50

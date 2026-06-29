@@ -11,9 +11,9 @@ export async function onRequestGet(context) {
   }
   
   const url = new URL(request.url);
-  const qId = url.searchParams.get("q");
+  const qId = url.searchParams.get("q") || url.searchParams.get("qId");
   if (!qId) {
-    return new Response(JSON.stringify({ error: "Missing parameter 'q'" }), {
+    return new Response(JSON.stringify({ error: "Missing parameter 'q' or 'qId'" }), {
       status: 400,
       headers: { "Content-Type": "application/json" }
     });
