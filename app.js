@@ -110,6 +110,28 @@ let examState = {
   subjectiveGrading: {} // Map of index -> true/false
 };
 
+function saveExamState() {
+  try {
+    localStorage.setItem('dm_exam_state', JSON.stringify({
+      isActive: examState.isActive,
+      answers: examState.answers,
+      completed: examState.completed,
+      secondsRemaining: examState.secondsRemaining,
+      questions: examState.questions.map(q => ({
+        category: q.category,
+        original_num: q.original_num,
+        question: q.question,
+        options: q.options,
+        answer: q.answer,
+        analysis: q.analysis,
+        topic: q.topic
+      }))
+    }));
+  } catch (e) {
+    console.error("Failed to save exam state:", e);
+  }
+}
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
   await loadDynamicQuestions();
