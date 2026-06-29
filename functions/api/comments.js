@@ -113,8 +113,14 @@ export async function onRequestDelete(context) {
       });
     }
     
-    // Clear all shortcut
+    // Clear all shortcut (Admin only)
     if (timestamp === 'all') {
+      if (user.role !== 'admin') {
+        return new Response(JSON.stringify({ error: "未授权的操作，仅系统管理员可以清空该题讨论记录！" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
       await putDb(env, `comments:${qId}`, JSON.stringify([]));
       return new Response(JSON.stringify({
         message: "该题目讨论记录已全部删除清空！",
@@ -143,8 +149,8 @@ export async function onRequestDelete(context) {
       });
     }
     
-    // Check ownership
-    if (comments[commentIndex].username !== user.username) {
+    // Check ownership (admins can bypass this check to delete any comment)
+    if (comments[commentIndex].username !== user.username && user.role !== 'admin') {
       return new Response(JSON.stringify({ error: "您只能删除自己发表的评论！" }), {
         status: 403,
         headers: { "Content-Type": "application/json" }

@@ -146,8 +146,35 @@ export async function onRequestPost(context) {
           console.error("Leaderboard filter error during admin delete:", lErr);
         }
       }
+
+      // 5. Delete User's Comments
+      try {
+        const commentKeys = await listDbKeys(env, "comments:");
+        for (const key of commentKeys) {
+          const valStr = await getDb(env, key);
+          if (valStr) {
+            try {
+              let comments = JSON.parse(valStr);
+              if (Array.isArray(comments)) {
+                const originalLen = comments.length;
+                comments = comments.filter(c => {
+                  const uname = c.username || "";
+                  return uname.trim().toLowerCase() !== normUsername;
+                });
+                if (comments.length < originalLen) {
+                  await putDb(env, key, JSON.stringify(comments));
+                }
+              }
+            } catch (parseErr) {
+              console.error("Parse error for comment key during admin deletion:", key, parseErr);
+            }
+          }
+        }
+      } catch (commentErr) {
+        console.error("Failed to cleanup user comments during admin deletion:", commentErr);
+      }
       
-      return new Response(JSON.stringify({ message: `用户 ${targetUsername} 的所有云端数据已强制注销并彻底清除！` }), {
+      return new Response(JSON.stringify({ message: `用户 ${targetUsername} 的所有云端数据和讨论区回复已强制注销并彻底清除！` }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
       });

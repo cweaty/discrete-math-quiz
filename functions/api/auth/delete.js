@@ -1,4 +1,4 @@
-import { getDb, putDb, deleteDb } from "../../_db.js";
+import { getDb, putDb, deleteDb, listDbKeys } from "../../_db.js";
 // Delete/Cancel Account worker endpoint
 
 export async function onRequestPost(context) {
@@ -40,8 +40,35 @@ export async function onRequestPost(context) {
       leaderboard = leaderboard.filter(item => item.userId !== userId);
       await putDb(env, "leaderboard:global", JSON.stringify(leaderboard));
     }
+
+    // 5. Delete User's Comments
+    try {
+      const commentKeys = await listDbKeys(env, "comments:");
+      for (const key of commentKeys) {
+        const valStr = await getDb(env, key);
+        if (valStr) {
+          try {
+            let comments = JSON.parse(valStr);
+            if (Array.isArray(comments)) {
+              const originalLen = comments.length;
+              comments = comments.filter(c => {
+                const uname = c.username || "";
+                return uname.trim().toLowerCase() !== normUsername;
+              });
+              if (comments.length < originalLen) {
+                await putDb(env, key, JSON.stringify(comments));
+              }
+            }
+          } catch (parseErr) {
+            console.error("Parse error for comment key during deletion:", key, parseErr);
+          }
+        }
+      }
+    } catch (commentErr) {
+      console.error("Failed to cleanup user comments:", commentErr);
+    }
     
-    return new Response(JSON.stringify({ message: "您的账号及所有云端刷题记录已成功注销并永久抹除！" }), {
+    return new Response(JSON.stringify({ message: "您的账号及所有云端刷题记录和讨论回复已成功注销并永久抹除！" }), {
       status: 200,
       headers: { "Content-Type": "application/json" }
     });
