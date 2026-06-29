@@ -7918,37 +7918,74 @@ D. $q \\to \\neg p$
       ? q.options.map((o, i) => `<span style="font-size:0.72rem; color:var(--text-secondary);">${String.fromCharCode(65 + i)}. ${o}</span>`).join('  ')
       : '';
 
+    // Build structure WITHOUT user content in innerHTML (to avoid XSS / broken HTML from LaTeX)
     rowEl.innerHTML = `
       <div class="import-q-row-header">
         <input type="checkbox" class="import-q-check" data-idx="${idx}" checked
           style="width:18px; height:18px; margin-top:0.15rem; cursor:pointer; flex-shrink:0; accent-color:var(--primary);">
         <div style="flex:1; min-width:0;">
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.35rem; align-items:center;">
-            <span class="import-q-cat-badge" style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;">${CAT_LABEL[q.category] || q.category}</span>
+            <span class="import-q-cat-badge" style="font-size:0.7rem; font-weight:700; background:var(--primary-light); color:var(--primary); padding:0.15rem 0.45rem; border-radius:4px; white-space:nowrap;"></span>
             <select class="import-q-topic" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${topicOptsHtml}</select>
             <select class="import-q-cat" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.4rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-primary); color:var(--text-primary); cursor:pointer;">${catOptsHtml(q.category)}</select>
             <button class="import-q-ai-btn" data-idx="${idx}">✨ AI 优化</button>
             <button class="import-q-expand-btn" data-idx="${idx}" style="font-size:0.72rem; padding:0.2rem 0.5rem; border-radius:6px; border:1px solid var(--border-color); background:transparent; color:var(--text-secondary); cursor:pointer;">编辑 ▼</button>
           </div>
           <div class="import-q-summary" style="font-size:0.82rem; color:var(--text-primary); line-height:1.5; display:flex; gap:0.5rem; align-items:baseline; flex-wrap:wrap;">
-            <span class="import-q-summary-text" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${q.question.substring(0, 80)}${q.question.length > 80 ? '...' : ''}</span>
-            <span style="font-size:0.75rem; color:var(--success); font-weight:700; flex-shrink:0;">→ ${q.answer}</span>
+            <span class="import-q-summary-text" style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+            <span class="import-q-answer-badge" style="font-size:0.75rem; color:var(--success); font-weight:700; flex-shrink:0;"></span>
           </div>
-          ${optPreview ? `<div style="margin-top:0.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">${optPreview}</div>` : ''}
+          <div class="import-q-opts-preview" style="margin-top:0.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
           <div class="import-q-tips" data-idx="${idx}"></div>
         </div>
       </div>
       <div class="import-q-row-body" data-idx="${idx}">
         <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">题干（支持 LaTeX $...$ 公式）</label>
-        <textarea class="import-q-text-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;">${q.question}</textarea>
+        <textarea class="import-q-text-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;"></textarea>
         <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">答案</label>
-        <input type="text" class="import-q-ans-input" data-idx="${idx}" value="${q.answer}" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; box-sizing:border-box; width:100%; outline:none;">
+        <input type="text" class="import-q-ans-input" data-idx="${idx}" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; box-sizing:border-box; width:100%; outline:none;">
         <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">解析（留空则由 AI 补全）</label>
-        <textarea class="import-q-ana-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;">${q.analysis || ''}</textarea>
+        <textarea class="import-q-ana-input" data-idx="${idx}" rows="3" style="padding:0.6rem; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.82rem; font-family:monospace; resize:vertical; box-sizing:border-box; width:100%; outline:none;"></textarea>
         <label style="font-size:0.72rem; font-weight:700; color:var(--text-secondary);">LaTeX 预览</label>
         <div class="import-q-preview-box import-q-render-${idx}"></div>
       </div>
     `;
+
+    // ── Safely fill user content using textContent / .value (no HTML injection) ──
+    const summarySpan = rowEl.querySelector('.import-q-summary-text');
+    const answerBadge = rowEl.querySelector('.import-q-answer-badge');
+    const catBadge    = rowEl.querySelector('.import-q-cat-badge');
+    const optsPreview = rowEl.querySelector('.import-q-opts-preview');
+    const textTA      = rowEl.querySelector('.import-q-text-input');
+    const ansInput    = rowEl.querySelector('.import-q-ans-input');
+    const anaTA       = rowEl.querySelector('.import-q-ana-input');
+
+    // Summary line (plain text, truncated)
+    const summaryTxt = q.question || '';
+    summarySpan.textContent = summaryTxt.substring(0, 80) + (summaryTxt.length > 80 ? '...' : '');
+
+    // Answer badge
+    answerBadge.textContent = '→ ' + (q.answer || '');
+
+    // Category badge
+    catBadge.textContent = CAT_LABEL[q.category] || q.category;
+
+    // Options preview (plain text spans)
+    if (q.options && q.options.length > 0) {
+      q.options.forEach((o, i) => {
+        const sp = document.createElement('span');
+        sp.style.cssText = 'font-size:0.72rem; color:var(--text-secondary);';
+        sp.textContent = String.fromCharCode(65 + i) + '. ' + o;
+        optsPreview.appendChild(sp);
+      });
+    }
+
+    // Textarea / input values (.value is safe — never parsed as HTML)
+    textTA.value  = q.question  || '';
+    ansInput.value = q.answer   || '';
+    anaTA.value   = q.analysis  || '';
+
+
 
     // Sync question data from inputs
     const syncFromInputs = (idx) => {
