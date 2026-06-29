@@ -22,6 +22,14 @@ let currentAiQuestion = null;
 let aiConversationHistory = [];
 let lastFilteredIdsKey = ""; // To track if the pool changed
 
+function getExpectedCfScriptName() {
+  const hostname = window.location.hostname;
+  if (hostname.endsWith('.pages.dev')) {
+    return 'pages-' + hostname.split('.')[0];
+  }
+  return 'pages-discrete-math-quiz';
+}
+
 function loadSettings() {
   const saved = localStorage.getItem('dm_quiz_settings');
   if (saved) {
@@ -3405,112 +3413,7 @@ async function askFloatingAiTutor() {
           userQuery: query,
           model: chosenModel,
           history: aiConversationHistory,
-          thinkingIntensity: chosenIntensity,
-          stream: false,
-          userRecord: userRecord ? { userAns: userRecord.userAns, isCorrect: userRecord.isCorrect } : null
-        })
-      });
-      
-      const result = await response.json();
-      aiLoadingDiv.remove();
-      
-      if (response.ok) {
-        // Extract <think>...</think> block if present (robust regex parsing)
-        let rawText = result.response;
-        let thinkingText = "";
-        
-        const thinkRegex = /<think>([\s\S]*?)<\/think>/i;
-        const match = rawText.match(thinkRegex);
-        if (match) {
-          thinkingText = match[1].trim();
-          rawText = rawText.replace(thinkRegex, "").trim();
-        } else {
-          // Fallback for missing closing tag
-          const openIndex = rawText.toLowerCase().indexOf("<think>");
-          if (openIndex !== -1) {
-            thinkingText = rawText.substring(openIndex + 7).trim();
-            rawText = rawText.substring(0, openIndex).trim();
-          }
-        }
-        
-        // Render Collapsible Thinking Accordion
-        let thinkingHtml = "";
-        if (thinkingText) {
-          thinkingHtml = `
-            <div class="ai-thinking-accordion" style="margin-bottom:0.75rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); overflow:hidden; background-color:rgba(0,0,0,0.02);">
-              <button class="ai-thinking-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'; this.querySelector('.arrow').innerText = this.nextElementSibling.style.display === 'none' ? '▶' : '▼';" style="width:100%; border:none; background:transparent; padding:0.4rem 0.6rem; font-size:0.75rem; font-weight:700; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
-                <span style="display:flex; align-items:center; gap:0.25rem;">💡 思考过程 (${selectedModelName})</span>
-                <span class="arrow" style="font-size:0.6rem; color:var(--text-muted);">▶</span>
-              </button>
-              <div class="ai-thinking-body" style="display:none; padding:0.5rem 0.6rem; border-top:1px dashed var(--border-color); font-size:0.75rem; color:var(--text-muted); line-height:1.45; white-space:pre-wrap; background-color:rgba(0,0,0,0.005);">
-                ${thinkingText}
-              </div>
-            </div>
-          `;
-        }
-        
-        // Combine thinking block and markdown result
-        aiReplyDiv.innerHTML = thinkingHtml + marked.parse(rawText);
-        
-        // Render token usage metadata badge
-        const usage = result.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
-        const usageBadge = document.createElement('div');
-        usageBadge.style.fontSize = '0.65rem';
-        usageBadge.style.color = 'var(--text-muted)';
-        usageBadge.style.marginTop = '0.4rem';
-        usageBadge.style.borderTop = '1px dashed var(--border-color)';
-        usageBadge.style.paddingTop = '0.25rem';
-        usageBadge.style.display = 'flex';
-        usageBadge.style.justifyContent = 'space-between';
-        usageBadge.style.alignItems = 'center';
-        usageBadge.innerHTML = `
-          <span>🔮 ${selectedModelName}</span>
-          <span>Tokens: Prompt ${usage.prompt_tokens} \| Reply ${usage.completion_tokens} \| Total ${usage.total_tokens}</span>
-        `;
-        aiReplyDiv.appendChild(usageBadge);
-        chatArea.appendChild(aiReplyDiv);
-        renderMath(aiReplyDiv);
-        
-        // Push assistant response to history
-        aiConversationHistory.push({ role: 'assistant', content: result.response });
-        updateAiContextBar(currentAiQuestion);
-      } else {
-        aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 助教答疑失败: ${result.error || "请求异常"}</span>`;
-        chatArea.appendChild(aiReplyDiv);
-        aiConversationHistory.pop();
-        updateAiContextBar(currentAiQuestion);
-      }
-    } catch (err) {
-      aiLoadingDiv.remove();
-      aiReplyDiv.innerHTML = `<span style="color:var(--error);">✕ 连接 AI 服务失败，请检查网络！</span>`;
-      chatArea.appendChild(aiReplyDiv);
-      aiConversationHistory.pop();
-      updateAiContextBar(currentAiQuestion);
-    }
-  }
-  
-  chatArea.scrollTop = chatArea.scrollHeight;
-}
-
-
-// ============================================================================
-//            CLOUDFLARE WORKERS/PAGES USAGE METRICS HANDLERS
-// ============================================================================
-
-function renderCloudflareUsageCard(container) {
-  const usageContainer = container.querySelector('#cf-usage-container');
-  if (!usageContainer) return;
-  
-  const cfAccountId = localStorage.getItem('cf_account_id');
-  const cfApiToken = localStorage.getItem('cf_api_token');
-  
-  // Clean up any running timers
-  if (cfCountdownInterval) {
-    clearInterval(cfCountdownInterval);
-    cfCountdownInterval = null;
-  }
-  
-  if (!cfAccountId || !cfApiToken) {
+      if (!cfAccountId || !cfApiToken) {
     // Show configuration form
     usageContainer.innerHTML = `
       <div class="dashboard-card" style="padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
@@ -3529,24 +3432,53 @@ function renderCloudflareUsageCard(container) {
             <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">Cloudflare API Token</label>
             <input type="password" id="cf-api-token" placeholder="输入具有 Account Analytics: Read 权限的 API 令牌..." style="padding: 0.75rem 1rem; font-size: 0.85rem; border-radius: 14px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: all 0.2s;">
           </div>
+          <div style="display:flex; flex-direction:column; gap:0.35rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">账户计划与每日配额</label>
+            <select id="cf-quota-select" style="padding: 0.75rem 1rem; font-size: 0.85rem; border-radius: 14px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: all 0.2s; cursor: pointer;">
+              <option value="100000">免费版账户 (每日 100,000 次请求)</option>
+              <option value="10000000">付费版账户 (基础额度每月 10,000,000 次，无每日限制)</option>
+              <option value="custom">自定义每日限额...</option>
+            </select>
+          </div>
+          <div id="cf-custom-quota-wrapper" style="display:none; flex-direction:column; gap:0.35rem;">
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);">自定义每日最高请求限额</label>
+            <input type="number" id="cf-custom-quota" value="100000" placeholder="例如: 500000" style="padding: 0.75rem 1rem; font-size: 0.85rem; border-radius: 14px; border: 1.5px solid var(--border-color); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: all 0.2s;">
+          </div>
           <button class="btn btn-primary" id="cf-save-btn" style="padding: 0.75rem; font-size: 0.85rem; font-weight: 700; width: 100%; margin-top: 0.5rem; cursor: pointer; border-radius: 14px; border: none;">
             确认绑定并查询使用进度
           </button>
         </div>
       </div>
     `;
+
+    const quotaSelect = usageContainer.querySelector('#cf-quota-select');
+    const customWrapper = usageContainer.querySelector('#cf-custom-quota-wrapper');
+    quotaSelect.addEventListener('change', () => {
+      if (quotaSelect.value === 'custom') {
+        customWrapper.style.display = 'flex';
+      } else {
+        customWrapper.style.display = 'none';
+      }
+    });
     
     usageContainer.querySelector('#cf-save-btn').addEventListener('click', () => {
       const idInput = usageContainer.querySelector('#cf-account-id').value.trim();
       const tokenInput = usageContainer.querySelector('#cf-api-token').value.trim();
+      const quotaSelectVal = quotaSelect.value;
       
       if (!idInput || !tokenInput) {
         showToast('Account ID 和 API Token 均不能为空！', 'error');
         return;
       }
+
+      let quotaVal = parseInt(quotaSelectVal);
+      if (quotaSelectVal === 'custom') {
+        quotaVal = parseInt(usageContainer.querySelector('#cf-custom-quota').value) || 100000;
+      }
       
       localStorage.setItem('cf_account_id', idInput);
       localStorage.setItem('cf_api_token', tokenInput);
+      localStorage.setItem('cf_quota_limit', quotaVal);
       showToast('Cloudflare 凭证保存成功，正在获取数据...', 'success');
       renderCloudflareUsageCard(container);
     });
@@ -3573,7 +3505,11 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ accountId, apiToken })
+      body: JSON.stringify({
+        accountId,
+        apiToken,
+        scriptName: getExpectedCfScriptName()
+      })
     });
     
     if (response.ok) {
@@ -3582,9 +3518,14 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
       const workers = result.workersRequests;
       const pages = result.pagesRequests;
       const total = result.totalRequests;
-      const quota = result.quota;
+      const quota = parseInt(localStorage.getItem('cf_quota_limit')) || result.quota || 100000;
       const pct = parseFloat(((total / quota) * 100).toFixed(2));
       let secondsLeft = result.secondsRemaining;
+      
+      // Artificial Workers AI Data
+      const aiNeurons = result.aiNeurons || 0;
+      const aiQuota = result.aiQuota || 10000; 
+      const aiPct = parseFloat(((aiNeurons / aiQuota) * 100).toFixed(2));
       
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       
@@ -3609,7 +3550,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
             <span>重置倒计时:</span>
             <span id="cf-countdown-timer">${getTimerHtml(secondsLeft)}</span>
           </div>
-
+ 
           <!-- Progress Bar -->
           <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
             <div style="background: linear-gradient(90deg, var(--primary), var(--accent)); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, pct)}%;"></div>
@@ -3617,13 +3558,13 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
               本日已用: ${total.toLocaleString()} / ${quota.toLocaleString()} (${pct}%)
             </span>
           </div>
-
+ 
           <div style="display:flex; gap:1.5rem; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
             <span>🌐 Pages (项目运行): <strong style="color: var(--primary);">${pages.toLocaleString()}</strong> 次</span>
             <span>⚙️ Workers (其他服务): <strong style="color: var(--success);">${workers.toLocaleString()}</strong> 次</span>
           </div>
         </div>
-
+ 
         <!-- Workers AI Neurons Card -->
         <div class="dashboard-card" style="padding: 1.25rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.85rem; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius-lg); animation: fadeIn 0.4s ease;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -3632,7 +3573,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
             </h3>
             <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700;">每日免费额度</span>
           </div>
-
+ 
           <!-- Progress Bar -->
           <div style="background-color: var(--bg-secondary); border-radius: 9999px; height: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; width: 100%; border: 1px solid var(--border-color);">
             <div style="background: linear-gradient(90deg, #10B981, var(--primary)); height: 100%; position: absolute; left: 0; top: 0; width: ${Math.min(100, aiPct)}%;"></div>
@@ -3640,7 +3581,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
               本日已用: ${aiNeurons.toLocaleString()} / ${aiQuota.toLocaleString()} Neurons (${aiPct}%)
             </span>
           </div>
-
+ 
           <div style="display:flex; justify-content:space-between; align-items:center; font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">
             <span>🧠 AI 助教算力单元: <strong style="color: #10B981;">${aiNeurons.toLocaleString()} Neurons</strong></span>
             <span style="color: var(--text-muted); font-size:0.7rem;">(免费配额重置与请求数同步)</span>
@@ -3652,6 +3593,7 @@ async function fetchCloudflareUsage(accountId, apiToken, targetContainer) {
       targetContainer.querySelector('#cf-reconfig-btn').addEventListener('click', () => {
         localStorage.removeItem('cf_account_id');
         localStorage.removeItem('cf_api_token');
+        localStorage.removeItem('cf_quota_limit');
         renderCloudflareUsageCard(document.getElementById('viewport'));
       });
       
@@ -3732,7 +3674,11 @@ function loadGlobalCloudQuota() {
 
   const accountId = localStorage.getItem('cf_account_id');
   const apiToken = localStorage.getItem('cf_api_token');
-  const body = (accountId && apiToken) ? { accountId, apiToken } : {};
+  const body = (accountId && apiToken) ? {
+    accountId,
+    apiToken,
+    scriptName: getExpectedCfScriptName()
+  } : {};
 
   fetch(`${API_BASE}/cf-usage`, {
     method: 'POST',
@@ -3749,7 +3695,7 @@ function loadGlobalCloudQuota() {
     const workers = result.workersRequests || 0;
     const pages = result.pagesRequests || 0;
     const total = result.totalRequests || 0;
-    const quota = result.quota || 100000;
+    const quota = parseInt(localStorage.getItem('cf_quota_limit')) || result.quota || 100000;
     const pct = parseFloat(((total / quota) * 100).toFixed(2));
     
     const aiNeurons = result.aiNeurons || 0;
@@ -4775,7 +4721,11 @@ function renderMobileLobby(container) {
 async function fetchLobbyQuotaDetails() {
   const accountId = localStorage.getItem('cf_account_id');
   const apiToken = localStorage.getItem('cf_api_token');
-  const body = (accountId && apiToken) ? { accountId, apiToken } : {};
+  const body = (accountId && apiToken) ? {
+    accountId,
+    apiToken,
+    scriptName: getExpectedCfScriptName()
+  } : {};
 
   try {
     const res = await fetch(`${API_BASE}/cf-usage`, {
@@ -4791,7 +4741,7 @@ async function fetchLobbyQuotaDetails() {
       const workers = result.workersRequests || 0;
       const pages = result.pagesRequests || 0;
       const total = result.totalRequests || 0;
-      const quota = result.quota || 100000;
+      const quota = parseInt(localStorage.getItem('cf_quota_limit')) || result.quota || 100000;
       const pct = parseFloat(((total / quota) * 100).toFixed(2));
       
       const aiNeurons = result.aiNeurons || 0;

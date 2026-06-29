@@ -128,7 +128,8 @@ export async function onRequestPost(context) {
       const name = item.dimensions?.scriptName || "";
       const count = item.count || 0;
       
-      if (name.includes("pages") || name === targetScript || name.includes("discrete-math")) {
+      const isTarget = (name === targetScript || name === `pages-${targetScript}` || (targetScript === "discrete-math-quiz" && name === "pages-discrete-math-quiz"));
+      if (isTarget) {
         pagesRequests += count;
       } else {
         workersRequests += count;
