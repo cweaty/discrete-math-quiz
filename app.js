@@ -747,6 +747,7 @@ function renderProfileView(container) {
           userData.lastStudyDate = "";
           userData.examHistory = [];
           userData.examHighScore = 0;
+          userData.examLogs = [];
           saveUserData();
           
           showToast('账号注销成功，所有本地及云端数据已彻底擦除！', 'success');
@@ -1986,6 +1987,20 @@ function submitExam(isTimeout = false) {
   } else {
     examState.timeUsed = 0;
   }
+
+  // Update high score and history logs
+  userData.examHighScore = Math.max(userData.examHighScore || 0, score);
+  userData.examLogs = userData.examLogs || [];
+  userData.examLogs.push({
+    score: score,
+    correctCount: correctCount,
+    totalCount: examState.questions.length,
+    timeUsed: examState.timeUsed,
+    timestamp: Date.now()
+  });
+
+  // Save changes locally and sync with cloud database
+  saveUserData(true);
   
   saveExamState();
   
@@ -2746,6 +2761,7 @@ function setupSettingsEvents() {
       userData.lastStudyDate = "";
       userData.examHistory = [];
       userData.examHighScore = 0;
+      userData.examLogs = [];
       
       saveUserData(); // saves to local & automatically pushes sync deletion to cloud KV
       showToast('所有答题历史记录与统计数据已成功清空！', 'success');
@@ -6579,6 +6595,7 @@ function renderMobileProfile(container) {
         userData.lastStudyDate = "";
         userData.examHistory = [];
         userData.examHighScore = 0;
+        userData.examLogs = [];
         saveUserData();
         
         showToast('账号注销成功，所有本地及云端数据已彻底擦除！', 'success');
