@@ -2403,10 +2403,11 @@ async function syncUserData() {
   const token = localStorage.getItem('dm_jwt_token');
   if (!token) return;
   
-  // Calculate highest exam score from local history
-  let localHighScore = 0;
-  if (userData.examHistory && userData.examHistory.length > 0) {
-    localHighScore = Math.max(...userData.examHistory);
+  // Calculate highest exam score from local history logs
+  let localHighScore = userData.examHighScore || 0;
+  if (userData.examLogs && userData.examLogs.length > 0) {
+    const maxLogScore = Math.max(...userData.examLogs.map(log => log.score || 0));
+    localHighScore = Math.max(localHighScore, maxLogScore);
   }
   const savedProfile = localStorage.getItem('dm_user_profile');
   if (savedProfile) {
@@ -4681,7 +4682,7 @@ function updateMobileNavAndHeader() {
     // Standard Logo + Title Header
     headerLeft.innerHTML = `
       <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">Σ</div>
-      <span class="font-bold text-slate-900 dark:text-white tracking-tight">离散数学刷题系统</span>
+      <span class="font-bold text-slate-900 dark:text-white tracking-tight">DiscreteMind 智能刷题系统</span>
     `;
     
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
