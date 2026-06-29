@@ -2957,3 +2957,66 @@ tr:nth-child(even) {
 .text-on-primary {
   color: #ffffff !important;
 }
+
+/* Dark Mode specific style overrides for option items */
+[data-theme="dark"] .option-item {
+  border-color: rgba(255, 255, 255, 0.6) !important; /* White border outline */
+  color: #ffffff !important; /* White text font color */
+  background-color: rgba(255, 255, 255, 0.03) !important; /* Slightly glass background */
+}
+
+[data-theme="dark"] .option-item .option-prefix {
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .option-item .option-text {
+  color: #ffffff !important;
+}
+
+/* Hover and selection states in dark mode */
+[data-theme="dark"] .option-item:hover {
+  border-color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .option-item:hover .option-prefix {
+  border-color: #ffffff !important;
+}
+
+/* Selected state overrides in dark mode */
+[data-theme="dark"] .option-item.selected {
+  border-color: var(--primary) !important;
+  background-color: var(--primary-light) !important;
+}
+
+[data-theme="dark"] .option-item.selected .option-prefix {
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  background-color: var(--primary) !important;
+}
+
+/* Correct state overrides in dark mode */
+[data-theme="dark"] .option-item.correct {
+  border-color: var(--success) !important;
+  background-color: var(--success-light) !important;
+}
+
+[data-theme="dark"] .option-item.correct .option-prefix {
+  border-color: var(--success) !important;
+  color: #ffffff !important;
+  background-color: var(--success) !important;
+}
+
+/* Incorrect state overrides in dark mode */
+[data-theme="dark"] .option-item.incorrect {
+  border-color: var(--error) !important;
+  background-color: var(--error-light) !important;
+}
+
+[data-theme="dark"] .option-item.incorrect .option-prefix {
+  border-color: var(--error) !important;
+  color: #ffffff !important;
+  background-color: var(--error) !important;
+}
