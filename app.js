@@ -49,6 +49,21 @@ async function loadDynamicQuestions() {
   }
 }
 
+function getCurrentUserRole() {
+  const role = localStorage.getItem('dm_user_role');
+  if (role) return role;
+  const profileStr = localStorage.getItem('dm_user_profile');
+  if (profileStr) {
+    try {
+      const profile = JSON.parse(profileStr);
+      if (profile && profile.username && profile.username.toLowerCase() === 'admin') {
+        return 'admin';
+      }
+    } catch(e) {}
+  }
+  return 'user';
+}
+
 function loadSettings() {
   const saved = localStorage.getItem('dm_quiz_settings');
   if (saved) {
@@ -2169,7 +2184,7 @@ async function checkAuthStatus() {
   const userProfile = document.getElementById('user-profile');
   const loginTriggerBtn = document.getElementById('login-trigger-btn');
   const adminNav = document.getElementById('nav-admin');
-  const role = localStorage.getItem('dm_user_role');
+  const role = getCurrentUserRole();
   
   if (token) {
     // If token exists, display profile
@@ -5856,7 +5871,7 @@ function renderMobileProfile(container) {
             <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
           </button>
           <!-- Admin Control Button (Show only if admin) -->
-          ${localStorage.getItem('dm_user_role') === 'admin' ? `
+          ${getCurrentUserRole() === 'admin' ? `
           <button class="flex items-center justify-between p-4 border-b border-slate-200/30 dark:border-slate-800/30 hover:bg-slate-100/30 transition-colors text-left group bg-transparent border-none cursor-pointer" id="mob-btn-admin">
             <div class="flex items-center gap-3 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
               <span class="material-symbols-outlined text-indigo-500 text-lg">settings</span>
@@ -6576,7 +6591,7 @@ let adminActiveTab = 'users'; // 'users', 'questions', 'system'
 
 async function renderAdminView(container) {
   const token = localStorage.getItem('dm_jwt_token');
-  const role = localStorage.getItem('dm_user_role');
+  const role = getCurrentUserRole();
   
   if (!token || role !== 'admin') {
     container.innerHTML = `
