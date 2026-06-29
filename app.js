@@ -1621,6 +1621,7 @@ function buildCustomExam(selectedTopic, selectedTime, cntJudgment, cntChoice, cn
   examState.completed = false;
   examState.secondsRemaining = selectedTime;
   examState.subjectiveGrading = {};
+  examState.startTime = Date.now(); // Record start time for mobile/desktop logs
   currentQuestionIndex = 0;
   
   // Start Timer if not unlimited
@@ -1661,6 +1662,10 @@ function selectRandom(arr, count) {
 function updateExamTimer() {
   const timerEl = document.getElementById('exam-timer-display');
   const mobTimerEl = document.getElementById('mobile-exam-timer');
+  
+  if (mobTimerEl) {
+    mobTimerEl.style.display = 'block'; // Make sure the timer badge is visible during exam
+  }
   
   if (examState.secondsRemaining === 0) {
     if (timerEl) {
@@ -1951,6 +1956,38 @@ function submitExam(isTimeout = false) {
       examState.subjectiveGrading[idx] = true; // Default self-grade correct
     }
   });
+
+  // Calculate score and correct count
+  let score = 0;
+  let correctCount = 0;
+  examState.questions.forEach((q, idx) => {
+    const userAns = examState.answers[idx] || '';
+    if (['judgment', 'single_choice', 'fill_blank'].includes(q.category)) {
+      const isCorrect = (q.category === 'fill_blank')
+        ? checkBlankCorrectness(userAns, q.answer)
+        : (userAns === q.answer);
+      if (isCorrect) {
+        score += 10;
+        correctCount++;
+      }
+    } else {
+      if (examState.subjectiveGrading[idx]) {
+        score += 10;
+        correctCount++;
+      }
+    }
+  });
+  examState.score = score;
+  examState.correctCount = correctCount;
+
+  // Calculate elapsed time used
+  if (examState.startTime) {
+    examState.timeUsed = Math.round((Date.now() - examState.startTime) / 1000);
+  } else {
+    examState.timeUsed = 0;
+  }
+  
+  saveExamState();
   
   renderViewport();
   
