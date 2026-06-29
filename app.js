@@ -7577,29 +7577,12 @@ async function renderAdminQuestionsTab(container) {
     openEditor({ category: 'judgment', options: [], question: "", answer: "", analysis: "", topic: "propositional_logic" }, true);
   };
 
-  // Bind markdown import button → trigger file picker
+  // Bind markdown import button → open live split-screen import editor
   const mdImportBtn = container.querySelector('#admin-q-import-md-btn');
-  const mdFileInput = container.querySelector('#admin-q-md-file-input');
   const importPanel = container.querySelector('#admin-q-import-panel');
 
-  mdImportBtn.onclick = () => mdFileInput.click();
-
-  mdFileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      const parsed = parseMarkdownQuestions(text);
-      if (parsed.length === 0) {
-        showToast('未能从文件中识别出任何题目，请检查格式是否正确！', 'error');
-        return;
-      }
-      openMarkdownImportPanel(importPanel, parsed, saveQuestionsToCloud, renderQuestionsList);
-    };
-    reader.readAsText(file, 'utf-8');
-    // Reset so same file can be re-imported
-    mdFileInput.value = '';
+  mdImportBtn.onclick = () => {
+    openMarkdownImportPanel(importPanel, "", saveQuestionsToCloud, renderQuestionsList);
   };
 
   // Bind filter events
@@ -7821,47 +7804,12 @@ function parseMarkdownQuestions(text) {
   return results;
 }
 
-// =================== MARKDOWN IMPORT PREVIEW PANEL V2 ===================
-function openMarkdownImportPanel(panelEl, parsedQuestions, saveQuestionsToCloud, renderQuestionsList) {
+function openMarkdownImportPanel(panelEl, initialText, saveQuestionsToCloud, renderQuestionsList) {
   panelEl.style.display = 'block';
   panelEl.scrollIntoView({ behavior: 'smooth' });
 
-  const TOPIC_OPTIONS = [
-    { value: 'propositional_logic', label: '命题逻辑' },
-    { value: 'predicate_logic', label: '谓词逻辑' },
-    { value: 'set_theory', label: '集合论' },
-    { value: 'binary_relations', label: '二元关系' },
-    { value: 'graph_theory', label: '图论' },
-  ];
-  const CAT_LABEL = {
-    judgment: '判断题', single_choice: '单选题', fill_blank: '填空题',
-    calculation: '计算/简答题', proof: '证明题', application: '应用题'
-  };
-  const topicOptsHtml = TOPIC_OPTIONS.map(t => `<option value="${t.value}">${t.label}</option>`).join('');
-  const catOptsHtml = (cat) => Object.entries(CAT_LABEL).map(([v, l]) =>
-    `<option value="${v}" ${v === cat ? 'selected' : ''}>${l}</option>`
-  ).join('');
-
-  // Build panel HTML
+  // Render the split-screen shell
   panelEl.innerHTML = `
-    <div class="admin-import-panel">
-      <!-- Header -->
-      <div class="admin-import-header">
-        <div>
-          <h3 style="margin:0; font-size:1rem; font-weight:800; color:var(--primary);">📄 Markdown 批量导入预览</h3>
-          <p style="margin:0.3rem 0 0; font-size:0.78rem; color:var(--text-muted);">共识别出 <strong>${parsedQuestions.length}</strong> 道题目，勾选需要导入的题目。点击任意题目行可展开编辑，AI 优化可自动补全解析。</p>
-        </div>
-        <div class="admin-import-actions">
-          <button id="import-select-all" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">全选</button>
-          <button id="import-select-none" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">取消全选</button>
-          <button id="import-batch-ai-btn" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer; color:var(--primary); border-color:var(--primary);">🤖 AI 批量优化全选</button>
-          <button id="import-confirm-btn" class="btn btn-primary" style="padding:0.4rem 1.1rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer;">✅ 确认导入选中题目</button>
-          <button id="import-cancel-btn" class="btn btn-outline" style="padding:0.4rem 0.9rem; font-size:0.78rem; font-weight:700; border-radius:10px; cursor:pointer; color:var(--error); border-color:rgba(239,68,68,0.3);">✖ 取消</button>
-        </div>
-      </div>
-
-      <!-- Batch AI Progress Bar -->
-      <div class="admin-import-batch-progress" id="import-batch-progress">
         <span id="import-batch-progress-text">正在 AI 优化题目...</span>
         <div class="admin-import-batch-bar-wrap">
           <div class="admin-import-batch-bar" id="import-batch-bar"></div>
