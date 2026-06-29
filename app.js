@@ -7048,7 +7048,9 @@ async function renderAdminQuestionsTab(container) {
             </div>
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">标准答案 (Answer)</label>
-              <input type="text" id="edit-q-answer" value="${q.answer || ""}" placeholder="例如：对 / A / $p \\vee q$" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; box-sizing:border-box; width:100%;">
+              <div id="edit-q-answer-wrapper">
+                <input type="text" id="edit-q-answer" value="${q.answer || ""}" placeholder="例如：对 / A / $p \\vee q$" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; box-sizing:border-box; width:100%;">
+              </div>
             </div>
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
               <label style="font-size:0.75rem; font-weight:700; color:var(--text-secondary);">详细解析 (Analysis)</label>
@@ -7092,9 +7094,41 @@ async function renderAdminQuestionsTab(container) {
     const catSelect = editorContainer.querySelector('#edit-q-category');
     const optionsWrapper = editorContainer.querySelector('#edit-q-options-wrapper');
     const optionsList = editorContainer.querySelector('#edit-q-options-list');
+    const answerWrapper = editorContainer.querySelector('#edit-q-answer-wrapper');
+
+    const updateAnswerUI = () => {
+      const category = catSelect.value;
+      const currentAns = q.answer || "";
+      if (category === 'judgment') {
+        answerWrapper.innerHTML = `
+          <select id="edit-q-answer" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%;">
+            <option value="对" ${currentAns === '对' ? 'selected' : ''}>对</option>
+            <option value="错" ${currentAns === '错' ? 'selected' : ''}>错</option>
+          </select>
+        `;
+      } else if (category === 'single_choice') {
+        const currentOpts = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map((_, idx) => String.fromCharCode(65 + idx));
+        if (currentOpts.length === 0) {
+          currentOpts.push('A', 'B', 'C', 'D');
+        }
+        let optsHtml = currentOpts.map(opt => `
+          <option value="${opt}" ${currentAns.toUpperCase() === opt ? 'selected' : ''}>${opt}</option>
+        `).join('');
+        answerWrapper.innerHTML = `
+          <select id="edit-q-answer" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; cursor:pointer; width:100%;">
+            ${optsHtml}
+          </select>
+        `;
+      } else {
+        answerWrapper.innerHTML = `
+          <input type="text" id="edit-q-answer" value="${currentAns}" placeholder="例如：对 / A / $p \\vee q$" style="padding:0.75rem; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; box-sizing:border-box; width:100%;">
+        `;
+      }
+    };
     
     catSelect.addEventListener('change', () => {
       optionsWrapper.style.display = (catSelect.value === 'single_choice') ? 'flex' : 'none';
+      updateAnswerUI();
     });
 
     const renderOptionsRows = (opts) => {
@@ -7116,6 +7150,7 @@ async function renderAdminQuestionsTab(container) {
           rows.forEach((r, i) => {
             r.querySelector('span').innerText = `${String.fromCharCode(65 + i)}.`;
           });
+          updateAnswerUI();
         };
         optionsList.appendChild(row);
       });
@@ -7127,6 +7162,7 @@ async function renderAdminQuestionsTab(container) {
       const currentOpts = Array.from(optionsList.querySelectorAll('.edit-q-opt-input')).map(i => i.value);
       currentOpts.push("");
       renderOptionsRows(currentOpts);
+      updateAnswerUI();
     };
 
     // Live preview update
@@ -7141,6 +7177,7 @@ async function renderAdminQuestionsTab(container) {
     editorContainer.querySelector('#edit-q-text').addEventListener('input', updatePreview);
     editorContainer.querySelector('#edit-q-analysis').addEventListener('input', updatePreview);
     updatePreview();
+    updateAnswerUI();
 
     // Cancel
     editorContainer.querySelector('#edit-q-cancel').onclick = () => {
