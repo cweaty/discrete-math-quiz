@@ -8034,12 +8034,12 @@ D. 违法占用应急车道行驶
             </div>
           </div>
 
-          <div style="display:flex; gap:0.5rem; margin-top:0.4rem; width:100%;">
-            <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+          <div style="display:flex; gap:0.5rem; margin-top:0.4rem; width:100%; flex-wrap:wrap;">
+            <div style="flex:1; min-width:120px; display:flex; flex-direction:column; gap:0.2rem;">
               <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">专题科目</label>
               <select class="card-edit-topic" style="padding:0.3rem; font-size:0.75rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none;">${topicOptsHtml}</select>
             </div>
-            <div style="flex:1; display:flex; flex-direction:column; gap:0.2rem;">
+            <div style="flex:1; min-width:120px; display:flex; flex-direction:column; gap:0.2rem;">
               <label style="font-size:0.7rem; font-weight:700; color:var(--text-secondary);">题目类型</label>
               <select class="card-edit-cat" style="padding:0.3rem; font-size:0.75rem; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); outline:none;">${catOptsHtml}</select>
             </div>
