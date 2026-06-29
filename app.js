@@ -32,7 +32,7 @@ function getExpectedCfScriptName() {
 
 async function loadDynamicQuestions() {
   try {
-    const res = await fetch("/api/questions");
+    const res = await fetch("/api/questions?_t=" + Date.now());
     if (res.ok) {
       const dbQuestions = await res.json();
       if (dbQuestions && Array.isArray(dbQuestions) && dbQuestions.length > 0) {
